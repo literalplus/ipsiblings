@@ -38,8 +38,8 @@ def dependency_error():
   Scipy:
   https://github.com/scipy/scipy/issues/8535
   In need of lifted increasing x values check -> '>=' instead of '>' for LSQUnivariateSpline
-  Still not merged (14 Nov 2018)
-  File: scipy/interpolate/fitpack2.py line ~730
+  Merged as of 2019-08-07, scipy 1.4.0, compare:
+  https://github.com/scipy/scipy/blob/d6fdfc742323e013e0af3fdd41029dfe36087ab3/scipy/interpolate/fitpack2.py#L753
   """
 
   v4source = inspect.getsource(scapy.TracerouteResult.get_trace).splitlines()
@@ -51,7 +51,7 @@ def dependency_error():
 
   # if not all(diff(x) > 0.0) should only check for '>=' NOT only '>'
   scipysrc = inspect.getsource(interpolate.LSQUnivariateSpline.__init__).splitlines()
-  scipy_error = any((l.strip().startswith('if not all(diff(x)') and '>=' not in l) for l in scipysrc)
+  scipy_error = any((l.strip().startswith('if not np.all(diff(x)') and '>=' not in l) for l in scipysrc)
 
   python_version_error = sys.version_info < (const.PYTHON_VERSION_MAJOR, const.PYTHON_VERSION_MINOR)
 
@@ -67,6 +67,7 @@ def dependency_error():
   return (scapy_error or scipy_error or python_version_error)
 
 ################################################################################
+
 
 class Settings(object):
 
@@ -130,7 +131,6 @@ class Settings(object):
     else:
       raise ValueError('Unknown operating system: {0}'.format(self.uname.system))
 
-
   def _backup_to_file(self):
     """
     Backs up the saved_settings dict to 'settings.bak' in the current working directory.
@@ -156,7 +156,6 @@ class Settings(object):
     else:
       log.warning('Nothing to write, empty saved_settings dict!')
       return False
-
 
   def get_system_info(self):
     """

@@ -20,12 +20,18 @@ Everything works with versions published within 2018.
 
 ## Important Notes
 
-Recent versions of scipy's `LSQUnivariateSpline` allow **strictly increasing** x
+~~Recent versions of scipy's `LSQUnivariateSpline` allow **strictly increasing** x
 values only.
 Due to internal design decisions we require **increasing** sequences.
 This means the file `scipy/interpolate/fitpack2.py` must be patched.
 To do so change `if not np.all(diff(x) > 0.0):` to `if not np.all(diff(x) >= 0.0):` in the initialization of the `LSQUnivariateSpline` class.
-You may also simply comment the dependency check in the `main.py` file.
+You may also simply comment the dependency check in the `main.py` file.~~
+
+No longer necessary as of scipy 1.4.0. Compare
+https://github.com/scipy/scipy/issues/8535
+and
+https://github.com/scipy/scipy/blob/d6fdfc742323e013e0af3fdd41029dfe36087ab3/scipy/interpolate/fitpack2.py#L753
+.
 
 
 ## Usage Message main.py
