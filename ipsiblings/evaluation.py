@@ -33,14 +33,14 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
-import keyscan
-import libts
-import libgeo
-import libtools
-import libtrace
-import libsiblings
-import libconstants as const
-import liblog
+from . import keyscan
+from . import libts
+from . import libgeo
+from . import libtools
+from . import libtrace
+from . import libsiblings
+from . import libconstants as const
+from . import liblog
 log = liblog.get_root_logger()
 log.setLevel(liblog.CRITICAL) # set to critical to silence output except print()
 

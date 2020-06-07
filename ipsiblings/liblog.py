@@ -15,7 +15,7 @@ For details see: https://stackoverflow.com/a/7622029
 import sys
 import logging
 
-import libconstants as const
+from . import libconstants as const
 
 
 NOTSET = logging.NOTSET       # 0

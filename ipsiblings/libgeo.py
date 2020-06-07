@@ -21,8 +21,8 @@ import datetime
 import urllib.request
 import geoip2.database
 
-import libconstants as const
-import liblog
+from . import libconstants as const
+from . import liblog
 log = liblog.get_root_logger()
 
 

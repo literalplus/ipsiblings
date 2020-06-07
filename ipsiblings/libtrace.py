@@ -19,9 +19,9 @@ import errno
 import glob
 
 
-import libconstants as const
-import libtools
-import liblog
+from . import libconstants as const
+from . import libtools
+from . import liblog
 log = liblog.get_root_logger()
 
 

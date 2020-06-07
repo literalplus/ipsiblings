@@ -44,18 +44,18 @@ import argparse
 import ipaddress
 import traceback
 
-import libts
-import liblog
-import libgeo
-import libtools
-import libtrace
-import libsiblings
-import libtraceroute
-import libconstants as const
-import resolved
-import settings
-import cdnfilter
-import keyscan
+from . import libts
+from . import liblog
+from . import libgeo
+from . import libtools
+from . import libtrace
+from . import libsiblings
+from . import libtraceroute
+from . import libconstants as const
+from . import resolved
+from . import settings
+from . import cdnfilter
+from . import keyscan
 
 
 # setup root logger

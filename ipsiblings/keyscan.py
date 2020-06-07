@@ -13,8 +13,8 @@ import pathlib
 import threading
 import subprocess
 
-import libconstants as const
-import liblog
+from . import libconstants as const
+from . import liblog
 log = liblog.get_root_logger()
 
 

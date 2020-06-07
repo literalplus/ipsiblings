@@ -4,10 +4,10 @@
 #
 
 
-from algorithms.base import Algorithm
+from .base import Algorithm
 from libtraceroute import TracerouteException
-import libconstants as const
-import libtools
+from .. import libconstants as const
+from .. import libtools
 
 from scapy import all as scapy # or e.g. only layers: from scapy.layers import all
 

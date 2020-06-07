@@ -22,8 +22,8 @@ import subprocess
 import scapy.all as scapy
 from scipy import interpolate
 
-import libconstants as const
-import liblog
+from . import libconstants as const
+from . import liblog
 log = liblog.get_root_logger()
 
 

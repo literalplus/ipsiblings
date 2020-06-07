@@ -4,7 +4,7 @@
 #
 
 
-from algorithms.base import Algorithm
+from .base import Algorithm
 from scapy import all as scapy # or e.g. only layers: from scapy.layers import all
 
 

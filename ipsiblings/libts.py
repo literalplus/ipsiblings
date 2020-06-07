@@ -21,10 +21,10 @@ import contextlib
 import multiprocessing
 import scapy.all as scapy
 
-import libtools
-import libconstants as const
-import libtrace
-import liblog
+from . import libtools
+from . import libconstants as const
+from . import libtrace
+from . import liblog
 log = liblog.get_root_logger()
 
 

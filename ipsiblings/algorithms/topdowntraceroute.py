@@ -7,9 +7,9 @@ import random
 import ipaddress
 from scapy import all as scapy
 
-import libtools
-import libconstants as const
-from algorithms.base import Algorithm
+from .. import libtools
+from .. import libconstants as const
+from .base import Algorithm
 
 
 class TopDownTracerouteAlgorithm(Algorithm):

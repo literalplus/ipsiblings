@@ -12,9 +12,9 @@ Register new algorithms here.
 """
 
 
-from algorithms.traceroute import TracerouteAlgorithm
-from algorithms.mda import MdaAlgorithm
-from algorithms.topdowntraceroute import TopDownTracerouteAlgorithm
+from .algorithms.traceroute import TracerouteAlgorithm
+from .algorithms.mda import MdaAlgorithm
+from .algorithms.topdowntraceroute import TopDownTracerouteAlgorithm
 
 
 ALGORITHMS = {
