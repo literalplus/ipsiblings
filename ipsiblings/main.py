@@ -54,7 +54,7 @@ from . import libtools
 from . import libtrace
 from . import libtraceroute
 from . import libts
-from . import resolved
+from . import alexa
 from . import settings
 
 # setup root logger
@@ -194,7 +194,7 @@ def main():
         else:
             directory = ARGS_alexa_toplist_dir
 
-        extracted = resolved.Alexa.load_remote_toplist(directory)  # staticmethod
+        extracted = alexa.Alexa.load_remote_toplist(directory)  # staticmethod
         if extracted:
             log.info('Successfully downloaded and extracted Alexa Top List file [{0}]'.format(extracted))
             return 0
@@ -359,7 +359,7 @@ def main():
         else:  # if not explicitly given, try to locate the file in base_dir (assume alexa resolved file)
             resolved_file = os.path.join(ARGS_base_dir, const.ALEXA_RESOLVED_FILE_NAME)
 
-        const.ALEXA = resolved.Alexa(resolved_file=resolved_file)
+        const.ALEXA = alexa.Alexa(resolved_file=resolved_file)
 
         if not const.ALEXA.resolved_available():
             if const.ALEXA.load_toplist_file(toplist_file, remote=ARGS_download_alexa):
