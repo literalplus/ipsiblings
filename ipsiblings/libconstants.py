@@ -43,6 +43,8 @@ INACTIVE_RESULTS_PER_TRACE_SET = 1 # for each target continue with next one if X
 MAX_TRIES_FOR_NEW_TRACE = 1 # continue with next target if X traceroutes to find a new trace were not successful
 
 # base directory only used if no command line directory is given
+# NOTE: Actually, a subdirectory with timestamp is created if no directory is given
+#       Also, the value of this variable is overwritten with the actual base directory.
 BASE_DIRECTORY = '/root/thesis/data'
 # write the silent trace set to disk
 WRITE_INACTIVE_TRACE_SET = False

@@ -866,6 +866,8 @@ class Harvester(object):
   def _sniff(self):
     # https://github.com/secdev/scapy/issues/989 - own sniff implementation
 
+    # from that issue, might be interesting to change to AsyncSniffer: https://github.com/secdev/scapy/pull/1999
+
     sock = scapy.conf.L2listen(filter = self.packet_filter)
 
     while True:
