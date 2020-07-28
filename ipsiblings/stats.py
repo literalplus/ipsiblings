@@ -9,7 +9,7 @@ import pathlib
 
 import libts
 import libtrace
-import libsiblings
+from ipsiblings import libsiblings
 
 import csv
 # set field_size_limit() from 131072 (2**17) to 262144 (2**18)
@@ -150,7 +150,8 @@ def get_number_of_randomized_nodes_traces_batches(basedir, initial_ts_threshold 
 
 
 def get_number_randmized_nodes_candidates(candidate_file, initial_ts_threshold = 10000, lrt = True):
-  candidates = list(libsiblings.construct_node_candidates(libts.load_candidate_pairs(candidate_file)[3], low_runtime = lrt).values()) # only pairs
+  candidates = list(
+      libsiblings.construct_node_candidates(libts.load_candidate_pairs(candidate_file)[3], low_runtime = lrt).values()) # only pairs
   randomized = 0
   nr_nodes = len(candidates)
   for cand in candidates:

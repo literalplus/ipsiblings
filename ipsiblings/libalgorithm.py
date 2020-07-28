@@ -23,6 +23,7 @@ ALGORITHMS = {
   'topdowntraceroute': TopDownTracerouteAlgorithm
 }
 
+
 def get_algorithm(algorithm, *args, **kwargs):
 
   if algorithm in ALGORITHMS:
