@@ -1,0 +1,2 @@
+class TracerouteException(Exception):
+    pass

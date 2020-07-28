@@ -19,7 +19,7 @@ import zipfile
 from . import libconstants as const
 from . import liblog
 from . import libtools
-from . import libts
+from .libts.candidatepair import CandidatePair
 
 log = liblog.get_root_logger()
 
@@ -366,14 +366,14 @@ class Alexa(object):
                 if (ip4, ip6) in candidates:  # may happen ...
                     candidates[(ip4, ip6)].add_domain(domain)
                 else:
-                    cp = libts.CandidatePair(ip4, ip6, domains=[domain])
+                    cp = CandidatePair(ip4, ip6, domains=[domain])
                     candidates[(ip4, ip6)] = cp
             else:
                 for ip4, ip6 in [(x, y) for x in ips4 for y in ips6]:
                     if (ip4, ip6) in candidates:
                         candidates[(ip4, ip6)].add_domain(domain)
                     else:
-                        cp = libts.CandidatePair(ip4, ip6, domains=[domain])
+                        cp = CandidatePair(ip4, ip6, domains=[domain])
                         candidates[(ip4, ip6)] = cp
 
         return candidates

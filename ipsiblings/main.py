@@ -44,6 +44,10 @@ import textwrap
 import time
 import traceback
 
+from ipsiblings.libts.harvester import TraceSetHarvester, CandidateHarvester
+from ipsiblings.libts.portscan import TraceSetPortScan, CandidatePortScan
+from ipsiblings.libts.serialization import load_candidate_pairs, write_candidate_pairs
+from . import alexa
 from . import cdnfilter
 from . import keyscan
 from . import libconstants as const
@@ -52,10 +56,8 @@ from . import liblog
 from . import libsiblings
 from . import libtools
 from . import libtrace
-from . import libtraceroute
-from . import libts
-from . import alexa
 from . import settings
+from .libtraceroute.cptraceroute import CPTraceroute
 
 # setup root logger
 log = liblog.setup_root_logger()
@@ -513,8 +515,9 @@ def main():
 
                 while nr_current_traces < const.NR_TRACES_PER_TRACE_SET:
                     # -> libconstants.TRACEROUTE_ADD_SOURCE_IP (False)
-                    ip4tracert, ip6tracert = libtraceroute.CPTraceroute((ip4, ip6), iface=nic, algorithm='traceroute',
-                                                                        timeout=2).traceroute(result_timeout=3)
+                    ip4tracert, ip6tracert = CPTraceroute(
+                        (ip4, ip6), iface=nic, algorithm='traceroute', timeout=2
+                    ).traceroute(result_timeout=3)
 
                     # check for CDN after very few hops
                     # if ARGS_cdn_file:
@@ -546,7 +549,7 @@ def main():
                     nodes4, nodes6 = trace.get_global_valid_IPs(
                         apply_ignore_regex=bool(ARGS_ip_ignore_file))  # only apply regex if ignore file was given
 
-                    tsports = libts.TraceSetPortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=nic).start()
+                    tsports = TraceSetPortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=nic).start()
                     while not tsports.finished():
                         tsports.process_results(timeout=1)
                     tsports.process_results(timeout=2)
@@ -607,8 +610,9 @@ def main():
         else:
             log.info('Loading candidate file {0}'.format(ARGS_candidates_csv_file))
             # load candidate pairs
-            ports_available, ts_data_available, tcp_opts_available, CANDIDATE_PAIRS = libts.load_candidate_pairs(
-                ARGS_candidates_csv_file, v4bl_re=v4bl_re, v6bl_re=v6bl_re, include_domain=True)
+            ports_available, ts_data_available, tcp_opts_available, CANDIDATE_PAIRS = load_candidate_pairs(
+                ARGS_candidates_csv_file, v4bl_re=v4bl_re, v6bl_re=v6bl_re, include_domain=True
+            )
             if not CANDIDATE_PAIRS:
                 log.error('{0}: Empty file!'.format(ARGS_candidates_csv_file))
                 return -3
@@ -664,13 +668,14 @@ def main():
 
                 log.info('Starting open port identification')
 
-                cpscan = libts.CandidatePortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=nic).start()
+                cpscan = CandidatePortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=nic).start()
 
                 while not cpscan.finished():
                     # do not choose this value too high otherwise the function will never return because
                     # there always will be data available (queue.empty exception will never be raised)
-                    cpscan.process_results(ip_cp_lut,
-                                           timeout=1.5)  # 1.5 seconds seems to be the optimum for debug output
+                    cpscan.process_results(
+                        ip_cp_lut, timeout=1.5
+                    )  # 1.5 seconds seems to be the optimum for debug output
                 cpscan.process_results(ip_cp_lut, timeout=3)  # was 5
                 cpscan.stop()  # must be explicitly stopped!
 
@@ -683,13 +688,15 @@ def main():
         finally:
             # write responding candidate pairs to file (no timestamp data!)
             if not ports_available:
-                nr_candidates_written, nr_data_records_written = libts.write_candidate_pairs(CANDIDATE_PAIRS,
-                                                                                             ARGS_base_dir,
-                                                                                             only_active_nodes=True,
-                                                                                             write_candidates=True,
-                                                                                             write_ts_data=False,
-                                                                                             write_tcp_opts_data=True,
-                                                                                             include_domain=True)
+                nr_candidates_written, nr_data_records_written = write_candidate_pairs(
+                    CANDIDATE_PAIRS,
+                    ARGS_base_dir,
+                    only_active_nodes=True,
+                    write_candidates=True,
+                    write_ts_data=False,
+                    write_tcp_opts_data=True,
+                    include_domain=True
+                )
 
     ##########
 
@@ -728,8 +735,9 @@ def main():
             log.info('Starting harvesting task ...')
 
             try:
-                harvester = libts.TraceSetHarvester(TRACE_SETS, runtime=const.HARVESTING_RUNTIME,
-                                                    interval=const.HARVESTING_INTERVAL, iface=nic)
+                harvester = TraceSetHarvester(
+                    TRACE_SETS, runtime=const.HARVESTING_RUNTIME, interval=const.HARVESTING_INTERVAL, iface=nic
+                )
                 control_thread = harvester.start()
 
                 while not harvester.finished():
@@ -758,8 +766,9 @@ def main():
             log.info('Starting harvesting task ...')
 
             try:
-                harvester = libts.CandidateHarvester(CANDIDATE_PAIRS, runtime=const.HARVESTING_RUNTIME,
-                                                     interval=const.HARVESTING_INTERVAL, iface=nic)
+                harvester = CandidateHarvester(
+                    CANDIDATE_PAIRS, runtime=const.HARVESTING_RUNTIME, interval=const.HARVESTING_INTERVAL, iface=nic
+                )
                 harvester.start()
 
                 while not harvester.finished():
@@ -774,12 +783,14 @@ def main():
                 log.info('Total records processed: {0}'.format(harvester.total_records_processed()))
                 log.info('Now writing harvesting data ...')
 
-                nr_candidates_written, nr_data_records_written = libts.write_candidate_pairs(CANDIDATE_PAIRS,
-                                                                                             ARGS_base_dir,
-                                                                                             write_candidates=False,
-                                                                                             write_ts_data=True,
-                                                                                             write_tcp_opts_data=False,
-                                                                                             include_domain=True)
+                nr_candidates_written, nr_data_records_written = write_candidate_pairs(
+                    CANDIDATE_PAIRS,
+                    ARGS_base_dir,
+                    write_candidates=False,
+                    write_ts_data=True,
+                    write_tcp_opts_data=False,
+                    include_domain=True
+                )
 
                 if nr_data_records_written > 0:
                     ts_data_available = True  # now we have timestamp data available

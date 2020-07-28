@@ -33,6 +33,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 
+from ipsiblings.libts.serialization import load_candidate_pairs
 from . import keyscan
 from . import libts
 from . import libgeo
@@ -363,7 +364,7 @@ def load_data(basedir, type, lrt = True, include_domain = True, limit_nr_timesta
       if not dir.is_dir():
         continue
       candidate_file = dir / const.CANDIDATE_PAIRS_FILE_NAME
-      _, _, _, cpairs = libts.load_candidate_pairs(candidate_file, include_domain = include_domain)
+      _, _, _, cpairs = load_candidate_pairs(candidate_file, include_domain = include_domain)
       if limit_nr_timestamps:
         sibcands = libsiblings.construct_node_candidates(cpairs, low_runtime = True, nr_timestamps = limit_nr_timestamps)
       else:
@@ -375,7 +376,7 @@ def load_data(basedir, type, lrt = True, include_domain = True, limit_nr_timesta
 
     if not sibcandidates: # we do not have any batches just the current directory (e.g. ground truth data)
       candidate_file = base / const.CANDIDATE_PAIRS_FILE_NAME
-      _, _, _, cpairs = libts.load_candidate_pairs(candidate_file, include_domain = include_domain)
+      _, _, _, cpairs = load_candidate_pairs(candidate_file, include_domain = include_domain)
       if limit_nr_timestamps:
         sibcandidates = libsiblings.construct_node_candidates(cpairs, low_runtime = True, nr_timestamps = limit_nr_timestamps)
       else:
