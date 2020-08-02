@@ -33,15 +33,11 @@ This is the main module.
 # # end netcup
 ################################################################################
 
-import argparse
 import csv
 import gc
-import os
 import pathlib
 import random
 import sys
-import textwrap
-import time
 import traceback
 
 from ipsiblings.libts.harvester import TraceSetHarvester, CandidateHarvester
@@ -52,11 +48,11 @@ from . import cdnfilter
 from . import keyscan
 from . import libconstants as const
 from . import libgeo
-from . import liblog
 from . import libsiblings
 from . import libtools
 from . import libtrace
 from . import settings
+from .config import *
 from .libtraceroute.cptraceroute import CPTraceroute
 
 # setup root logger
@@ -67,239 +63,104 @@ liblog.set_scapy_loglevel(const.LOG_LVL_SCAPY)
 csv.field_size_limit(262144)
 
 
-def _prepare_arg_parser():
-    ap = argparse.ArgumentParser(
-        description=textwrap.dedent('''\
-        IP Siblings Toolset
-
-        The argument of -c/-t option (combined with -s option) can be used with alexa
-        top list file if resolution is required.
-        [Any other file formatted in that way can be used.]'''),
-        # why this: ?
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        add_help=False
-    )
-    # reproduction of argparse behavior on error
-    # ap.print_usage(sys.stderr)
-    # prog = os.path.basename(sys.argv[0])
-    # sys.stderr.write('{0}: error: error description goes here\n'.format(prog))
-    # sys.exit(2)
-
-    one_grp = ap.add_argument_group(title='required argument, exactly one', description=None)
-    mutualgrp = one_grp.add_mutually_exclusive_group(required=True)
-    mutualgrp.add_argument('-c', '--candidates', action='store', help='parse candidates from csv file or top list (-s)',
-                           default=None, nargs='?', const='None')
-    mutualgrp.add_argument('-t', '--trace-targets', action='store',
-                           help='trace target hosts from csv file or top list (-s)', default=None, nargs='?',
-                           const='None')
-    # -l also works for already constructed TraceSets in combination with Alexa/Cisco Top list
-    mutualgrp.add_argument('-l', '--load', action='store_true',
-                           help='load previously saved trace sets from base directory', default=False)
-    mutualgrp.add_argument('--alexa-toplist', action='store', dest='alexa_toplist_dir',
-                           help='loads the alexa top list from the internet and saves it to the given directory or current working directory',
-                           default=None, nargs='?', const='cwd')
-    # mutualgrp.add_argument('--cisco-toplist', action = 'store', dest = 'cisco_toplist_dir', help = 'loads the cisco top list from the internet and saves it to the given directory or current working directory', default = None, nargs = '?', const = 'cwd')
-    mutualgrp.add_argument('--debug', action='store_true', help='debug run (only run initialization)', default=False)
-
-    opt_grp = ap.add_argument_group(title='optional arguments', description=None)
-    opt_grp.add_argument('-h', '--help', action='help', help='show this help message and exit')
-    opt_grp.add_argument('-d', '--directory', action='store', help='base directory to store and load trace sets',
-                         default=None)
-    opt_grp.add_argument('-i', '--ignore-file', action='store', help='nodes to ignore are listed in this file',
-                         default=None)
-    opt_grp.add_argument('-r', '--run-harvest', action='store_true', help='perform harvesting for candidate IPs',
-                         default=False)
-    opt_grp.add_argument('-s', '--resolved', action='store_true',
-                         help='construct candidates or trace targets from resolved (alexa top) list (use with -c/-t for operation mode)',
-                         default=False)
-    opt_grp.add_argument('-f', '--resolved-file', action='store',
-                         help='csv file holding resolved (alexa) domains and IPs', default=None)
-    opt_grp.add_argument('-o', '--download-alexa', action='store_true',
-                         help='allows downloading alexa top list from the internet', default=False)
-    opt_grp.add_argument('--router-ports', action='store_true',
-                         help='use the comprehensive port list for non-server devices', default=False)
-    opt_grp.add_argument('--server-ports', action='store_true', help='use the much smaller port list for servers',
-                         default=False)
-    opt_grp.add_argument('--from', action='store', type=int, dest='start_index',
-                         help='restricts candidates/targets to a start index', default=None)
-    opt_grp.add_argument('--to', action='store', type=int, dest='end_index',
-                         help='restricts candidates/targets to an end index (excluded)', default=None)
-    opt_grp.add_argument('--low-runtime', action='store_true', help='use only few timestamps for evaluation',
-                         default=False)
-    opt_grp.add_argument('--print', action='store_true', help='print charts to pdf file', default=False)
-    opt_grp.add_argument('--resultfile', action='store', help='write evaluation results to file', default=None,
-                         nargs='?', const=const.RESULT_FILE_NAME)
-    opt_grp.add_argument('--no-evaluation', action='store_true',
-                         help='do not perform any calculations/evaluations on sibling candidates', default=False)
-    opt_grp.add_argument('--cdn-file', action='store', help='load CDN networks for IP filtering', default=None)
-    opt_grp.add_argument('--write-pairs', action='store', help='write constructed IP pairs to file', default=None,
-                         nargs='?', const=const.IP_PAIRS_FILE_NAME)
-    opt_grp.add_argument('--no-ssh-keyscan', action='store_true', help='do not scan for public ssh keys', default=False)
-    opt_grp.add_argument('--only-ssh-keyscan', action='store_true', help='exit after keyscan', default=False)
-
-    log_grp = ap.add_argument_group(title='optional logging arguments', description=None)
-    logmutualgrp = log_grp.add_mutually_exclusive_group()
-    logmutualgrp.add_argument('-v', '--verbose', action='count', help='increase verbosity once per call', default=0)
-    logmutualgrp.add_argument('-q', '--quiet', action='count', help='decrease verbosity once per call', default=0)
-
-    geo_grp = ap.add_argument_group(title='optional geolocation arguments', description=None)
-    geo_grp.add_argument('--city-db', action='store', help='custom MaxMind city database', default=None)
-    geo_grp.add_argument('--asn-db', action='store', help='custom MaxMind ASN database', default=None)
-    geo_grp.add_argument('--update-geo-dbs', action='store_true', help='update geolocation databases', default=False)
-
-    return ap
-
-
-def main():
-    ap = _prepare_arg_parser()
-    args = ap.parse_args()
-
-    verbosity = args.verbose - args.quiet
-    if verbosity <= -2:
-        loglevel = liblog.CRITICAL
-    elif verbosity <= -1:
-        loglevel = liblog.ERROR
-    elif verbosity == 0:  # no parameter provided
-        loglevel = liblog.WARNING
-    elif verbosity == 1:
-        loglevel = liblog.INFO
+def _prepare_reduce(iterable, config, kind):
+    should_reduce = (config.start_index or config.end_index)
+    if not iterable or not should_reduce:
+        return False
+    inp_len = len(iterable)
+    if config.end_index is None or config.end_index > inp_len:
+        config.end_index = inp_len
+    if config.start_index >= config.end_index:
+        log.error(f'{kind} - Start index must be less than end index ({config.start_index} to {config.end_index})')
+        sys.exit(-6)
+    elif config.start_index >= inp_len:
+        log.error(f'{kind} - Start index exceeds available input ({config.start_index} >= {inp_len}')
+        sys.exit(-6)
     else:
-        loglevel = liblog.DEBUG
+        return True
 
-    log.setLevel(loglevel)
 
-    ARGS_debug = args.debug  # run initialization only for debugging reasons
+def _reduce_map(inp_dict, config, type):
+    # Python 3.6+ preserves insertion order with built-in dict
+    if not _prepare_reduce(inp_dict, config, type):
+        return inp_dict
+    original_len = len(inp_dict)
+    keys = list(inp_dict.keys())[config.start_index: config.end_index]
+    result = {key: inp_dict[key] for key in keys}
+    log.info(f'Reduced loaded {type} from size [{original_len}] to [{len(result)}] '
+             f'(indices [{config.start_index}] to [{config.end_index}])')
+    return result
 
-    # base directory where data will be read from or written to
-    if args.directory:  # direcotry provided
-        ARGS_base_dir = os.path.join(args.directory, '')
-    else:
-        ARGS_base_dir = os.path.join(const.BASE_DIRECTORY, time.strftime("%Y-%m-%d_%H.%M.%S"))
 
-    const.BASE_DIRECTORY = ARGS_base_dir  # set base dir for current execution instance
-    # trace sets without answering nodes will be written to this directory
-    base_dir_silent = os.path.join(ARGS_base_dir, const.DIRECTORY_SILENT_NODES, '')
+def _reduce_list(inp_list, config, type):
+    if not _prepare_reduce(inp_list, config, type):
+        return inp_list
+    original_len = len(inp_list)
+    result = inp_list[config.start_index: config.end_index]
+    log.info(f'Reduced loaded {type} from size [{original_len}] to [{len(result)}] '
+             f'(indices [{config.start_index}] to [{config.end_index}])')
+    return result
 
-    ARGS_ip_ignore_file = args.ignore_file
 
-    # True: load trace set data from base direcotry; False: run active node discovery with given csv file
-    ARGS_load_tracesets = args.load
-    # trace targets csv file
-    ARGS_target_csv_file = args.trace_targets
-    # examine nodes given in candidate csv file
-    ARGS_candidates_csv_file = args.candidates
+def _validate_config(config):
+    if config.alexa.resolved_ips_path and not config.alexa.has_resolved:
+        print_usage_and_exit('-f/--resolved-file can only be used with -s/--resolved')
 
-    ARGS_alexa_toplist_dir = args.alexa_toplist_dir
-    if ARGS_alexa_toplist_dir is not None:  # download alexa top list and save it to directory
-        if ARGS_alexa_toplist_dir == 'cwd':
-            directory = os.getcwd()
-        else:
-            directory = ARGS_alexa_toplist_dir
+    if config.alexa.do_download and not config.alexa.has_resolved:
+        print_usage_and_exit('-o/--download-alexa can only be used with -s/--resolved')
 
-        extracted = alexa.Alexa.load_remote_toplist(directory)  # staticmethod
-        if extracted:
-            log.info('Successfully downloaded and extracted Alexa Top List file [{0}]'.format(extracted))
-            return 0
-        else:
-            log.error('Could not download/write file to disk [{0}]'.format(directory))
-            return -3
-        # return at this point
+    if config.end_index is not None:
+        if config.start_index < 0 or config.end_index < 1:
+            print_usage_and_exit('--from/--to can not be negative/zero')
+        if config.start_index >= config.end_index:
+            print_usage_and_exit('--to can not be less or equal to --from')
 
-    # True: perform harvesting task for the identified trace sets or the loaded candidates
-    ARGS_perform_harvesting = args.run_harvest
 
-    # resolved argument given -> work with resolved files
-    ARGS_resolved = args.resolved
-    ARGS_resolved_file = args.resolved_file
-    ARGS_download_alexa = args.download_alexa
-    if ARGS_resolved_file and not ARGS_resolved:
-        ap.print_usage(sys.stderr)
-        prog = os.path.basename(sys.argv[0])
-        sys.stderr.write('{0}: error: -f/--resolved-file can only be used with -s/--resolved\n'.format(prog))
-        sys.exit(2)
-
-    if ARGS_download_alexa and not ARGS_resolved:
-        ap.print_usage(sys.stderr)
-        prog = os.path.basename(sys.argv[0])
-        sys.stderr.write('{0}: error: -o/--download-alexa can only be used with -s/--resolved\n'.format(prog))
-        sys.exit(2)
-
-    # start_index, end_index to restrict amount of data to process
-    ARGS_start_index = args.start_index
-    ARGS_end_index = args.end_index
-    if ARGS_start_index is None:
-        ARGS_start_index = 0
-    if ARGS_end_index is not None:
-        if ARGS_start_index < 0 or ARGS_end_index < 1:
-            ap.print_usage(sys.stderr)
-            prog = os.path.basename(sys.argv[0])
-            sys.stderr.write('{0}: error: --from/--to can not be negative/zero\n'.format(prog))
-            sys.exit(2)
-        if ARGS_start_index >= ARGS_end_index:
-            ap.print_usage(sys.stderr)
-            prog = os.path.basename(sys.argv[0])
-            sys.stderr.write('{0}: error: --to can not be less or equal to --from\n'.format(prog))
-            sys.exit(2)
-
-    # individual geolocation databases
-    ARGS_city_db = args.city_db
-    ARGS_asn_db = args.asn_db
-    ARGS_update_geo_dbs = args.update_geo_dbs
-
-    # determine if we deal with concrete (submitted) nodes or trace sets containing candidate nodes
-    ARGS_candidates_available = bool(
-        ARGS_candidates_csv_file)  # evaluate to true if no additional argument for -c/-t is given
-    ARGS_targets_available = bool(
-        ARGS_target_csv_file)  # this allows us to distinguish whether candidate or target tasks should be performed
-
-    ARGS_router_portlist = args.router_ports
-    ARGS_server_portlist = args.server_ports
-
-    ARGS_lowruntime = args.low_runtime
-    ARGS_print = args.print
-    ARGS_resultfile = args.resultfile
-    ARGS_no_evaluation = args.no_evaluation
-    ARGS_cdn_file = args.cdn_file
-    ARGS_write_pairs = args.write_pairs
-    ARGS_no_ssh_keyscan = args.no_ssh_keyscan
-    ARGS_only_ssh_keyscan = args.only_ssh_keyscan
-
+def _apply_config(config):
+    log.setLevel(config.log_level)
+    const.BASE_DIRECTORY = config.base_dir
     # PORT_LIST selection based on --router-ports/--server-ports options or operation mode (-c/-t)
     # prioritize the explicit arguments
-    if ARGS_router_portlist:
+    if config.port_scan.router_portlist:
         const.PORT_LIST = const.PORT_LIST_ROUTER
-    elif ARGS_server_portlist:
+    elif config.port_scan.server_portlist:
         const.PORT_LIST = const.PORT_LIST_SERVER
     else:
-        if ARGS_candidates_available:
+        if config.candidates.available:
             const.PORT_LIST = const.PORT_LIST_SERVER
-        elif ARGS_targets_available or ARGS_load_tracesets:
+        elif config.flags.has_targets or config.flags.load_tracesets:
             const.PORT_LIST = const.PORT_LIST_ROUTER
         else:
             const.PORT_LIST = const.PORT_LIST_SERVER
 
-    # initialize global Geolocation object
-    geo = libgeo.Geo(city_db_path=ARGS_city_db, asn_db_path=ARGS_asn_db)
-    const.GEO = geo  # make Geo object available to other modules which use constants
-    # update databases if requested
-    if ARGS_update_geo_dbs:
-        const.GEO.update_databases()  # does nothing if no updates available
+    const.GEO = libgeo.Geo(config)
 
-    ###
+    if config.alexa.toplist_dir is not None:  # download alexa top list and save it to directory
+        if config.alexa.toplist_dir == 'cwd':
+            directory = os.getcwd()
+        else:
+            directory = config.alexa.toplist_dir
+        extracted = alexa.Alexa.load_remote_toplist(directory)  # staticmethod
+        if extracted:
+            log.info('Successfully downloaded and extracted Alexa Top List file [{0}]'.format(extracted))
+            sys.exit(0)
+        else:
+            log.error('Could not download/write file to disk [{0}]'.format(directory))
+            sys.exit(-3)
+
+
+def main():
+    config = AppConfig()
+    _validate_config(config)
+    _apply_config(config)
 
     if not gc.isenabled():  # just to be sure ...
         gc.enable()
 
-    #### TEST CODE ####
-    # code to test goes here
-    ####
-
     # debug run requested, exiting now
-    if ARGS_debug:
+    if config.debug:
         log.warning('DEBUG run -> exiting now ...')
         return 0
-
-    ###
 
     log.info('Started')
 
@@ -311,60 +172,59 @@ def main():
         return -2
     else:
         nic = nic_list[0]
-    log.info('Found Dual Stack interfaces: {0}, using \'{1}\''.format(nic_list, nic))
+    log.info(f'Found Dual Stack interfaces: {nic_list}, using \'{nic}\'')
 
     const.IFACE_MAC_ADDRESS = libtools.get_mac(iface=nic).lower()
     if const.IFACE_MAC_ADDRESS:
-        log.debug('Identified MAC address: {0}'.format(const.IFACE_MAC_ADDRESS))
+        log.debug(f'Identified MAC address: {const.IFACE_MAC_ADDRESS}')
 
     own_ip4, own_ip6 = libtools.get_iface_IPs(iface=nic)
     const.IFACE_IP4_ADDRESS = own_ip4
     const.IFACE_IP6_ADDRESS = own_ip6.lower()
     if const.IFACE_IP4_ADDRESS and const.IFACE_IP6_ADDRESS:
-        log.debug(
-            'Identified IP addresses [{0}]: {1} / {2}'.format(nic, const.IFACE_IP4_ADDRESS, const.IFACE_IP6_ADDRESS))
+        log.debug(f'Identified IP addresses [{nic}]: {const.IFACE_IP4_ADDRESS} / {const.IFACE_IP6_ADDRESS}')
 
-    v4bl_re, v6bl_re = libtools.construct_blacklist_regex(ARGS_ip_ignore_file)
+    v4bl_re, v6bl_re = libtools.construct_blacklist_regex(config.paths.ip_ignores)
     if v4bl_re or v6bl_re:
-        log.debug('Constructed blacklist filters from {0}'.format(ARGS_ip_ignore_file))
+        log.debug(f'Constructed blacklist filters from {config.paths.ip_ignores}')
 
-    if not ARGS_load_tracesets:
+    if not config.flags.load_tracesets:
         # create base directory
-        dir_status = libtools.create_directories(ARGS_base_dir)
+        dir_status = libtools.create_directories(config.base_dir)
         if dir_status == True:
-            log.info('Successfully created base directory [{0}]'.format(ARGS_base_dir))
+            log.info(f'Successfully created base directory [{config.base_dir}]')
         elif dir_status is None:
-            log.info('Directory [{0}] already exists'.format(ARGS_base_dir))
+            log.info(f'Directory [{config.base_dir}] already exists')
         else:  # False
-            log.error('Error while creating base directory [{0}]'.format(ARGS_base_dir))
+            log.error(f'Error while creating base directory [{config.base_dir}]')
             return -3
 
     #### Alexa / resolved file
     ##############
     # prepare Alexa Top list related tasks
-    if ARGS_resolved:
-        if ARGS_candidates_available:  # -c
-            if ARGS_candidates_csv_file == 'None':  # no additional argument given with -c
+    if config.alexa.has_resolved:
+        if config.candidates.available:  # -c
+            if config.paths.candidates_csv == 'None':  # no additional argument given with -c
                 toplist_file = None
             else:
-                toplist_file = ARGS_candidates_csv_file
-        elif ARGS_targets_available:  # -t
-            if ARGS_target_csv_file == 'None':  # no additional argument given with -t
+                toplist_file = config.paths.candidates_csv
+        elif config.flags.has_targets:  # -t
+            if config.paths.target_csv == 'None':  # no additional argument given with -t
                 toplist_file = None
             else:
-                toplist_file = ARGS_target_csv_file
+                toplist_file = config.paths.target_csv
         else:  # should never happen
-            toplist_file = None  # os.path.join(ARGS_base_dir, const.ALEXA_FILE_NAME)
+            toplist_file = None  # os.path.join(config.base_dir, const.ALEXA_FILE_NAME)
 
-        if ARGS_resolved_file:
-            resolved_file = ARGS_resolved_file
+        if config.alexa.resolved_ips_path:
+            resolved_file = config.alexa.resolved_ips_path
         else:  # if not explicitly given, try to locate the file in base_dir (assume alexa resolved file)
-            resolved_file = os.path.join(ARGS_base_dir, const.ALEXA_RESOLVED_FILE_NAME)
+            resolved_file = os.path.join(config.base_dir, const.ALEXA_RESOLVED_FILE_NAME)
 
         const.ALEXA = alexa.Alexa(resolved_file=resolved_file)
 
         if not const.ALEXA.resolved_available():
-            if const.ALEXA.load_toplist_file(toplist_file, remote=ARGS_download_alexa):
+            if const.ALEXA.load_toplist_file(toplist_file, remote=config.alexa.do_download):
                 if toplist_file:  # only report if loaded from file
                     log.info('Successfully loaded Alexa Top List file [{0}]'.format(toplist_file))
                 log.info('Starting name resolution process ...')
@@ -373,8 +233,8 @@ def main():
                 log.error('Aborting now ...')
                 return -5
 
-    if ARGS_cdn_file:
-        const.CDNFILTER = cdnfilter.CDNFilter(ARGS_cdn_file)
+    if config.paths.cdns:
+        const.CDNFILTER = cdnfilter.CDNFilter(config.paths.cdns)
     ####
 
     # either trace sets ...
@@ -387,91 +247,46 @@ def main():
 
     ##########
 
-    if ARGS_load_tracesets:
+    if config.flags.load_tracesets:
+        log.info(f'Loading trace sets from base directory {config.base_dir}')
+        TRACE_SETS = libtrace.load_trace_sets(
+            config.base_dir, config.paths.base_dir_silent,
+            v4bl_re=v4bl_re, v6bl_re=v6bl_re, iface=nic
+        )
+        TRACE_SETS = _reduce_map(TRACE_SETS, config, 'TraceSets')
 
-        log.info('Loading trace sets from base directory {0}'.format(ARGS_base_dir))
-        TRACE_SETS = libtrace.load_trace_sets(ARGS_base_dir, base_dir_silent, v4bl_re=v4bl_re, v6bl_re=v6bl_re,
-                                              iface=nic)
-        # Python 3.6+ preserves insertion order with built-in dict
-        if TRACE_SETS and (ARGS_start_index or ARGS_end_index):  # slice the data set as requested
-            trace_sets_length = len(TRACE_SETS)
-            if ARGS_end_index is None or ARGS_end_index > trace_sets_length:  # end_index == 0 - case already checked above
-                ARGS_end_index = trace_sets_length
-
-            if ARGS_start_index >= ARGS_end_index:
-                log.error(
-                    'Start index can not be higher/equal than end index (start/end: {0} / {1})'.format(ARGS_start_index,
-                                                                                                       ARGS_end_index))
-                return -6
-            elif ARGS_start_index > trace_sets_length:
-                log.error(
-                    'Start index is higher than the number of TraceSets available (start index / data size: {0} / {1}'.format(
-                        ARGS_start_index, trace_sets_length))
-                return -6
-
-            keys = list(TRACE_SETS.keys())[ARGS_start_index: ARGS_end_index]
-            TRACE_SETS = {key: TRACE_SETS[key] for key in keys}
-
-            log.info('Reduced loaded TraceSets from size [{0}] to [{1}] (indices from [{2}] to [{3}])'.format(
-                trace_sets_length, len(TRACE_SETS), ARGS_start_index, ARGS_end_index))
-
-    ##########
-
-    elif ARGS_targets_available:  # ARGS_target_csv_file is not None:
-
-        ipdata = []
-        include_domain = None
-
-        if ARGS_resolved:
+    elif config.flags.has_targets:  # config.paths.target_csv is not None:
+        if config.alexa.has_resolved:
             include_domain = True
             # keep in mind that slicing does not yield deterministic results if one_per_domain is True
-            ipdata = const.ALEXA.construct_targets(
-                one_per_domain=False)  # gives ~250k targets for 145k resolved hosts of Alexa Top List
+            ipdata = const.ALEXA.construct_targets(one_per_domain=False)
+            # gives ~250k targets for 145k resolved hosts of Alexa Top List
             if not ipdata:
-                if ARGS_resolved_file:
-                    log.error('{0}: Empty CSV file!'.format(ARGS_resolved_file))
+                if config.alexa.resolved_ips_path:
+                    log.error(f'{config.alexa.resolved_ips_path}: Empty CSV file!')
                 else:
                     log.error('Empty target array!')
                 return -3
         else:
             include_domain = False
-            ipdata = libtools.parsecsv(ARGS_target_csv_file, iponly=True, include_domain=include_domain)
+            ipdata = libtools.parsecsv(config.paths.target_csv, iponly=True, include_domain=include_domain)
             if not ipdata:
-                log.error('{0}: Empty CSV file!'.format(ARGS_target_csv_file))
+                log.error(f'{config.paths.target_csv}: Empty CSV file!')
                 return -3
 
-        log.info('Constructed {0} candidates'.format(len(ipdata)))
-        if ARGS_write_pairs:
-            nr_records = libtools.write_constructed_pairs(pathlib.Path(ARGS_base_dir) / ARGS_write_pairs, ipdata,
-                                                          include_domain=include_domain)
+        log.info(f'Constructed {len(ipdata)} candidates')
+        if config.candidates.write_pairs:
+            nr_records = libtools.write_constructed_pairs(
+                pathlib.Path(config.base_dir) / config.candidates.write_pairs,
+                ipdata,
+                include_domain=include_domain
+            )
             log.info('Wrote [{0}] IP candidate pairs to [{1}]'.format(nr_records, str(
-                pathlib.Path(ARGS_base_dir) / ARGS_write_pairs)))
+                pathlib.Path(config.base_dir) / config.candidates.write_pairs)))
             log.info('Exiting now ...')
             return 0
 
-        if ARGS_start_index or ARGS_end_index:  # slice if requested
-            length = len(ipdata)
-            if ARGS_end_index is None or ARGS_end_index > length:
-                ARGS_end_index = length
-
-            if ARGS_start_index >= ARGS_end_index:
-                log.error(
-                    'Start index can not be higher/equal than end index (start/end: {0} / {1})'.format(ARGS_start_index,
-                                                                                                       ARGS_end_index))
-                return -6
-            elif ARGS_start_index > length:
-                log.error(
-                    'Start index is higher than the number of targets available (start index / data size: {0} / {1}'.format(
-                        ARGS_start_index, length))
-                return -6
-
-            ipdata = ipdata[ARGS_start_index: ARGS_end_index]
-
-            log.info(
-                'Reduced targets from size [{0}] to [{1}] (indices from [{2}] to [{3}])'.format(length, len(ipdata),
-                                                                                                ARGS_start_index,
-                                                                                                ARGS_end_index))
-
+        ipdata = _reduce_list(ipdata, config, 'targets (ipdata)')
         # randomize target list
         random.shuffle(ipdata)
         ipdata_len = len(ipdata)
@@ -490,16 +305,15 @@ def main():
                     domains = None
                     info_str = '({0} of {1}) Processing target {2} / {3}'.format(n, ipdata_len, ip4, ip6)
 
-                if ARGS_cdn_file:
-                    if const.CDNFILTER.is_cdn(ip4, ip6):
-                        CDN_FILTERED[(ip4, ip6)] = domains
-                        if domains:
-                            info_str = '({0} of {1}) Filtered target (CDN) {2} / {3} [{4}]'.format(n, ipdata_len, ip4,
-                                                                                                   ip6, domains)
-                        else:
-                            info_str = '({0} of {1}) Filtered target (CDN) {2} / {3}'.format(n, ipdata_len, ip4, ip6)
-                        log.info(info_str)
-                        continue
+                if config.paths.cdns and const.CDNFILTER.is_cdn(ip4, ip6):
+                    CDN_FILTERED[(ip4, ip6)] = domains
+                    if domains:
+                        info_str = '({0} of {1}) Filtered target (CDN) {2} / {3} [{4}]'.format(n, ipdata_len, ip4,
+                                                                                               ip6, domains)
+                    else:
+                        info_str = '({0} of {1}) Filtered target (CDN) {2} / {3}'.format(n, ipdata_len, ip4, ip6)
+                    log.info(info_str)
+                    continue
 
                 log.info(info_str)
 
@@ -510,8 +324,10 @@ def main():
                     continue
 
                 nr_current_traces = 0
-                no_results_counter = 0  # if more than X traces have no active nodes continue with next target
-                no_new_trace_counter = 0  # in case there are no new traces available to hit the requested number of traces
+                # if more than X traces have no active nodes continue with next target
+                no_results_counter = 0
+                # in case there are no new traces available to hit the requested number of traces
+                no_new_trace_counter = 0
 
                 while nr_current_traces < const.NR_TRACES_PER_TRACE_SET:
                     # -> libconstants.TRACEROUTE_ADD_SOURCE_IP (False)
@@ -520,15 +336,17 @@ def main():
                     ).traceroute(result_timeout=3)
 
                     # check for CDN after very few hops
-                    # if ARGS_cdn_file:
+                    # if config.paths.cdns:
                     #   if len(ip4tracert) < const.CDN_HOP_THRESHOLD or len(ip6tracert) < const.CDN_HOP_THRESHOLD:
                     #     if const.CDNFILTER.is_cdn(ip4, ip6):
                     #       CDN_FILTERED[(ip4, ip6)] = domains
                     #       break # stop and do not inspect CDN target
 
                     try:
-                        trace = libtrace.Trace().init(ip4, ip6, ip4tracert, ip6tracert, v4bl_re=v4bl_re,
-                                                      v6bl_re=v6bl_re, iface=nic)
+                        trace = libtrace.Trace().init(
+                            ip4, ip6, ip4tracert, ip6tracert,
+                            v4bl_re=v4bl_re, v6bl_re=v6bl_re, iface=nic
+                        )
                     except ValueError:
                         trace = None
 
@@ -547,7 +365,7 @@ def main():
                         continue
 
                     nodes4, nodes6 = trace.get_global_valid_IPs(
-                        apply_ignore_regex=bool(ARGS_ip_ignore_file))  # only apply regex if ignore file was given
+                        apply_ignore_regex=bool(config.paths.ip_ignores))  # only apply regex if ignore file was given
 
                     tsports = TraceSetPortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=nic).start()
                     while not tsports.finished():
@@ -571,15 +389,10 @@ def main():
                     TRACE_SETS[key] = trace_set
                 else:
                     SILENT_TRACE_SETS[key] = trace_set
-
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except Exception:
-            raise
         finally:
-            ts_written = libtrace.write_trace_sets(ARGS_base_dir, TRACE_SETS)
+            ts_written = libtrace.write_trace_sets(config.base_dir, TRACE_SETS)
             if const.WRITE_INACTIVE_TRACE_SET:
-                ts_silent_written = libtrace.write_trace_sets(base_dir_silent, SILENT_TRACE_SETS)
+                ts_silent_written = libtrace.write_trace_sets(config.paths.base_dir_silent, SILENT_TRACE_SETS)
                 if ts_written > 0 or ts_silent_written > 0:
                     log.info('Active TraceSets written: {0} / Inactive TraceSets written: {1}'.format(ts_written,
                                                                                                       ts_silent_written))
@@ -587,58 +400,38 @@ def main():
                 if ts_written > 0:
                     log.info('Active TraceSets written: {0}'.format(ts_written))
 
-            filtered_cdns_written = cdnfilter.write_filtered(ARGS_base_dir, CDN_FILTERED, include_domain=include_domain)
+            filtered_cdns_written = cdnfilter.write_filtered(config.base_dir, CDN_FILTERED,
+                                                             include_domain=include_domain)
             if filtered_cdns_written > 0:
                 log.info('Filtered CDN pairs written: {0}'.format(filtered_cdns_written))
 
     ##########
 
-    elif ARGS_candidates_available:  # elif ARGS_candidates_csv_file is not None:
+    elif config.candidates.available:  # elif config.paths.candidates_csv is not None:
 
-        if ARGS_resolved:
+        if config.alexa.has_resolved:
             ports_available = False
             ts_data_available = False
             # keep in mind that slicing does not yield deterministic results if one_per_domain is True
             CANDIDATE_PAIRS = const.ALEXA.construct_candidates(
                 one_per_domain=False)  # gives ~ 500k candidates for 145k resolved hosts of Alexa Top List
             if not CANDIDATE_PAIRS:
-                if ARGS_resolved_file:
-                    log.error('{0}: Empty file!'.format(ARGS_resolved_file))
+                if config.alexa.resolved_ips_path:
+                    log.error('{0}: Empty file!'.format(config.alexa.resolved_ips_path))
                 else:
                     log.error('Empty candidate pairs!')
                 return -3
         else:
-            log.info('Loading candidate file {0}'.format(ARGS_candidates_csv_file))
+            log.info('Loading candidate file {0}'.format(config.paths.candidates_csv))
             # load candidate pairs
             ports_available, ts_data_available, tcp_opts_available, CANDIDATE_PAIRS = load_candidate_pairs(
-                ARGS_candidates_csv_file, v4bl_re=v4bl_re, v6bl_re=v6bl_re, include_domain=True
+                config.paths.candidates_csv, v4bl_re=v4bl_re, v6bl_re=v6bl_re, include_domain=True
             )
             if not CANDIDATE_PAIRS:
-                log.error('{0}: Empty file!'.format(ARGS_candidates_csv_file))
+                log.error('{0}: Empty file!'.format(config.paths.candidates_csv))
                 return -3
 
-        # Python 3.6+ preserves insertion order with built-in dict
-        if ARGS_start_index or ARGS_end_index:  # slice data
-            length = len(CANDIDATE_PAIRS)
-            if ARGS_end_index is None or ARGS_end_index > length:
-                ARGS_end_index = length
-
-            if ARGS_start_index >= ARGS_end_index:
-                log.error(
-                    'Start index can not be higher/equal than end index (start/end: {0} / {1})'.format(ARGS_start_index,
-                                                                                                       ARGS_end_index))
-                return -6
-            elif ARGS_start_index > length:
-                log.error(
-                    'Start index is higher than the number of CandidatePairs available (start index / data size: {0} / {1}'.format(
-                        ARGS_start_index, length))
-                return -6
-
-            keys = list(CANDIDATE_PAIRS.keys())[ARGS_start_index: ARGS_end_index]
-            CANDIDATE_PAIRS = {key: CANDIDATE_PAIRS[key] for key in keys}
-
-            log.info('Reduced candidates from size [{0}] to [{1}] (indices from [{2}] to [{3}])'.format(length, len(
-                CANDIDATE_PAIRS), ARGS_start_index, ARGS_end_index))
+        CANDIDATE_PAIRS = _reduce_map(CANDIDATE_PAIRS, config, 'candidate pairs')
 
         try:
             if not ports_available or not ts_data_available:
@@ -657,7 +450,7 @@ def main():
 
             if not ports_available:
                 # no ports in csv file available -> find open ports with TSNode
-                if not ARGS_resolved:
+                if not config.alexa.has_resolved:
                     log.info('No open ports available in candidate file')
 
                 nodes4 = set()  # do not add IPs more than once
@@ -680,17 +473,12 @@ def main():
                 cpscan.stop()  # must be explicitly stopped!
 
                 log.info('Finished with port identification')
-
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except Exception:
-            raise
         finally:
             # write responding candidate pairs to file (no timestamp data!)
             if not ports_available:
                 nr_candidates_written, nr_data_records_written = write_candidate_pairs(
                     CANDIDATE_PAIRS,
-                    ARGS_base_dir,
+                    config.base_dir,
                     only_active_nodes=True,
                     write_candidates=True,
                     write_ts_data=False,
@@ -706,11 +494,11 @@ def main():
 
     ##########
 
-    if not len(TRACE_SETS) > 0 and not ARGS_candidates_available:
+    if not len(TRACE_SETS) > 0 and not config.candidates.available:
         log.warning('No active nodes available!')
         return 0
 
-    if ARGS_candidates_available:
+    if config.candidates.available:
         if not ports_available:
             nr_active_nodes4 = nr_candidates_written
             nr_active_nodes6 = nr_candidates_written
@@ -729,7 +517,7 @@ def main():
     ### HARVESTING STARTS HERE ###
     ##############################
 
-    if ARGS_perform_harvesting and not ARGS_candidates_available:
+    if config.flags.do_harvest and not config.candidates.available:
         # only harvest if not already done
         if not any([ts.has_timestamp_data() for ts in TRACE_SETS.values()]):
             log.info('Starting harvesting task ...')
@@ -738,30 +526,25 @@ def main():
                 harvester = TraceSetHarvester(
                     TRACE_SETS, runtime=const.HARVESTING_RUNTIME, interval=const.HARVESTING_INTERVAL, iface=nic
                 )
-                control_thread = harvester.start()
+                harvester.start()
 
                 while not harvester.finished():
                     harvester.process_results(timeout=const.HARVESTING_RESULTS_TIMEOUT)
                 harvester.process_results(timeout=const.HARVESTING_RESULTS_TIMEOUT_FINAL)
-
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except Exception:
-                raise
             finally:
                 log.info('Total records processed: {0}'.format(harvester.total_records_processed()))
 
                 log.info('Now writing harvesting data ...')
                 # assumes trace sets already written to disk
                 for tset in TRACE_SETS.values():
-                    tset.write_timestamp_data(ARGS_base_dir)
+                    tset.write_timestamp_data(config.base_dir)
 
                 log.info('Finished writing timestamp data')
 
         else:
             log.warning('TraceData for TraceSets available. Harvesting will not be performed!')
 
-    elif ARGS_perform_harvesting and ARGS_candidates_available:
+    elif config.flags.do_harvest and config.candidates.available:
         if not ts_data_available:
             log.info('Starting harvesting task ...')
 
@@ -774,18 +557,13 @@ def main():
                 while not harvester.finished():
                     harvester.process_results(timeout=const.HARVESTING_RESULTS_TIMEOUT)
                 harvester.process_results(timeout=const.HARVESTING_RESULTS_TIMEOUT_FINAL)
-
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except Exception:
-                raise
             finally:
                 log.info('Total records processed: {0}'.format(harvester.total_records_processed()))
                 log.info('Now writing harvesting data ...')
 
                 nr_candidates_written, nr_data_records_written = write_candidate_pairs(
                     CANDIDATE_PAIRS,
-                    ARGS_base_dir,
+                    config.base_dir,
                     write_candidates=False,
                     write_ts_data=True,
                     write_tcp_opts_data=False,
@@ -797,25 +575,30 @@ def main():
 
         else:
             # do not harvest if timestamp data was loaded, instead print a warning
-            tsfile = str(os.path.join(os.path.dirname(ARGS_candidates_csv_file), const.CANDIDATE_PAIRS_DATA_FILE_NAME))
+            tsfile = str(
+                os.path.join(os.path.dirname(config.paths.candidates_csv), const.CANDIDATE_PAIRS_DATA_FILE_NAME))
             log.warning('Timestamps already loaded from [{0}]'.format(tsfile))
             log.warning('Harvesting will not be performed!')
 
     ##########
 
     # stop here if no evaluation was requested
-    if ARGS_no_evaluation:
+    if config.skip_evaluation:
         log.warning('No evaluation requested (--no-evaluation). Exiting.')
         return 0
 
     # stop here if only portscan was requested
-    if (ARGS_candidates_available and ts_data_available) or any(
+    if (config.candidates.available and ts_data_available) or any(
             [ts.has_timestamp_data() for ts in TRACE_SETS.values()]):
         candidates = None
-        if ARGS_candidates_available:
-            candidates = libsiblings.construct_node_candidates(CANDIDATE_PAIRS, low_runtime=ARGS_lowruntime)
+        if config.candidates.available:
+            candidates = libsiblings.construct_node_candidates(
+                CANDIDATE_PAIRS, low_runtime=config.candidates.low_runtime
+            )
         else:
-            candidates = libsiblings.construct_trace_candidates(TRACE_SETS, low_runtime=ARGS_lowruntime)
+            candidates = libsiblings.construct_trace_candidates(
+                TRACE_SETS, low_runtime=config.candidates.low_runtime
+            )
 
         if not candidates:
             log.warning('No candidates available!')
@@ -833,11 +616,15 @@ def main():
     gc.collect()
 
     ##### SSH-KEYSCAN #####
-    if not ARGS_no_ssh_keyscan:
+    if not config.candidates.skip_keyscan:
         log.info('Preparing ssh-keyscan ...')
-        sshkeyscan = keyscan.Keyscan(candidates, directory=ARGS_base_dir, timeout=None,
-                                     key_file_name=const.SSH_KEYS_FILENAME, agent_file_name=const.SSH_AGENTS_FILENAME,
-                                     keyscan_command=const.SSH_KEYSCAN_COMMAND)
+        sshkeyscan = keyscan.Keyscan(
+            candidates,
+            directory=config.base_dir, timeout=None,
+            key_file_name=const.SSH_KEYS_FILENAME,
+            agent_file_name=const.SSH_AGENTS_FILENAME,
+            keyscan_command=const.SSH_KEYSCAN_COMMAND
+        )
         if not sshkeyscan.has_keys():  # assign available keys to candidates
             log.info('No keyfile found, starting ssh-keyscan processes')
             done = sshkeyscan.run(write_keyfile=True, split_output=False)  # if not available, run ssh-keyscan
@@ -846,12 +633,13 @@ def main():
             else:
                 log.info('Finished ssh-keyscan')
         else:
-            log.info('Loaded ssh keys from file [{0}]'.format(pathlib.Path(ARGS_base_dir, const.SSH_KEYS_FILENAME)))
+            keys_path = pathlib.Path(config.base_dir, const.SSH_KEYS_FILENAME)
+            log.info(f'Loaded ssh keys from file [{keys_path}]')
     else:
         log.info('No ssh-keyscan requested')
 
     # stop here if solely ssh-keyscan was requested
-    if ARGS_only_ssh_keyscan:
+    if config.candidates.only_keyscan:
         log.info('--only-ssh-keyscan requested, exiting now ...')
         return 0
 
@@ -861,93 +649,27 @@ def main():
         try:
             c.evaluate()
         except Exception as e:
-            exc_type, exc_object, exc_traceback = sys.exc_info()
-            ef = traceback.extract_tb(exc_traceback)[-1]  # get the inner most error frame
-            string = '{0} in {1} (function: \'{2}\') at line {3}: "{4}" <{5}>'.format(exc_type.__name__,
-                                                                                      os.path.basename(ef.filename),
-                                                                                      ef.name, ef.lineno, str(e),
-                                                                                      ef.line)
-
+            log.warning('exception during evaluation', exc_info=e)
     log.info('Finished sibling candidate calculations')
 
     ##### OUTFILE #####
-    if ARGS_resultfile:
-        resultfile = pathlib.Path(ARGS_resultfile)
+    if config.candidates.out_csv:
+        resultfile = pathlib.Path(config.candidates.out_csv)
         if not resultfile.is_absolute():
             resultfile = const.BASE_DIRECTORY / resultfile
         log.info('Writing resultfile [{0}] ...'.format(resultfile))
-        nr_records = libsiblings.write_results(candidates.values(), resultfile, low_runtime=ARGS_lowruntime)
+        nr_records = libsiblings.write_results(candidates.values(), resultfile,
+                                               low_runtime=config.candidates.low_runtime)
         log.info('Wrote {0} result records to file'.format(nr_records))
 
     ##### PLOT #####
-    if ARGS_print:  # plots all candidates to base_directory/const.PLOT_FILE_NAME
+    if config.flags.do_print:  # plots all candidates to base_directory/const.PLOT_FILE_NAME
         log.info('Starting plot process ...')
         libsiblings.plot_all(candidates.values(), const.PLOT_FILE_NAME)
         log.info('Finished printing charts')
 
-    if not ARGS_resultfile and not ARGS_print:
+    if not config.candidates.out_csv and not config.flags.do_print:
         log.info('Nothing more to do ... Exiting ...')
-
-    return 0
-
-    ##################
-    #### TESTING #####
-    ##################
-
-    index = random.randrange(0, len(
-        candidates))  # 0, 22, 177[very high raw tcp ts diff] (1k hz), 95 (250 hz) to test, 6 (ranodmized ts)
-    c = list(candidates.values())[index]
-    print('index: {0} - {1}'.format(index, c))
-    is_sibling = c.evaluate()
-    print('evaluate: {0}'.format(is_sibling))
-    print('status: {0}'.format(c.sibling_status))
-
-    if not is_sibling:
-        print('error')
-    else:
-        # print('took {0} candidates'.format(counter))
-        print('hertz:', c.hz4, c.hz6)
-        print('hertz raw:', c.hz4_raw, c.hz6_raw)
-        print('R-squared:', c.hz4_R2, c.hz6_R2)
-        print('raw_ts_diff', c.raw_timestamp_diff)
-        # print('Xi\n', c.Xi4, '\n', c.Xi6)
-        # print('Vi\n', c.Vi4, '\n', c.Vi6)
-        # print('time_offsets4\n', c.time_offsets4)
-        # print()
-        # print('time_offsets6\n', c.time_offsets6)
-        # print('denoised4\n', c.denoised4)
-        # print('denoised6\n', c.denoised6)
-        # print('cleaned_mean4', c.cleaned_mean4)
-        # print('cleaned_mean6', c.cleaned_mean6)
-        # print('ppd_range_raw', c.ppd_range_raw)
-        # print('ppd_index6_arr', c.ppd_index6_arr)
-        # print('ppd_arr', c.ppd_arr)
-        # print('ppd_mean_threshold', c.ppd_mean_threshold)
-        # print('ppd_median_threshold', c.ppd_median_threshold)
-        # print('ppd_arr_pruned', c.ppd_arr_pruned)
-        # print('ppd_range_pruned', c.ppd_range_pruned)
-        # print('alpha4', c.alpha4)
-        # print('alpha6', c.alpha6)
-        print('alphadiff', c.alphadiff)
-        # print('rsqr4', c.rsqr4)
-        # print('rsqr6', c.rsqr6)
-        print('rsqrdiff', c.rsqrdiff)
-        print('theta', c.theta)
-        print('dynrange4', c.dynrange4)
-        print('dynrange6', c.dynrange6)
-        print('dynrange_diff', c.dynrange_diff)
-        print('dynrange_diff_rel', c.dynrange_diff_rel)
-        print('len spline4, xs4', len(c.spline_arr4), len(c.xs4))  # different sizes are possible
-        print('len spline6, xs6', len(c.spline_arr6), len(c.xs6))  # for v4/v6
-        # print('spline_arr4', c.spline_arr4)
-        # print('spline_arr6', c.spline_arr6)
-        # print('xs4', c.xs4)
-        # print('xs6', c.xs6)
-        # print('spl_mapped_diff', c.spl_mapped_diff)
-        print('spl_mean4', c.spl_mean4)
-        print('spl_mean6', c.spl_mean6)
-        print('spl_mean_diff', c.spl_mean_diff)
-        print('spl_percent_val', c.spl_percent_val)
 
     return 0
 

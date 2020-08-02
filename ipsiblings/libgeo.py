@@ -23,13 +23,15 @@ import geoip2.database
 
 from . import libconstants as const
 from . import liblog
+from .config import GeoipConfig
+
 log = liblog.get_root_logger()
 
 
 
 class Geo(object):
 
-  def __init__(self, city_db_path = None, asn_db_path = None):
+  def __init__(self, config: GeoipConfig):
     """
     Load city database and ASN database.
     No parameters mean that the databases in const.GEO_DB_BASE_DIR will be loaded.
@@ -38,13 +40,13 @@ class Geo(object):
     self.city_dbreader = None
     self.asn_dbreader = None
 
-    if city_db_path:
-      self.city_db = city_db_path
+    if config.city_db:
+      self.city_db = config.city_db
     else:
       self.city_db = os.path.join(const.GEO_DB_BASE_DIR, const.GEO_CITY_DB_FILE)
 
-    if asn_db_path:
-      self.asn_db = asn_db_path
+    if config.asn_db:
+      self.asn_db = config.asn_db
     else:
       self.asn_db = os.path.join(const.GEO_DB_BASE_DIR, const.GEO_ASN_DB_FILE)
 
@@ -61,6 +63,9 @@ class Geo(object):
       log.warning('Problem loading ASN database (trying to update now): {0} - {1}'.format(type(e).__name__, e))
       self._update_asn()
       self.asn_dbreader = geoip2.database.Reader(self.asn_db)
+
+    if config.do_update:
+      self.update_databases()
 
 
   def _update_city(self):
