@@ -224,8 +224,6 @@ LOG_LVL_SCAPY = 40  # ERROR - disable warnings
 
 ########
 
-### holds the CDNFilter instance; initialized in main.py
-CDNFILTER = None
 # number of hops threshold for checking if IPs belong to CDN
 CDN_HOP_THRESHOLD = 3
 # file name for writing filtered cdn pairs
@@ -245,9 +243,6 @@ GEO_ASN_DB_URL = 'http://geolite.maxmind.com/download/geoip/database/GeoLite2-AS
 ########
 
 ### Alexa Top List ###
-# holds the instance of the Alexa class; initialized in main.py if requested
-ALEXA = None
-
 ALEXA_URL = 'https://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
 ALEXA_FILE_NAME = 'top-1m.csv'
 ALEXA_RESOLVED_FILE_NAME = 'alexa_resolved.csv'

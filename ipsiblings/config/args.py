@@ -3,7 +3,7 @@ import os
 import sys
 import textwrap
 
-from .. import libconstants
+from .. import libconstants, targetprovider
 
 
 def _prepare_parser():
@@ -84,6 +84,13 @@ def _prepare_parser():
     geo_grp.add_argument('--asn-db', action='store', help='custom MaxMind ASN database', default=None)
     geo_grp.add_argument('--update-geo-dbs', action='store_true', help='update geolocation databases',
                          default=False)
+
+    provider_grp = created_parser.add_argument_group(title='Provider choices', description=None)
+    provider_grp.add_argument(
+        '--target-provider', action='store', help='Target provider',
+        choices=targetprovider.get_provider_names(), default='alexa'
+    )
+
     return created_parser
 
 

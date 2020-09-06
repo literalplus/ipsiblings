@@ -12,27 +12,6 @@ This is the main module.
 
 """
 
-##### CURRENT IGNORE FILE ######################################################
-# # rackspace
-# 10.*
-# 50.56.6.*
-# # end rackspace
-# # netcup
-# 185.170.112.2
-# 185.170.112.3
-# # end netcup
-# =
-# # rackspace
-# 2001:4801:800:dc1:ca::
-# 2001:4801:800:ca:bb99::
-# 2001:4801:800:dc2:cb::
-# # end rackspace
-# # netcup
-# 2a03:4000:ffff:ffff::2
-# 2a03:4000:15::2
-# # end netcup
-################################################################################
-
 import csv
 import gc
 import pathlib
@@ -40,11 +19,12 @@ import random
 import sys
 import traceback
 
+from ipsiblings.bootstrap.exception import ConfigurationException
 from ipsiblings.libts.harvester import TraceSetHarvester, CandidateHarvester
 from ipsiblings.libts.portscan import TraceSetPortScan, CandidatePortScan
 from ipsiblings.libts.serialization import load_candidate_pairs, write_candidate_pairs
-from . import alexa
-from . import cdnfilter
+from ipsiblings.targetprovider import alexa
+from . import cdnfilter, targetprovider
 from . import keyscan
 from . import libconstants as const
 from . import libgeo
@@ -103,10 +83,10 @@ def _reduce_list(inp_list, config, type):
 
 
 def _validate_config(config):
-    if config.alexa.resolved_ips_path and not config.alexa.has_resolved:
+    if config.targetprovider.resolved_ips_path and not config.targetprovider.has_resolved:
         print_usage_and_exit('-f/--resolved-file can only be used with -s/--resolved')
 
-    if config.alexa.do_download and not config.alexa.has_resolved:
+    if config.targetprovider.do_download and not config.targetprovider.has_resolved:
         print_usage_and_exit('-o/--download-alexa can only be used with -s/--resolved')
 
     if config.end_index is not None:
@@ -135,18 +115,28 @@ def _apply_config(config):
 
     const.GEO = libgeo.Geo(config)
 
-    if config.alexa.toplist_dir is not None:  # download alexa top list and save it to directory
-        if config.alexa.toplist_dir == 'cwd':
-            directory = os.getcwd()
-        else:
-            directory = config.alexa.toplist_dir
-        extracted = alexa.Alexa.load_remote_toplist(directory)  # staticmethod
-        if extracted:
-            log.info('Successfully downloaded and extracted Alexa Top List file [{0}]'.format(extracted))
-            sys.exit(0)
-        else:
-            log.error('Could not download/write file to disk [{0}]'.format(directory))
-            sys.exit(-3)
+
+def _find_ds_interface():
+    log.debug('Searching for Dual Stack interfaces ...')
+    nic = None  # network interface to use
+    nic_list = libtools.get_dualstack_nics()
+    if not nic_list:
+        log.error('You do not have any Dual Stack interface available! Exiting ...')
+        return False
+    else:
+        nic = nic_list[0]
+    log.info(f'Found Dual Stack interfaces: {nic_list}, using \'{nic}\'')
+
+    const.IFACE_MAC_ADDRESS = libtools.get_mac(iface=nic).lower()
+    if const.IFACE_MAC_ADDRESS:
+        log.debug(f'Identified MAC address: {const.IFACE_MAC_ADDRESS}')
+
+    own_ip4, own_ip6 = libtools.get_iface_IPs(iface=nic)
+    const.IFACE_IP4_ADDRESS = own_ip4
+    const.IFACE_IP6_ADDRESS = own_ip6.lower()
+    if const.IFACE_IP4_ADDRESS and const.IFACE_IP6_ADDRESS:
+        log.debug(f'Identified IP addresses [{nic}]: {const.IFACE_IP4_ADDRESS} / {const.IFACE_IP6_ADDRESS}')
+    return nic
 
 
 def main():
@@ -164,25 +154,9 @@ def main():
 
     log.info('Started')
 
-    log.debug('Searching for Dual Stack interfaces ...')
-    nic = None  # network interface to use
-    nic_list = libtools.get_dualstack_nics()
-    if not nic_list:
-        log.error('You do not have any Dual Stack interface available! Exiting ...')
+    nic = _find_ds_interface()
+    if not nic:
         return -2
-    else:
-        nic = nic_list[0]
-    log.info(f'Found Dual Stack interfaces: {nic_list}, using \'{nic}\'')
-
-    const.IFACE_MAC_ADDRESS = libtools.get_mac(iface=nic).lower()
-    if const.IFACE_MAC_ADDRESS:
-        log.debug(f'Identified MAC address: {const.IFACE_MAC_ADDRESS}')
-
-    own_ip4, own_ip6 = libtools.get_iface_IPs(iface=nic)
-    const.IFACE_IP4_ADDRESS = own_ip4
-    const.IFACE_IP6_ADDRESS = own_ip6.lower()
-    if const.IFACE_IP4_ADDRESS and const.IFACE_IP6_ADDRESS:
-        log.debug(f'Identified IP addresses [{nic}]: {const.IFACE_IP4_ADDRESS} / {const.IFACE_IP6_ADDRESS}')
 
     v4bl_re, v6bl_re = libtools.construct_blacklist_regex(config.paths.ip_ignores)
     if v4bl_re or v6bl_re:
@@ -191,51 +165,15 @@ def main():
     if not config.flags.load_tracesets:
         # create base directory
         dir_status = libtools.create_directories(config.base_dir)
-        if dir_status == True:
-            log.info(f'Successfully created base directory [{config.base_dir}]')
-        elif dir_status is None:
+        if dir_status is None:
             log.info(f'Directory [{config.base_dir}] already exists')
+        elif dir_status:
+            log.info(f'Successfully created base directory [{config.base_dir}]')
         else:  # False
             log.error(f'Error while creating base directory [{config.base_dir}]')
             return -3
 
-    #### Alexa / resolved file
-    ##############
-    # prepare Alexa Top list related tasks
-    if config.alexa.has_resolved:
-        if config.candidates.available:  # -c
-            if config.paths.candidates_csv == 'None':  # no additional argument given with -c
-                toplist_file = None
-            else:
-                toplist_file = config.paths.candidates_csv
-        elif config.flags.has_targets:  # -t
-            if config.paths.target_csv == 'None':  # no additional argument given with -t
-                toplist_file = None
-            else:
-                toplist_file = config.paths.target_csv
-        else:  # should never happen
-            toplist_file = None  # os.path.join(config.base_dir, const.ALEXA_FILE_NAME)
-
-        if config.alexa.resolved_ips_path:
-            resolved_file = config.alexa.resolved_ips_path
-        else:  # if not explicitly given, try to locate the file in base_dir (assume alexa resolved file)
-            resolved_file = os.path.join(config.base_dir, const.ALEXA_RESOLVED_FILE_NAME)
-
-        const.ALEXA = alexa.Alexa(resolved_file=resolved_file)
-
-        if not const.ALEXA.resolved_available():
-            if const.ALEXA.load_toplist_file(toplist_file, remote=config.alexa.do_download):
-                if toplist_file:  # only report if loaded from file
-                    log.info('Successfully loaded Alexa Top List file [{0}]'.format(toplist_file))
-                log.info('Starting name resolution process ...')
-                const.ALEXA.resolve_toplist(write_unresolvable=True)  # this will take a long time ...
-            else:
-                log.error('Aborting now ...')
-                return -5
-
-    if config.paths.cdns:
-        const.CDNFILTER = cdnfilter.CDNFilter(config.paths.cdns)
-    ####
+    target_provider = targetprovider.get_provider(config.targetprovider.provider)
 
     # either trace sets ...
     TRACE_SETS = {}  # { v4target_v6target: TraceSet() }   # trace sets to work with
@@ -256,14 +194,14 @@ def main():
         TRACE_SETS = _reduce_map(TRACE_SETS, config, 'TraceSets')
 
     elif config.flags.has_targets:  # config.paths.target_csv is not None:
-        if config.alexa.has_resolved:
+        if config.targetprovider.has_resolved:
             include_domain = True
             # keep in mind that slicing does not yield deterministic results if one_per_domain is True
-            ipdata = const.ALEXA.construct_targets(one_per_domain=False)
+            ipdata = target_provider.provide_targets()
             # gives ~250k targets for 145k resolved hosts of Alexa Top List
             if not ipdata:
-                if config.alexa.resolved_ips_path:
-                    log.error(f'{config.alexa.resolved_ips_path}: Empty CSV file!')
+                if config.targetprovider.resolved_ips_path:
+                    log.error(f'{config.targetprovider.resolved_ips_path}: Empty CSV file!')
                 else:
                     log.error('Empty target array!')
                 return -3
@@ -304,16 +242,6 @@ def main():
                     ip4, ip6 = target
                     domains = None
                     info_str = '({0} of {1}) Processing target {2} / {3}'.format(n, ipdata_len, ip4, ip6)
-
-                if config.paths.cdns and const.CDNFILTER.is_cdn(ip4, ip6):
-                    CDN_FILTERED[(ip4, ip6)] = domains
-                    if domains:
-                        info_str = '({0} of {1}) Filtered target (CDN) {2} / {3} [{4}]'.format(n, ipdata_len, ip4,
-                                                                                               ip6, domains)
-                    else:
-                        info_str = '({0} of {1}) Filtered target (CDN) {2} / {3}'.format(n, ipdata_len, ip4, ip6)
-                    log.info(info_str)
-                    continue
 
                 log.info(info_str)
 
@@ -409,15 +337,13 @@ def main():
 
     elif config.candidates.available:  # elif config.paths.candidates_csv is not None:
 
-        if config.alexa.has_resolved:
+        if config.targetprovider.has_resolved:
             ports_available = False
             ts_data_available = False
-            # keep in mind that slicing does not yield deterministic results if one_per_domain is True
-            CANDIDATE_PAIRS = const.ALEXA.construct_candidates(
-                one_per_domain=False)  # gives ~ 500k candidates for 145k resolved hosts of Alexa Top List
+            CANDIDATE_PAIRS = target_provider.provide_candidates()
             if not CANDIDATE_PAIRS:
-                if config.alexa.resolved_ips_path:
-                    log.error('{0}: Empty file!'.format(config.alexa.resolved_ips_path))
+                if config.targetprovider.resolved_ips_path:
+                    log.error('{0}: Empty file!'.format(config.targetprovider.resolved_ips_path))
                 else:
                     log.error('Empty candidate pairs!')
                 return -3
@@ -450,7 +376,7 @@ def main():
 
             if not ports_available:
                 # no ports in csv file available -> find open ports with TSNode
-                if not config.alexa.has_resolved:
+                if not config.targetprovider.has_resolved:
                     log.info('No open ports available in candidate file')
 
                 nodes4 = set()  # do not add IPs more than once
@@ -698,6 +624,9 @@ if __name__ == '__main__':
 
         ret = main()  # start main execution
 
+    except ConfigurationException:
+        log.exception()
+        ret = -3
     except Exception as e:
         error = True
         exc_type, exc_object, exc_traceback = sys.exc_info()
@@ -711,17 +640,6 @@ if __name__ == '__main__':
         error = True
         raise
     finally:
-        if const.ALEXA:  # only write file if data was modified
-            if error:  # prevent overwriting probably existing files by using a different file name in case of error
-                resolved_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_RESOLVED_FILENAME_ERRORCASE)
-                unresolvable_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_UNRESOLVABLE_FILENAME_ERRORCASE)
-            else:
-                resolved_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_RESOLVED_FILE_NAME)
-                unresolvable_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_UNRESOLVABLE_FILE_NAME)
-
-            const.ALEXA.save_resolved(resolved_fname)
-            const.ALEXA.save_unresolvable(unresolvable_fname)
-
         # remove any applied firewall rules
         if const.FIREWALL_APPLY_RULES:
             os_settings.disable_firewall_rules()

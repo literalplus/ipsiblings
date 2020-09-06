@@ -13,19 +13,94 @@ import io
 import os
 import random
 import socket
+import sys
 import urllib.request
 import zipfile
+from typing import Dict, List
 
-from . import libconstants as const
-from . import liblog
-from . import libtools
-from .libts.candidatepair import CandidatePair
+from .. import libconstants as const, config
+from .. import liblog
+from .. import libtools
+from ..bootstrap.exception import ConfigurationException
+from ..libts.candidatepair import CandidatePair
+from . import TargetProvider
 
 log = liblog.get_root_logger()
 
 
-class Alexa(object):
+class AlexaProvider(TargetProvider):
+    def __init__(self):
+        self.instance = None
 
+    def configure(self, conf: config.AppConfig) -> None:
+        if conf.targetprovider.toplist_dir is not None:  # download alexa top list and save it to directory
+            self._download_and_exit(conf)
+
+        # prepare Alexa Top list related tasks
+        if conf.targetprovider.has_resolved:
+            toplist_file = self._find_toplist_file(conf)
+
+            if conf.targetprovider.resolved_ips_path:
+                resolved_file = conf.targetprovider.resolved_ips_path
+            else:  # if not explicitly given, try to locate the file in base_dir (assume alexa resolved file)
+                resolved_file = os.path.join(conf.base_dir, const.ALEXA_RESOLVED_FILE_NAME)
+
+            self.instance = Alexa(resolved_file=resolved_file)
+
+            if not self.instance.resolved_available():
+                if self.instance.load_toplist_file(toplist_file, remote=conf.targetprovider.do_download):
+                    self._do_resolve_if_necessary(toplist_file)
+                else:
+                    raise ConfigurationException('Failed to load Alexa toplist')
+
+    def _download_and_exit(self, conf):
+        if conf.targetprovider.toplist_dir == 'cwd':
+            directory = os.getcwd()
+        else:
+            directory = conf.targetprovider.toplist_dir
+        extracted = Alexa.load_remote_toplist(directory)  # staticmethod
+        if extracted:
+            log.info('Successfully downloaded and extracted Alexa Top List file [{0}]'.format(extracted))
+            sys.exit(0)
+        else:
+            raise ConfigurationException('Could not download/write file to disk [{0}]'.format(directory))
+
+    def _find_toplist_file(self, conf):
+        if conf.candidates.available:  # -c
+            if conf.paths.candidates_csv == 'None':  # no additional argument given with -c
+                toplist_file = None
+            else:
+                toplist_file = conf.paths.candidates_csv
+        elif conf.flags.has_targets:  # -t
+            if conf.paths.target_csv == 'None':  # no additional argument given with -t
+                toplist_file = None
+            else:
+                toplist_file = conf.paths.target_csv
+        else:  # should never happen
+            toplist_file = None  # os.path.join(config.base_dir, const.ALEXA_FILE_NAME)
+        return toplist_file
+
+    def _do_resolve_if_necessary(self, toplist_file):
+        if toplist_file:  # only report if loaded from file
+            log.info('Successfully loaded Alexa Top List file [{0}]'.format(toplist_file))
+        log.info('Starting name resolution process ...')
+        try:
+            const.ALEXA.resolve_toplist(write_unresolvable=True)  # this will take a long time ...
+        finally:
+            resolved_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_RESOLVED_FILE_NAME)
+            unresolvable_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_UNRESOLVABLE_FILE_NAME)
+
+            self.instance.save_resolved(resolved_fname)
+            self.instance.save_unresolvable(unresolvable_fname)
+
+    def provide_candidates(self) -> Dict[(str, str), CandidatePair]:
+        return self.instance.construct_candidates(one_per_domain=False)
+
+    def provide_targets(self) -> List[(List[str], str, str)]:
+        return self.instance.construct_targets(one_per_domain=False)
+
+
+class Alexa:
     def __init__(self, resolved_file=None):
         """
         This class works with a file containing already resolved Alexa domains.
@@ -151,7 +226,7 @@ class Alexa(object):
             records = None
             counter = 0
 
-        return (records, counter)
+        return records, counter
 
     def resolved_available(self):
         return bool(len(self.resolved) > 0)
@@ -301,6 +376,7 @@ class Alexa(object):
         Uses the resolved dict of the instance.
         """
         # TODO: This seems to do the same thing as construct_candidates() - merge these?
+        # TODO: Is the difference de-duplication?
         if not self.resolved:
             return None
 

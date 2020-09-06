@@ -54,8 +54,9 @@ class TraceSetConfig:
         self.do_load = args.load
 
 
-class AlexaConfig:
+class TargetProviderConfig:
     def __init__(self, args):
+        self.provider = args.target_provider
         self.toplist_dir = args.alexa_toplist_dir
         self.resolved_ips_path = args.resolved_file
         self.has_resolved = args.resolved
@@ -76,7 +77,7 @@ class AppConfig:
         self.args = parser.parse_args()
         self.paths = PathsConfig(self.args)
         self.flags = FlagsConfig(self.args, self.paths)
-        self.alexa = AlexaConfig(self.args)
+        self.targetprovider = TargetProviderConfig(self.args)
         self.candidates = CandidatesConfig(self.args)
         self.geoip = GeoipConfig(self.args)
         self.trace_set = TraceSetConfig(self.args)
