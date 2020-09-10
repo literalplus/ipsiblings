@@ -28,7 +28,6 @@ from .config import GeoipConfig
 log = liblog.get_root_logger()
 
 
-
 class Geo(object):
 
   def __init__(self, config: GeoipConfig):

@@ -11,11 +11,35 @@ import netifaces
 from .misc import is_iterable
 from .. import libconstants as const
 from .. import liblog
+from ..bootstrap.exception import ConfigurationException
 
 log = liblog.get_root_logger()
 
 
-def get_dualstack_nics():
+class NicInfo:
+    def __init__(self, name):
+        self.name = name
+        self.mac: str = get_mac(iface=name).lower()
+        own_ip4, own_ip6 = _getiface_ips(iface=name)
+        self.ip4: str = own_ip4
+        self.ip6: str = own_ip6.lower()
+
+    def __str__(self):
+        return f'NicInfo({self.name}: mac={self.mac}, ip4={self.ip4}, ip6={self.ip6})'
+
+
+def obtain_nic():
+    nic_list = _get_dualstack_nic_names()
+    if not nic_list:
+        raise ConfigurationException('Unable to find any Dual-Stack NIC')
+    else:
+        nicname = nic_list[0]
+    info = NicInfo(nicname)
+    log.info(f'Found Dual Stack interfaces: {nic_list}, using {info}')
+    return info
+
+
+def _get_dualstack_nic_names():
     """
     Check if Dual Stack is available and return a sorted list of interfaces.
     """
@@ -78,7 +102,7 @@ def get_mac(iface='en0'):
         return ''
 
 
-def get_iface_IPs(iface='en0'):
+def _getiface_ips(iface='en0'):
     v4addr = None
     v6addr = None
 

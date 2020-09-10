@@ -8,25 +8,30 @@ import contextlib
 import csv
 import ipaddress
 import os
+from typing import Union
 
 from .candidatepair import CandidatePair
 from .. import libconstants as const
 from .. import liblog
 from .. import libtools
+from ..libtools import SkipList, NO_SKIPS
 
 log = liblog.get_root_logger()
 
 
-def load_candidate_pairs(candidate_file, ts_data_file=None, delimiter=';', port_delimiter=',', v4bl_re=None,
-                         v6bl_re=None, include_domain=False):
+def load_candidate_pairs(
+        candidate_file, ts_data_file=None,
+        delimiter=';', port_delimiter=',',
+        skip_list: SkipList = NO_SKIPS,
+        include_domain=False
+):
     """
     Parameters:
     candidate_file    file to parse candidates from
     ts_data_file      optional load timestamp data from this file [None]
     delimiter         optional [';']
     port_delimiter    optional [',']
-    v4bl_re           regex object to test for blacklisted IPs [None]
-    v6bl_re           regex object to test for blacklisted IPs [None]
+    skip_list SkipList
     include_domain    optional [False]
 
     Returns (ports_available, ts_data_available, tcp_opts_available, candidate_pairs { (ip4, ip6): CandidatePair } )
@@ -181,14 +186,7 @@ def load_candidate_pairs(candidate_file, ts_data_file=None, delimiter=';', port_
         for row in csvreader:
             ip4, ports4, ip6, ports6, domains = row_func(row)
 
-            if v4bl_re and v6bl_re and v4bl_re.match(ip4) and v6bl_re.match(ip6):
-                log.info('IPv4 and IPv6 blacklisted: {0} / {1}'.format(ip4, ip6))
-                continue
-            if v4bl_re and v4bl_re.match(ip4):
-                log.info('IPv4 blacklisted: {0} / {1}'.format(ip4, ip6))
-                continue
-            if v6bl_re and v6bl_re.match(ip6):
-                log.info('IPv6 blacklisted: {0} / {1}'.format(ip4, ip6))
+            if skip_list.matches_pair(ip4, ip6):
                 continue
 
             if tcpopts_available:

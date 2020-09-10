@@ -14,25 +14,24 @@ This is the main module.
 
 import csv
 import gc
+import os
 import pathlib
 import random
 import sys
 import traceback
 
-from ipsiblings.bootstrap.exception import ConfigurationException
+from ipsiblings.bootstrap.exception import ConfigurationException, JustExit
 from ipsiblings.libts.harvester import TraceSetHarvester, CandidateHarvester
 from ipsiblings.libts.portscan import TraceSetPortScan, CandidatePortScan
 from ipsiblings.libts.serialization import load_candidate_pairs, write_candidate_pairs
-from ipsiblings.targetprovider import alexa
-from . import cdnfilter, targetprovider
+from . import cdnfilter, targetprovider, config, bootstrap, libconstants
 from . import keyscan
-from . import libconstants as const
 from . import libgeo
+from . import liblog
 from . import libsiblings
 from . import libtools
 from . import libtrace
 from . import settings
-from .config import *
 from .libtraceroute.cptraceroute import CPTraceroute
 
 # setup root logger
@@ -82,282 +81,236 @@ def _reduce_list(inp_list, config, type):
     return result
 
 
-def _validate_config(config):
-    if config.targetprovider.resolved_ips_path and not config.targetprovider.has_resolved:
-        print_usage_and_exit('-f/--resolved-file can only be used with -s/--resolved')
+def _validate_config(conf):
+    if conf.targetprovider.resolved_ips_path and not conf.targetprovider.has_resolved:
+        config.print_usage_and_exit('-f/--resolved-file can only be used with -s/--resolved')
 
-    if config.targetprovider.do_download and not config.targetprovider.has_resolved:
-        print_usage_and_exit('-o/--download-alexa can only be used with -s/--resolved')
+    if conf.targetprovider.do_download and not conf.targetprovider.has_resolved:
+        config.print_usage_and_exit('-o/--download-alexa can only be used with -s/--resolved')
 
-    if config.end_index is not None:
-        if config.start_index < 0 or config.end_index < 1:
-            print_usage_and_exit('--from/--to can not be negative/zero')
-        if config.start_index >= config.end_index:
-            print_usage_and_exit('--to can not be less or equal to --from')
+    if conf.end_index is not None:
+        if conf.start_index < 0 or conf.end_index < 1:
+            config.print_usage_and_exit('--from/--to can not be negative/zero')
+        if conf.start_index >= conf.end_index:
+            config.print_usage_and_exit('--to can not be less or equal to --from')
 
 
-def _apply_config(config):
-    log.setLevel(config.log_level)
-    const.BASE_DIRECTORY = config.base_dir
+def _bridge_config_to_legacy(conf: config.AppConfig, const: libconstants):
+    log.setLevel(conf.log_level)
+    const.BASE_DIRECTORY = conf.base_dir
     # PORT_LIST selection based on --router-ports/--server-ports options or operation mode (-c/-t)
     # prioritize the explicit arguments
-    if config.port_scan.router_portlist:
+    if conf.port_scan.router_portlist:
         const.PORT_LIST = const.PORT_LIST_ROUTER
-    elif config.port_scan.server_portlist:
+    elif conf.port_scan.server_portlist:
         const.PORT_LIST = const.PORT_LIST_SERVER
     else:
-        if config.candidates.available:
+        if conf.candidates.available:
             const.PORT_LIST = const.PORT_LIST_SERVER
-        elif config.flags.has_targets or config.flags.load_tracesets:
+        elif conf.flags.has_targets or conf.flags.load_tracesets:
             const.PORT_LIST = const.PORT_LIST_ROUTER
         else:
             const.PORT_LIST = const.PORT_LIST_SERVER
 
-    const.GEO = libgeo.Geo(config)
 
+def handle_targets(TRACE_SETS, wiring):
+    conf = wiring.conf
+    const = libconstants
+    SILENT_TRACE_SETS = {}  # trace sets with non responding nodes
 
-def _find_ds_interface():
-    log.debug('Searching for Dual Stack interfaces ...')
-    nic = None  # network interface to use
-    nic_list = libtools.get_dualstack_nics()
-    if not nic_list:
-        log.error('You do not have any Dual Stack interface available! Exiting ...')
-        return False
+    if conf.targetprovider.has_resolved:
+        include_domain = True
+        ipdata = wiring.target_provider.provide_targets()
+        # gives ~250k targets for 145k resolved hosts of Alexa Top List
+        if not ipdata:
+            if conf.targetprovider.resolved_ips_path:
+                raise ConfigurationException(f'{conf.targetprovider.resolved_ips_path}: Empty CSV file!')
+            else:
+                raise ConfigurationException('Empty target array!')
     else:
-        nic = nic_list[0]
-    log.info(f'Found Dual Stack interfaces: {nic_list}, using \'{nic}\'')
+        include_domain = False
+        ipdata = libtools.parsecsv(conf.paths.target_csv, iponly=True, include_domain=include_domain)
+        if not ipdata:
+            raise ConfigurationException(f'{conf.paths.target_csv}: Empty CSV file!')
+    log.info(f'Constructed {len(ipdata)} candidates')
+    if conf.candidates.just_write_pairs:
+        nr_records = libtools.write_constructed_pairs(
+            pathlib.Path(conf.base_dir) / conf.candidates.just_write_pairs,
+            ipdata,
+            include_domain=include_domain
+        )
+        log.info('Wrote [{0}] IP candidate pairs to [{1}]'.format(nr_records, str(
+            pathlib.Path(conf.base_dir) / conf.candidates.just_write_pairs)))
+        log.info('Exiting now ...')
+        raise JustExit
+    ipdata = _reduce_list(ipdata, conf, 'targets (ipdata)')
+    # randomize target list
+    random.shuffle(ipdata)
+    ipdata_len = len(ipdata)
+    try:
+        ### TARGET LOOP ###
+        for n, target in enumerate(ipdata, start=1):
 
-    const.IFACE_MAC_ADDRESS = libtools.get_mac(iface=nic).lower()
-    if const.IFACE_MAC_ADDRESS:
-        log.debug(f'Identified MAC address: {const.IFACE_MAC_ADDRESS}')
+            if include_domain:
+                domains, ip4, ip6 = target
+                if libtools.is_iterable(domains):
+                    domains = ','.join(domains)
+                info_str = '({0} of {1}) Processing target {2} / {3} [{4}]'.format(n, ipdata_len, ip4, ip6, domains)
+            else:
+                ip4, ip6 = target
+                domains = None
+                info_str = '({0} of {1}) Processing target {2} / {3}'.format(n, ipdata_len, ip4, ip6)
 
-    own_ip4, own_ip6 = libtools.get_iface_IPs(iface=nic)
-    const.IFACE_IP4_ADDRESS = own_ip4
-    const.IFACE_IP6_ADDRESS = own_ip6.lower()
-    if const.IFACE_IP4_ADDRESS and const.IFACE_IP6_ADDRESS:
-        log.debug(f'Identified IP addresses [{nic}]: {const.IFACE_IP4_ADDRESS} / {const.IFACE_IP6_ADDRESS}')
-    return nic
+            log.info(info_str)
+
+            trace_set = libtrace.TraceSet(target=(ip4, ip6), domain=domains)
+            key = str(ip4) + '_' + str(ip6)
+            if key in TRACE_SETS:  # should never happen
+                log.error('Target {0} / {1} already in trace sets!'.format(ip4, ip6))
+                continue
+
+            nr_current_traces = 0
+            # if more than X traces have no active nodes continue with next target
+            no_results_counter = 0
+            # in case there are no new traces available to hit the requested number of traces
+            no_new_trace_counter = 0
+
+            while nr_current_traces < const.NR_TRACES_PER_TRACE_SET:
+                # -> libconstants.TRACEROUTE_ADD_SOURCE_IP (False)
+                ip4tracert, ip6tracert = CPTraceroute(
+                    (ip4, ip6), iface=wiring.nic.name, algorithm='traceroute', timeout=2
+                ).traceroute(result_timeout=3)
+
+                try:
+                    trace = libtrace.Trace().init(
+                        ip4, ip6,
+                        ip4tracert, ip6tracert,
+                        wiring.nic,
+                        skip_list=wiring.skip_list
+                    )
+                except ValueError:
+                    trace = None
+
+                if not trace or trace.id() in trace_set.get_traces():
+                    no_new_trace_counter = no_new_trace_counter + 1
+                    if trace:
+                        log.debug(
+                            'Trace {0} (with target {1} / {2}) already in current trace set! [{3}. retry]'.format(
+                                trace.id(), ip4, ip6, no_new_trace_counter))
+                    else:
+                        log.debug('No trace data available for target ({0} / {1})! [{2}. retry]'.format(
+                            ip4, ip6, no_new_trace_counter
+                        ))
+
+                    if no_new_trace_counter >= const.MAX_TRIES_FOR_NEW_TRACE:
+                        break
+                    continue
+
+                nodes4, nodes6 = trace.get_global_valid_IPs(
+                    apply_ignore_regex=bool(conf.paths.ip_ignores))  # only apply regex if ignore file was given
+
+                tsports = TraceSetPortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=wiring.nic.name).start()
+                while not tsports.finished():
+                    tsports.process_results(timeout=1)
+                tsports.process_results(timeout=2)
+                tsports.stop()
+
+                ip4results, ip6results = tsports.results()
+                if not ip4results and not ip6results:
+                    no_results_counter = no_results_counter + 1
+                    nr_current_traces = nr_current_traces - 1  # do not increment if we have no active nodes
+                    if no_results_counter >= const.INACTIVE_RESULTS_PER_TRACE_SET:
+                        # if there were more than X empty results continue with the next target
+                        break
+
+                trace.set_active_nodes((ip4results, ip6results))
+                trace_set.add_trace(trace)
+                nr_current_traces = nr_current_traces + 1
+
+            if trace_set.has_candidates():
+                TRACE_SETS[key] = trace_set
+            else:
+                SILENT_TRACE_SETS[key] = trace_set
+    finally:
+        ts_written = libtrace.write_trace_sets(conf.base_dir, TRACE_SETS)
+        if const.WRITE_INACTIVE_TRACE_SET:
+            ts_silent_written = libtrace.write_trace_sets(conf.paths.base_dir_silent, SILENT_TRACE_SETS)
+            if ts_written > 0 or ts_silent_written > 0:
+                log.info('Active TraceSets written: {0} / Inactive TraceSets written: {1}'.format(ts_written,
+                                                                                                  ts_silent_written))
+        else:
+            if ts_written > 0:
+                log.info('Active TraceSets written: {0}'.format(ts_written))
 
 
 def main():
-    config = AppConfig()
-    _validate_config(config)
-    _apply_config(config)
+    conf = config.AppConfig()
+    _validate_config(conf)
+    _bridge_config_to_legacy(conf, libconstants)
+    wiring = bootstrap.Wiring(conf)
+    bootstrap.bridge_wiring_to_legacy(wiring, libconstants)
 
     if not gc.isenabled():  # just to be sure ...
         gc.enable()
 
     # debug run requested, exiting now
-    if config.debug:
+    if conf.debug:
         log.warning('DEBUG run -> exiting now ...')
         return 0
 
     log.info('Started')
 
-    nic = _find_ds_interface()
-    if not nic:
-        return -2
-
-    v4bl_re, v6bl_re = libtools.construct_blacklist_regex(config.paths.ip_ignores)
-    if v4bl_re or v6bl_re:
-        log.debug(f'Constructed blacklist filters from {config.paths.ip_ignores}')
-
-    if not config.flags.load_tracesets:
+    if not conf.flags.load_tracesets:
         # create base directory
-        dir_status = libtools.create_directories(config.base_dir)
+        dir_status = libtools.create_directories(conf.base_dir)
         if dir_status is None:
-            log.info(f'Directory [{config.base_dir}] already exists')
+            log.info(f'Directory [{conf.base_dir}] already exists')
         elif dir_status:
-            log.info(f'Successfully created base directory [{config.base_dir}]')
+            log.info(f'Successfully created base directory [{conf.base_dir}]')
         else:  # False
-            log.error(f'Error while creating base directory [{config.base_dir}]')
+            log.error(f'Error while creating base directory [{conf.base_dir}]')
             return -3
-
-    target_provider = targetprovider.get_provider(config.targetprovider.provider)
 
     # either trace sets ...
     TRACE_SETS = {}  # { v4target_v6target: TraceSet() }   # trace sets to work with
-    SILENT_TRACE_SETS = {}  # trace sets with non responding nodes
     # ... or candidate pairs
     CANDIDATE_PAIRS = {}  # { (ip4, ip6): CandidatePair }
 
-    CDN_FILTERED = {}  # { (ip4, ip6): [domains] }
-
     ##########
 
-    if config.flags.load_tracesets:
-        log.info(f'Loading trace sets from base directory {config.base_dir}')
+    if conf.flags.load_tracesets:
+        log.info(f'Loading trace sets from base directory {conf.base_dir}')
         TRACE_SETS = libtrace.load_trace_sets(
-            config.base_dir, config.paths.base_dir_silent,
-            v4bl_re=v4bl_re, v6bl_re=v6bl_re, iface=nic
+            conf.base_dir, wiring.nic, conf.paths.base_dir_silent,
+            skip_list=wiring.skip_list
         )
-        TRACE_SETS = _reduce_map(TRACE_SETS, config, 'TraceSets')
+        TRACE_SETS = _reduce_map(TRACE_SETS, conf, 'TraceSets')
 
-    elif config.flags.has_targets:  # config.paths.target_csv is not None:
-        if config.targetprovider.has_resolved:
-            include_domain = True
-            # keep in mind that slicing does not yield deterministic results if one_per_domain is True
-            ipdata = target_provider.provide_targets()
-            # gives ~250k targets for 145k resolved hosts of Alexa Top List
-            if not ipdata:
-                if config.targetprovider.resolved_ips_path:
-                    log.error(f'{config.targetprovider.resolved_ips_path}: Empty CSV file!')
-                else:
-                    log.error('Empty target array!')
-                return -3
-        else:
-            include_domain = False
-            ipdata = libtools.parsecsv(config.paths.target_csv, iponly=True, include_domain=include_domain)
-            if not ipdata:
-                log.error(f'{config.paths.target_csv}: Empty CSV file!')
-                return -3
-
-        log.info(f'Constructed {len(ipdata)} candidates')
-        if config.candidates.write_pairs:
-            nr_records = libtools.write_constructed_pairs(
-                pathlib.Path(config.base_dir) / config.candidates.write_pairs,
-                ipdata,
-                include_domain=include_domain
-            )
-            log.info('Wrote [{0}] IP candidate pairs to [{1}]'.format(nr_records, str(
-                pathlib.Path(config.base_dir) / config.candidates.write_pairs)))
-            log.info('Exiting now ...')
-            return 0
-
-        ipdata = _reduce_list(ipdata, config, 'targets (ipdata)')
-        # randomize target list
-        random.shuffle(ipdata)
-        ipdata_len = len(ipdata)
-
-        try:
-            ### TARGET LOOP ###
-            for n, target in enumerate(ipdata, start=1):
-
-                if include_domain:
-                    domains, ip4, ip6 = target
-                    if libtools.is_iterable(domains):
-                        domains = ','.join(domains)
-                    info_str = '({0} of {1}) Processing target {2} / {3} [{4}]'.format(n, ipdata_len, ip4, ip6, domains)
-                else:
-                    ip4, ip6 = target
-                    domains = None
-                    info_str = '({0} of {1}) Processing target {2} / {3}'.format(n, ipdata_len, ip4, ip6)
-
-                log.info(info_str)
-
-                trace_set = libtrace.TraceSet(target=(ip4, ip6), domain=domains)
-                key = str(ip4) + '_' + str(ip6)
-                if key in TRACE_SETS:  # should never happen
-                    log.error('Target {0} / {1} already in trace sets!'.format(ip4, ip6))
-                    continue
-
-                nr_current_traces = 0
-                # if more than X traces have no active nodes continue with next target
-                no_results_counter = 0
-                # in case there are no new traces available to hit the requested number of traces
-                no_new_trace_counter = 0
-
-                while nr_current_traces < const.NR_TRACES_PER_TRACE_SET:
-                    # -> libconstants.TRACEROUTE_ADD_SOURCE_IP (False)
-                    ip4tracert, ip6tracert = CPTraceroute(
-                        (ip4, ip6), iface=nic, algorithm='traceroute', timeout=2
-                    ).traceroute(result_timeout=3)
-
-                    # check for CDN after very few hops
-                    # if config.paths.cdns:
-                    #   if len(ip4tracert) < const.CDN_HOP_THRESHOLD or len(ip6tracert) < const.CDN_HOP_THRESHOLD:
-                    #     if const.CDNFILTER.is_cdn(ip4, ip6):
-                    #       CDN_FILTERED[(ip4, ip6)] = domains
-                    #       break # stop and do not inspect CDN target
-
-                    try:
-                        trace = libtrace.Trace().init(
-                            ip4, ip6, ip4tracert, ip6tracert,
-                            v4bl_re=v4bl_re, v6bl_re=v6bl_re, iface=nic
-                        )
-                    except ValueError:
-                        trace = None
-
-                    if not trace or trace.id() in trace_set.get_traces():
-                        no_new_trace_counter = no_new_trace_counter + 1
-                        if trace:
-                            log.debug(
-                                'Trace {0} (with target {1} / {2}) already in current trace set! [{3}. retry]'.format(
-                                    trace.id(), ip4, ip6, no_new_trace_counter))
-                        else:
-                            log.debug('No trace data available for target ({0} / {1})! [{2}. retry]'.format(ip4, ip6,
-                                                                                                            no_new_trace_counter))
-
-                        if no_new_trace_counter >= const.MAX_TRIES_FOR_NEW_TRACE:
-                            break
-                        continue
-
-                    nodes4, nodes6 = trace.get_global_valid_IPs(
-                        apply_ignore_regex=bool(config.paths.ip_ignores))  # only apply regex if ignore file was given
-
-                    tsports = TraceSetPortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=nic).start()
-                    while not tsports.finished():
-                        tsports.process_results(timeout=1)
-                    tsports.process_results(timeout=2)
-                    tsports.stop()
-
-                    ip4results, ip6results = tsports.results()
-                    if not ip4results and not ip6results:
-                        no_results_counter = no_results_counter + 1
-                        nr_current_traces = nr_current_traces - 1  # do not increment if we have no active nodes
-                        if no_results_counter >= const.INACTIVE_RESULTS_PER_TRACE_SET:
-                            # if there were more than X empty results continue with the next target
-                            break
-
-                    trace.set_active_nodes((ip4results, ip6results))
-                    trace_set.add_trace(trace)
-                    nr_current_traces = nr_current_traces + 1
-
-                if trace_set.has_candidates():
-                    TRACE_SETS[key] = trace_set
-                else:
-                    SILENT_TRACE_SETS[key] = trace_set
-        finally:
-            ts_written = libtrace.write_trace_sets(config.base_dir, TRACE_SETS)
-            if const.WRITE_INACTIVE_TRACE_SET:
-                ts_silent_written = libtrace.write_trace_sets(config.paths.base_dir_silent, SILENT_TRACE_SETS)
-                if ts_written > 0 or ts_silent_written > 0:
-                    log.info('Active TraceSets written: {0} / Inactive TraceSets written: {1}'.format(ts_written,
-                                                                                                      ts_silent_written))
-            else:
-                if ts_written > 0:
-                    log.info('Active TraceSets written: {0}'.format(ts_written))
-
-            filtered_cdns_written = cdnfilter.write_filtered(config.base_dir, CDN_FILTERED,
-                                                             include_domain=include_domain)
-            if filtered_cdns_written > 0:
-                log.info('Filtered CDN pairs written: {0}'.format(filtered_cdns_written))
-
-    ##########
-
-    elif config.candidates.available:  # elif config.paths.candidates_csv is not None:
-
-        if config.targetprovider.has_resolved:
+    elif conf.flags.has_targets:
+        handle_targets(TRACE_SETS, wiring)
+    elif conf.candidates.available:  # elif config.paths.candidates_csv is not None:
+        ### candidates start ###
+        if conf.targetprovider.has_resolved:
             ports_available = False
             ts_data_available = False
-            CANDIDATE_PAIRS = target_provider.provide_candidates()
+            CANDIDATE_PAIRS = wiring.target_provider.provide_candidates()
             if not CANDIDATE_PAIRS:
-                if config.targetprovider.resolved_ips_path:
-                    log.error('{0}: Empty file!'.format(config.targetprovider.resolved_ips_path))
+                if conf.targetprovider.resolved_ips_path:
+                    log.error('{0}: Empty file!'.format(conf.targetprovider.resolved_ips_path))
                 else:
                     log.error('Empty candidate pairs!')
                 return -3
         else:
-            log.info('Loading candidate file {0}'.format(config.paths.candidates_csv))
+            log.info('Loading candidate file {0}'.format(conf.paths.candidates_csv))
             # load candidate pairs
             ports_available, ts_data_available, tcp_opts_available, CANDIDATE_PAIRS = load_candidate_pairs(
-                config.paths.candidates_csv, v4bl_re=v4bl_re, v6bl_re=v6bl_re, include_domain=True
+                conf.paths.candidates_csv, skip_list=wiring.skip_list, include_domain=True
             )
             if not CANDIDATE_PAIRS:
-                log.error('{0}: Empty file!'.format(config.paths.candidates_csv))
+                log.error('{0}: Empty file!'.format(conf.paths.candidates_csv))
                 return -3
 
-        CANDIDATE_PAIRS = _reduce_map(CANDIDATE_PAIRS, config, 'candidate pairs')
+        CANDIDATE_PAIRS = _reduce_map(CANDIDATE_PAIRS, conf, 'candidate pairs')
 
         try:
             if not ports_available or not ts_data_available:
@@ -376,7 +329,7 @@ def main():
 
             if not ports_available:
                 # no ports in csv file available -> find open ports with TSNode
-                if not config.targetprovider.has_resolved:
+                if not conf.targetprovider.has_resolved:
                     log.info('No open ports available in candidate file')
 
                 nodes4 = set()  # do not add IPs more than once
@@ -387,7 +340,7 @@ def main():
 
                 log.info('Starting open port identification')
 
-                cpscan = CandidatePortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=nic).start()
+                cpscan = CandidatePortScan(nodes4, nodes6, port_list=const.PORT_LIST, iface=wiring.nic.name).start()
 
                 while not cpscan.finished():
                     # do not choose this value too high otherwise the function will never return because
@@ -404,13 +357,14 @@ def main():
             if not ports_available:
                 nr_candidates_written, nr_data_records_written = write_candidate_pairs(
                     CANDIDATE_PAIRS,
-                    config.base_dir,
+                    conf.base_dir,
                     only_active_nodes=True,
                     write_candidates=True,
                     write_ts_data=False,
                     write_tcp_opts_data=True,
                     include_domain=True
                 )
+        ### candidates end ###
 
     ##########
 
@@ -420,11 +374,11 @@ def main():
 
     ##########
 
-    if not len(TRACE_SETS) > 0 and not config.candidates.available:
+    if not len(TRACE_SETS) > 0 and not conf.candidates.available:
         log.warning('No active nodes available!')
         return 0
 
-    if config.candidates.available:
+    if conf.candidates.available:
         if not ports_available:
             nr_active_nodes4 = nr_candidates_written
             nr_active_nodes6 = nr_candidates_written
@@ -443,7 +397,7 @@ def main():
     ### HARVESTING STARTS HERE ###
     ##############################
 
-    if config.flags.do_harvest and not config.candidates.available:
+    if conf.flags.do_harvest and not conf.candidates.available:
         # only harvest if not already done
         if not any([ts.has_timestamp_data() for ts in TRACE_SETS.values()]):
             log.info('Starting harvesting task ...')
@@ -463,14 +417,14 @@ def main():
                 log.info('Now writing harvesting data ...')
                 # assumes trace sets already written to disk
                 for tset in TRACE_SETS.values():
-                    tset.write_timestamp_data(config.base_dir)
+                    tset.write_timestamp_data(conf.base_dir)
 
                 log.info('Finished writing timestamp data')
 
         else:
             log.warning('TraceData for TraceSets available. Harvesting will not be performed!')
 
-    elif config.flags.do_harvest and config.candidates.available:
+    elif conf.flags.do_harvest and conf.candidates.available:
         if not ts_data_available:
             log.info('Starting harvesting task ...')
 
@@ -489,7 +443,7 @@ def main():
 
                 nr_candidates_written, nr_data_records_written = write_candidate_pairs(
                     CANDIDATE_PAIRS,
-                    config.base_dir,
+                    conf.base_dir,
                     write_candidates=False,
                     write_ts_data=True,
                     write_tcp_opts_data=False,
@@ -502,28 +456,28 @@ def main():
         else:
             # do not harvest if timestamp data was loaded, instead print a warning
             tsfile = str(
-                os.path.join(os.path.dirname(config.paths.candidates_csv), const.CANDIDATE_PAIRS_DATA_FILE_NAME))
+                os.path.join(os.path.dirname(conf.paths.candidates_csv), const.CANDIDATE_PAIRS_DATA_FILE_NAME))
             log.warning('Timestamps already loaded from [{0}]'.format(tsfile))
             log.warning('Harvesting will not be performed!')
 
     ##########
 
     # stop here if no evaluation was requested
-    if config.skip_evaluation:
+    if conf.skip_evaluation:
         log.warning('No evaluation requested (--no-evaluation). Exiting.')
         return 0
 
     # stop here if only portscan was requested
-    if (config.candidates.available and ts_data_available) or any(
+    if (conf.candidates.available and ts_data_available) or any(
             [ts.has_timestamp_data() for ts in TRACE_SETS.values()]):
         candidates = None
-        if config.candidates.available:
+        if conf.candidates.available:
             candidates = libsiblings.construct_node_candidates(
-                CANDIDATE_PAIRS, low_runtime=config.candidates.low_runtime
+                CANDIDATE_PAIRS, low_runtime=conf.candidates.low_runtime
             )
         else:
             candidates = libsiblings.construct_trace_candidates(
-                TRACE_SETS, low_runtime=config.candidates.low_runtime
+                TRACE_SETS, low_runtime=conf.candidates.low_runtime
             )
 
         if not candidates:
@@ -542,11 +496,11 @@ def main():
     gc.collect()
 
     ##### SSH-KEYSCAN #####
-    if not config.candidates.skip_keyscan:
+    if not conf.candidates.skip_keyscan:
         log.info('Preparing ssh-keyscan ...')
         sshkeyscan = keyscan.Keyscan(
             candidates,
-            directory=config.base_dir, timeout=None,
+            directory=conf.base_dir, timeout=None,
             key_file_name=const.SSH_KEYS_FILENAME,
             agent_file_name=const.SSH_AGENTS_FILENAME,
             keyscan_command=const.SSH_KEYSCAN_COMMAND
@@ -559,13 +513,13 @@ def main():
             else:
                 log.info('Finished ssh-keyscan')
         else:
-            keys_path = pathlib.Path(config.base_dir, const.SSH_KEYS_FILENAME)
+            keys_path = pathlib.Path(conf.base_dir, const.SSH_KEYS_FILENAME)
             log.info(f'Loaded ssh keys from file [{keys_path}]')
     else:
         log.info('No ssh-keyscan requested')
 
     # stop here if solely ssh-keyscan was requested
-    if config.candidates.only_keyscan:
+    if conf.candidates.only_keyscan:
         log.info('--only-ssh-keyscan requested, exiting now ...')
         return 0
 
@@ -579,22 +533,22 @@ def main():
     log.info('Finished sibling candidate calculations')
 
     ##### OUTFILE #####
-    if config.candidates.out_csv:
-        resultfile = pathlib.Path(config.candidates.out_csv)
+    if conf.candidates.out_csv:
+        resultfile = pathlib.Path(conf.candidates.out_csv)
         if not resultfile.is_absolute():
             resultfile = const.BASE_DIRECTORY / resultfile
         log.info('Writing resultfile [{0}] ...'.format(resultfile))
         nr_records = libsiblings.write_results(candidates.values(), resultfile,
-                                               low_runtime=config.candidates.low_runtime)
+                                               low_runtime=conf.candidates.low_runtime)
         log.info('Wrote {0} result records to file'.format(nr_records))
 
     ##### PLOT #####
-    if config.flags.do_print:  # plots all candidates to base_directory/const.PLOT_FILE_NAME
+    if conf.flags.do_print:  # plots all candidates to base_directory/const.PLOT_FILE_NAME
         log.info('Starting plot process ...')
         libsiblings.plot_all(candidates.values(), const.PLOT_FILE_NAME)
         log.info('Finished printing charts')
 
-    if not config.candidates.out_csv and not config.flags.do_print:
+    if not conf.candidates.out_csv and not conf.flags.do_print:
         log.info('Nothing more to do ... Exiting ...')
 
     return 0
@@ -627,6 +581,8 @@ if __name__ == '__main__':
     except ConfigurationException:
         log.exception()
         ret = -3
+    except JustExit:
+        ret = 0
     except Exception as e:
         error = True
         exc_type, exc_object, exc_traceback = sys.exc_info()

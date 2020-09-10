@@ -13,6 +13,7 @@ from prettytable import PrettyTable
 from .. import libconstants as const
 from .. import liblog
 from .. import libtools
+from ..libtools import NicInfo, SkipList, NO_SKIPS
 
 log = liblog.get_root_logger()
 
@@ -107,16 +108,20 @@ class Trace(object):
 
         return v4nodes, v6nodes
 
-    def init(self, v4target, v6target, v4trace, v6trace, domain=None, v4bl_re=None, v6bl_re=None, iface=None):
+    def init(
+            self,
+            v4target, v6target, v4trace, v6trace,
+            nic: NicInfo, domain=None,
+            skip_list: SkipList = NO_SKIPS
+    ):
         """
         v4target  string
         v6target  string
         v4trace   iterable
         v6trace   iterable
+        nic         dual stack interface to work with (used to determine v4 and v6 source addresses)
         domain    string optional
-        v4bl_re   v4 blacklist regex: compiled regex object optional
-        v6bl_re   v6 blacklist regex: compiled regex object optional
-        iface     dual stack interface to work with (used to determine v4 and v6 source addresses)
+        skip_list SkipList
         """
         self.v4target = v4target
         self.v6target = v6target
@@ -136,19 +141,16 @@ class Trace(object):
         self.v6length = len(v6trace)
 
         self.target_domain = domain
-        self.v4bl_re = v4bl_re
-        self.v6bl_re = v6bl_re
-        self.iface = iface
-        self.v4src = const.IFACE_IP4_ADDRESS
-        self.v6src = const.IFACE_IP6_ADDRESS
-        # if self.iface:
-        #   self.v4src, self.v6src = libtools.get_iface_IPs(iface = self.iface)
+        self.skip_list = skip_list
+        self.iface = nic.name
+        self.v4src = nic.ip4
+        self.v6src = nic.ip6
 
         self.trace_id = self._id()
 
         return self
 
-    def initfile(self, filename, delimiter=',', v4bl_re=None, v6bl_re=None, iface=None):
+    def initfile(self, filename, nic: NicInfo, delimiter=',', skip_list: SkipList = NO_SKIPS):
         """
         Reads from a csv constructed as follows:
 
@@ -160,9 +162,8 @@ class Trace(object):
 
         Only reads the first five lines of the file.
 
-        v4bl_re   v4 blacklist regex: compiled regex object
-        v6bl_re   v6 blacklist regex: compiled regex object
-        iface     dual stack interface to work with (used to determine v4 and v6 source addresses)
+        skip_list SkipList
+        nic NicInfo
         """
 
         with open(filename, mode="r", newline='') as csvfile:
@@ -181,13 +182,10 @@ class Trace(object):
             except Exception as e:
                 self.target_domain = None
 
-        self.v4bl_re = v4bl_re
-        self.v6bl_re = v6bl_re
-        self.iface = iface
-        self.v4src = const.IFACE_IP4_ADDRESS
-        self.v6src = const.IFACE_IP6_ADDRESS
-        # if self.iface:
-        #   self.v4src, self.v6src = libtools.get_iface_IPs(iface = self.iface)
+        self.skip_list = skip_list
+        self.iface = nic.name
+        self.v4src = nic.ip4
+        self.v6src = nic.ip6
 
         self.trace_id = self._id()
 
@@ -223,13 +221,13 @@ class Trace(object):
             v4whitelist = {}
             v6whitelist = {}
 
-            for ttl, ip in enumerate(self.v4trace, start=1):
-                if not self.v4bl_re.match(ip):
-                    v4whitelist[ttl] = ip
+            for ttl, ip4 in enumerate(self.v4trace, start=1):
+                if not self.skip_list.matches_v4(ip4):
+                    v4whitelist[ttl] = ip4
 
-            for hlim, ip in enumerate(self.v6trace, start=1):
-                if not self.v6bl_re.match(ip):
-                    v6whitelist[hlim] = ip
+            for hlim, ip6 in enumerate(self.v6trace, start=1):
+                if not self.skip_list.matches_v6(ip6):
+                    v6whitelist[hlim] = ip6
 
             addresses = libtools.get_global_ip_addresses((v4whitelist, v6whitelist))
         else:
@@ -301,8 +299,8 @@ class Trace(object):
         """
         return self.active_nodes_packets
 
-    def from_file(self, name, delimiter=',', v4bl_re=None, v6bl_re=None, iface=None):
-        return self.initfile(name, delimiter, v4bl_re, v6bl_re, iface)
+    def from_file(self, nic: NicInfo, name, delimiter=',', skip_list: SkipList = NO_SKIPS):
+        return self.initfile(name, nic, delimiter, skip_list=skip_list)
 
     def to_file(self, name):
         with open(name, mode="w") as outfile:

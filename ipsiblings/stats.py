@@ -9,7 +9,7 @@ import pathlib
 
 import numpy
 
-from ipsiblings import libsiblings
+from ipsiblings import libsiblings, libtools
 # set field_size_limit() from 131072 (2**17) to 262144 (2**18)
 from ipsiblings.libtrace import load_trace_sets
 from ipsiblings.libts.serialization import load_candidate_pairs
@@ -35,7 +35,7 @@ def get_number_ssh_agents(file_or_basedir):
 
 
 def get_port_stats_base(basedir):
-    tracesets = list(load_trace_sets(basedir).values())  # only objects in list
+    tracesets = list(load_trace_sets(basedir, libtools.network.obtain_nic()).values())  # only objects in list
     v4ports = set()
     v6ports = set()
     v4map = {}  # { port: count }
@@ -132,7 +132,9 @@ def is_montonically_increasing(list_of_timestamp_tuples, strict=False):
 
 
 def get_number_of_randomized_nodes_traces(dir, initial_ts_threshold=10000):
-    candidates = list(libsiblings.construct_trace_candidates(load_trace_sets(dir), low_runtime=True).values())
+    candidates = list(libsiblings.construct_trace_candidates(
+        load_trace_sets(dir, libtools.network.obtain_nic()), low_runtime=True
+    ).values())
     randomized = 0
     nr_nodes = len(candidates)
     for cand in candidates:
@@ -187,7 +189,7 @@ def get_number_randmized_nodes_candidates_batches(basedir, initial_ts_threshold=
 
 
 def get_path_node_stats(dir, return_sets=False):
-    tracesets = list(load_trace_sets(dir).values())
+    tracesets = list(load_trace_sets(dir, libtools.network.obtain_nic()).values())
 
     v4nodes = set()
     v6nodes = set()

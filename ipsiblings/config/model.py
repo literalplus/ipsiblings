@@ -38,7 +38,8 @@ class CandidatesConfig:
         self.low_runtime = args.low_runtime
         self.skip_keyscan = args.no_ssh_keyscan
         self.only_keyscan = args.only_ssh_keyscan
-        self.write_pairs = args.write_pairs
+        # If set, candidate pairs will be saved but nothing else will happen
+        self.just_write_pairs = args.write_pairs
 
 
 class GeoipConfig:

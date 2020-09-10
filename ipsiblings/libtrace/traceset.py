@@ -12,6 +12,7 @@ from . import TraceData
 from .trace import Trace
 from .. import liblog
 from .. import libtools
+from ..libtools import NicInfo, NO_SKIPS, SkipList
 
 log = liblog.get_root_logger()
 
@@ -166,7 +167,7 @@ class TraceSet(object):
     def add_records(self, records):
         return self.trace_data.add_records(records)
 
-    def from_file(self, directory, v4bl_re=None, v6bl_re=None, iface=None):
+    def from_file(self, directory, nic: NicInfo, skip_list: SkipList = NO_SKIPS):
         if not os.path.exists(os.path.dirname(directory)):
             log.error('Directory {0} does not exist!'.format(directory))
             return None
@@ -180,10 +181,8 @@ class TraceSet(object):
 
         self.traceset_id = self._id()
         self.tcp_sequence = self._tcp_seq()
-        # assert self.traceset_id == os.path.basename(os.path.normpath(directory))
-        # assert abs(self.tcp_sequence) <= 0xffffffff # check 32 bit
 
-        trace_files = [fn for fn in glob.glob(os.path.join(directory, 'trace_*.txt')) if not 'active_nodes' in fn]
+        trace_files = [fn for fn in glob.glob(os.path.join(directory, 'trace_*.txt')) if 'active_nodes' not in fn]
         trace_active_nodes_files = [fn for fn in glob.glob(os.path.join(directory, 'trace_*.txt')) if
                                     'active_nodes' in fn]
 
@@ -196,7 +195,7 @@ class TraceSet(object):
         #   print(tf.split('/')[4], antf.split('/')[4]) # index is based on directory tree
 
         for tf, antf in zip(trace_files, trace_active_nodes_files):
-            trace_obj = Trace().from_file(tf, v4bl_re=v4bl_re, v6bl_re=v6bl_re, iface=iface)
+            trace_obj = Trace().from_file(tf, nic, skip_list=skip_list)
             trace_obj.active_nodes_from_file(antf)
 
             self.traces[trace_obj.id()] = trace_obj

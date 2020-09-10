@@ -7,6 +7,7 @@ import os
 
 from .traceset import TraceSet
 from .. import liblog
+from ..libtools import NicInfo, SkipList, NO_SKIPS
 
 log = liblog.get_root_logger()
 
@@ -25,7 +26,7 @@ def write_trace_sets(base_dir, trace_set_dict):
     return counter
 
 
-def load_trace_sets(base_dir, silent_dir='', v4bl_re=None, v6bl_re=None, iface=None):
+def load_trace_sets(base_dir, nic: NicInfo, silent_dir='', skip_list: SkipList = NO_SKIPS):
     """
     Loads all trace sets from base_dir, ignores silent_dir in base_dir.
     Use blacklist regex and interface to pass through to the Trace objects.
@@ -38,10 +39,10 @@ def load_trace_sets(base_dir, silent_dir='', v4bl_re=None, v6bl_re=None, iface=N
 
     for ts_dir in ts_dirs:
         tset = TraceSet()
-        tset.from_file(ts_dir, v4bl_re=v4bl_re, v6bl_re=v6bl_re, iface=iface)
-        id = tset.id()
-        if id not in trace_set_dict:
-            trace_set_dict[id] = tset
+        tset.from_file(ts_dir, nic, skip_list=skip_list)
+        tid = tset.id()
+        if tid not in trace_set_dict:
+            trace_set_dict[tid] = tset
         else:
             log.error('TraceSet ID {0} already in dictionary!'.format(tset.id()))
 
