@@ -10,9 +10,10 @@ import pathlib
 import numpy
 
 from ipsiblings import libsiblings, libtools
-# set field_size_limit() from 131072 (2**17) to 262144 (2**18)
 from ipsiblings.libtrace import load_trace_sets
 from ipsiblings.libts.serialization import load_candidate_pairs
+# set field_size_limit() from 131072 (2**17) to 262144 (2**18)
+from ipsiblings.preparation import PreparedTraceSets, PreparedPairs
 
 csv.field_size_limit(262144)
 
@@ -24,8 +25,7 @@ def get_number_ssh_agents(file_or_basedir):
             agents.extend(infile.readlines())
         agentsset = set(agents)
     else:
-        # TODO: where should basedir come from here?
-        dirs = glob.glob('{0}/*/ssh-agents.txt'.format(basedir))
+        dirs = glob.glob('{0}/*/ssh-agents.txt'.format(file_or_basedir))
         for dir in dirs:
             with open(dir, mode='r') as infile:
                 agents.extend(infile.readlines())
@@ -49,8 +49,6 @@ def get_port_stats_base(basedir):
             v4active = v4active + 1
             for p in ports:
                 port = int(p)
-                # if port == 28869:
-                #   print('v4', '28869', ip)
                 if port in v4map:
                     v4map[port] = v4map[port] + 1
                 else:
@@ -60,8 +58,6 @@ def get_port_stats_base(basedir):
             v6active = v6active + 1
             for p in ports:
                 port = int(p)
-                # if port == 28869:
-                #   print('v6', '28869', ip)
                 if port in v6map:
                     v6map[port] = v6map[port] + 1
                 else:
@@ -132,8 +128,8 @@ def is_montonically_increasing(list_of_timestamp_tuples, strict=False):
 
 
 def get_number_of_randomized_nodes_traces(dir, initial_ts_threshold=10000):
-    candidates = list(libsiblings.construct_trace_candidates(
-        load_trace_sets(dir, libtools.network.obtain_nic()), low_runtime=True
+    candidates = list(libsiblings.construct_candidates._construct_trace_candidates(
+        PreparedTraceSets(load_trace_sets(dir, libtools.network.obtain_nic())), low_runtime=True
     ).values())
     randomized = 0
     nr_nodes = len(candidates)
@@ -160,8 +156,9 @@ def get_number_of_randomized_nodes_traces_batches(basedir, initial_ts_threshold=
 
 def get_number_randmized_nodes_candidates(candidate_file, initial_ts_threshold=10000, lrt=True):
     candidates = list(
-        libsiblings.construct_node_candidates(
-            load_candidate_pairs(candidate_file)[3], low_runtime=lrt).values()
+        libsiblings.construct_candidates._construct_pair_candidates(
+            PreparedPairs(load_candidate_pairs(candidate_file)[3], False, 0, False), low_runtime=lrt
+        ).values()
     )  # only pairs
     randomized = 0
     nr_nodes = len(candidates)

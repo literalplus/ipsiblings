@@ -2,8 +2,8 @@ import os
 import time
 
 from .args import parser
-from .. import liblog
 from .. import libconstants
+from .. import liblog
 
 
 class PathsConfig:
@@ -39,7 +39,7 @@ class CandidatesConfig:
         self.skip_keyscan = args.no_ssh_keyscan
         self.only_keyscan = args.only_ssh_keyscan
         # If set, candidate pairs will be saved but nothing else will happen
-        self.just_write_pairs = args.write_pairs
+        self.just_write_pairs_to = args.write_pairs
 
 
 class GeoipConfig:

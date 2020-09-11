@@ -6,6 +6,7 @@ log = liblog.get_root_logger()
 
 
 class SkipList:
+    """Handles a skip-list of IP addresses to ignore per address family."""
     def __init__(self, filename):
         self.rev4, self. rev6 = self._make_regexes(filename)
 

@@ -1,3 +1,5 @@
+import gc
+
 from .. import libgeo, liblog, libtools, libconstants, targetprovider
 from ..config.model import AppConfig
 from ..libtools import SkipList
@@ -18,3 +20,6 @@ def bridge_wiring_to_legacy(wiring: Wiring, const: libconstants):
     const.NIC_MAC_ADDRESS = wiring.nic.mac
     const.IFACE_IP4_ADDRESS = wiring.nic.ip4
     const.IFACE_IP6_ADDRESS = wiring.nic.ip6
+
+    if not gc.isenabled():
+        gc.enable()

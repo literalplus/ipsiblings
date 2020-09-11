@@ -8,7 +8,6 @@ import queue  # only exceptions
 import random
 import select
 import threading
-from typing import Dict
 
 import scapy.all as scapy
 
@@ -16,9 +15,11 @@ from .. import libconstants as const
 from .. import liblog
 from .. import libtools
 from .. import libtrace
-from ..config.model import HarvesterConfig
+from ..bootstrap import Wiring
+from ..bootstrap.exception import ConfigurationException
+from ..config.model import HarvesterConfig, AppConfig
 from ..libtools import NicInfo
-from ..libtrace import TraceSet
+from ..preparation import PreparedTargets, PreparedTraceSets, PreparedPairs
 
 log = liblog.get_root_logger()
 
@@ -327,17 +328,18 @@ class TraceSetHarvester(Harvester):
     Collect timestamps to fill trace data of trace sets.
     """
 
-    def __init__(self, nic: NicInfo, trace_set_dict: Dict[str, TraceSet], conf: HarvesterConfig):
-        if not trace_set_dict:
+    def __init__(self, nic: NicInfo, prepared_trace_sets: PreparedTraceSets, conf: AppConfig):
+        if not prepared_trace_sets.get_models():
             raise ValueError('TraceSet dictionary is empty!')
 
-        super().__init__(nic, conf)
+        super().__init__(nic, conf.harvester)
+        self.base_dir = conf.base_dir
 
-        self.trace_set_dict = trace_set_dict
+        self.prepared_trace_sets = prepared_trace_sets
 
         # ( { ip4: { portlist } }, { ip6: { portlist } }, { ip4: { trace_set_id } }, { ip6: { trace_set_id } } )
         active_nodes4, active_nodes6, ip4_tracesets_lut, ip6_tracesets_lut = libtrace.get_all_active_nodes(
-            self.trace_set_dict
+            self.prepared_trace_sets.get_models()
         )
         self.ip_tracesets_lut = {**ip4_tracesets_lut, **ip6_tracesets_lut}
 
@@ -377,22 +379,23 @@ class TraceSetHarvester(Harvester):
 
         trace_set_ids = self.ip_tracesets_lut[ip]
         for ts_id in trace_set_ids:
-            self.trace_set_dict[ts_id].add_record(ip, port, (remote_ts, received_ts), tcp_options, ipversion)
+            self.prepared_trace_sets.trace_sets[ts_id].add_record(
+                ip, port, (remote_ts, received_ts), tcp_options, ipversion
+            )
 
 
 class CandidateHarvester(Harvester):
-
-    def __init__(self, nic: NicInfo, candidate_pairs, conf: HarvesterConfig):
-        if not candidate_pairs:
+    def __init__(self, nic: NicInfo, prepared_pairs: PreparedPairs, conf: AppConfig):
+        if not prepared_pairs.candidate_pairs:
             raise ValueError('Candidate pairs empty!')
+        super().__init__(nic, conf.harvester)
+        self.base_dir = conf.base_dir
 
-        super().__init__(nic, conf)
-
-        self.candidate_pairs = candidate_pairs
+        self.prepared_pairs = prepared_pairs
 
         self.cp_lut = {}
 
-        for cp in self.candidate_pairs.values():
+        for cp in self.prepared_pairs.get_models().values():
             if not cp.is_responsive():
                 continue
 
@@ -429,3 +432,12 @@ class CandidateHarvester(Harvester):
 
         cp = self.cp_lut[ip]
         cp.add_ts_record(ip, port, remote_ts, received_ts, tcp_options, ipversion)
+
+
+def provide_harvester_for(wiring: Wiring, prepared_targets: PreparedTargets) -> Harvester:
+    if prepared_targets.get_kind() == PreparedTraceSets.KIND:
+        return TraceSetHarvester(wiring.nic, prepared_targets.get_models(), wiring.conf.harvester)
+    elif prepared_targets.get_kind() == PreparedPairs.KIND:
+        return CandidateHarvester(wiring.nic, prepared_targets.get_models(), wiring.conf.harvester)
+    else:
+        raise ConfigurationException(f'Unable to provide harvester for targets of kind {prepared_targets.get_kind()}')

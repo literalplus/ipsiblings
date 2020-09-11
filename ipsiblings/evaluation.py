@@ -26,13 +26,15 @@ import sklearn.model_selection as ms
 import sklearn.tree as tree  # CART
 import xgboost as xgb
 
-from ipsiblings.libts.serialization import load_candidate_pairs
 from . import keyscan
 from . import libconstants as const
 from . import liblog
 from . import libsiblings
 from . import libtools
 from . import libtrace
+from .libsiblings.construct_candidates import _construct_pair_candidates
+from .libts.serialization import load_candidate_pairs
+from .preparation import PreparedTraceSets, PreparedPairs
 
 log = liblog.get_root_logger()
 log.setLevel(liblog.CRITICAL)  # set to critical to silence output except print()
@@ -257,8 +259,8 @@ def evaluate_routers(directory, model, lrt=False, feature_keys=['raw_timestamp_d
     """
 
     tracesets = libtrace.load_trace_sets(directory, libtools.network.obtain_nic())
-    candidates = list(libsiblings.construct_trace_candidates(
-        tracesets, all_ports_timestamps=False, low_runtime=lrt, add_traces=True
+    candidates = list(libsiblings._construct_trace_candidates(
+        PreparedTraceSets(tracesets), low_runtime=lrt, add_traces=True
     ).values())
     del tracesets
     gc.collect()
@@ -361,14 +363,14 @@ def load_data(basedir, type, lrt=True, include_domain=True, limit_nr_timestamps=
             if not dir.is_dir():
                 continue
             tset = libtrace.load_trace_sets(dir, libtools.network.obtain_nic())
-            sibcands = libsiblings.construct_trace_candidates(tset, low_runtime=lrt)
+            sibcands = libsiblings._construct_trace_candidates(PreparedTraceSets(tset), low_runtime=lrt)
             sibcandidates = {**sibcandidates, **sibcands}
             tset.clear()
             gc.collect()
 
         if not sibcandidates:  # we do not have any batches just the current directory (e.g. ground truth data)
             tset = libtrace.load_trace_sets(base, libtools.network.obtain_nic())
-            sibcandidates = libsiblings.construct_trace_candidates(tset, low_runtime=lrt)
+            sibcandidates = libsiblings._construct_trace_candidates(PreparedTraceSets(tset), low_runtime=lrt)
             tset.clear()
             gc.collect()
 
@@ -379,10 +381,14 @@ def load_data(basedir, type, lrt=True, include_domain=True, limit_nr_timestamps=
             candidate_file = dir / const.CANDIDATE_PAIRS_FILE_NAME
             _, _, _, cpairs = load_candidate_pairs(candidate_file, include_domain=include_domain)
             if limit_nr_timestamps:
-                sibcands = libsiblings.construct_node_candidates(cpairs, low_runtime=True,
-                                                                 nr_timestamps=limit_nr_timestamps)
+                sibcands = _construct_pair_candidates(
+                    PreparedPairs(cpairs, False, 0, False), low_runtime=True,
+                    nr_timestamps=limit_nr_timestamps
+                )
             else:
-                sibcands = libsiblings.construct_node_candidates(cpairs, low_runtime=lrt)
+                sibcands = _construct_pair_candidates(
+                    PreparedPairs(cpairs, False, 0, False), low_runtime=lrt
+                )
 
             sibcandidates = {**sibcandidates, **sibcands}
             cpairs.clear()
@@ -392,10 +398,14 @@ def load_data(basedir, type, lrt=True, include_domain=True, limit_nr_timestamps=
             candidate_file = base / const.CANDIDATE_PAIRS_FILE_NAME
             _, _, _, cpairs = load_candidate_pairs(candidate_file, include_domain=include_domain)
             if limit_nr_timestamps:
-                sibcandidates = libsiblings.construct_node_candidates(cpairs, low_runtime=True,
-                                                                      nr_timestamps=limit_nr_timestamps)
+                sibcandidates = _construct_pair_candidates(
+                    PreparedPairs(cpairs, False, 0, False), low_runtime=True,
+                    nr_timestamps=limit_nr_timestamps
+                )
             else:
-                sibcandidates = libsiblings.construct_node_candidates(cpairs, low_runtime=lrt)
+                sibcandidates = _construct_pair_candidates(
+                    PreparedPairs(cpairs, False, 0, False), low_runtime=lrt
+                )
             cpairs.clear()
             gc.collect()
 

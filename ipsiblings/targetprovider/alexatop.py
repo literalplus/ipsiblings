@@ -2,9 +2,9 @@ import io
 import urllib.request
 import zipfile
 
-from . import network
-from .. import libconstants as const
-from .. import liblog
+from ipsiblings import libconstants as const
+from ipsiblings import liblog
+from ipsiblings.libtools import network
 
 log = liblog.get_root_logger()
 
