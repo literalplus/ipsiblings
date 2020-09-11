@@ -14,6 +14,7 @@ import scapy.all as scapy
 from .. import libconstants as const
 from .. import liblog
 from .. import libtools
+from ..libtools import NicInfo
 
 log = liblog.get_root_logger()
 
@@ -26,7 +27,7 @@ class TSPortScan(object):
     """
 
     def __init__(
-            self, nodes4, nodes6, *args, port_list=[x for x in range(const.PORT_MAX)], iface='en0',
+            self, nodes4, nodes6, nic: NicInfo, *args, port_list=[x for x in range(const.PORT_MAX)],
             dump_unknown_packets=False, **kwargs
     ):
         """
@@ -43,7 +44,7 @@ class TSPortScan(object):
         self.nodes6_length = len(nodes6)
         self.portlist = port_list
         self.portlist_length = len(port_list)
-        self.iface = iface
+        self.nic = nic
         self.nr_v4packets = self.portlist_length * self.nodes4_length
         self.nr_v6packets = self.portlist_length * self.nodes6_length
 
@@ -77,7 +78,7 @@ class TSPortScan(object):
         raise NotImplementedError()
 
     def _send4(self):
-        socket4 = scapy.conf.L2socket(iface=self.iface)
+        socket4 = scapy.conf.L2socket(iface=self.nic.name)
         pkt = self.v4pkt.copy()
         for port in random.sample(self.portlist, k=self.portlist_length):
             pkt.payload.payload.dport = port
@@ -89,7 +90,7 @@ class TSPortScan(object):
         self.v4sending_finished.value = 1
 
     def _send6(self):
-        socket6 = scapy.conf.L2socket(iface=self.iface)
+        socket6 = scapy.conf.L2socket(iface=self.nic.name)
         pkt = self.v6pkt.copy()
         for port in random.sample(self.portlist, k=self.portlist_length):
             pkt.payload.payload.dport = port
@@ -102,7 +103,7 @@ class TSPortScan(object):
 
     def _sniff(self):
         # https://github.com/secdev/scapy/issues/989 - own sniff implementation
-        sock = scapy.conf.L2listen(iface=self.iface, type=scapy.ETH_P_ALL, filter=self.packet_filter)
+        sock = scapy.conf.L2listen(iface=self.nic.name, type=scapy.ETH_P_ALL, filter=self.packet_filter)
 
         while True:
             try:  # prevent sniff process to terminate on error (excludes KeyboardInterrupt and SystemExit)
@@ -215,8 +216,8 @@ class TSPortScan(object):
 
 class TraceSetPortScan(TSPortScan):
 
-    def __init__(self, nodes4, nodes6, port_list=[x for x in range(const.PORT_MAX)], iface='en0'):
-        super().__init__(nodes4, nodes6, port_list=port_list, iface=iface)
+    def __init__(self, nodes4, nodes6, nic: NicInfo, port_list=[x for x in range(const.PORT_MAX)]):
+        super().__init__(nodes4, nodes6, nic, port_list=port_list)
         self.v4results, self.v6results = {}, {}
 
     def process_record(self, record):

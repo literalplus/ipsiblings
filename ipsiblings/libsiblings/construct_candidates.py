@@ -8,16 +8,19 @@
 #
 
 import itertools
+from typing import Dict
 
-from .siblingcandidate import SiblingCandidate
 from .lowrtsiblingcandidate import LowRTSiblingCandidate
+from .siblingcandidate import SiblingCandidate
 from .. import libconstants as const
 from .. import liblog
 
 log = liblog.get_root_logger()
 
 
-def construct_node_candidates(candidate_pairs, all_ports_timestamps=False, low_runtime=False, nr_timestamps=None):
+def construct_node_candidates(
+        candidate_pairs, all_ports_timestamps=False, low_runtime=False, nr_timestamps=None
+) -> Dict[str, SiblingCandidate]:
     """
     Constructs a dictionary structured as shown below.
     Per default, the lowest common port (if multiple ports are available) is used to construct the
@@ -61,7 +64,9 @@ def construct_node_candidates(candidate_pairs, all_ports_timestamps=False, low_r
     return candidates
 
 
-def construct_trace_candidates(trace_sets, all_ports_timestamps=False, low_runtime=False, add_traces=False):
+def construct_trace_candidates(
+        trace_sets, all_ports_timestamps=False, low_runtime=False, add_traces=False
+) -> Dict[str, SiblingCandidate]:
     """
     Constructs a dictionary structured as shown below.
     Uses the port index which offers the most timestamps.
@@ -95,7 +100,7 @@ def construct_trace_candidates(trace_sets, all_ports_timestamps=False, low_runti
 
         if add_traces:
             trace_data = (
-            [trace.get_trace_lists() for trace in trace_set.get_traces().values()], trace_set.get_target())
+                [trace.get_trace_lists() for trace in trace_set.get_traces().values()], trace_set.get_target())
         else:
             trace_data = None
 
@@ -239,10 +244,14 @@ def from_CandidatePair(cp, all_ports=False, low_runtime=False, nr_timestamps=Non
 
         key = '{0}_{1}_{2}_{3}'.format(ip4, p4, ip6, p6)
         if low_runtime:
-            sc = LowRTSiblingCandidate(ip4, ip6, p4, p6, timestamps4, timestamps6, opts4, opts6, domains=domains,
-                                       ssh_available=has_ssh, nr_timestamps=nr_timestamps)
+            sc = LowRTSiblingCandidate(
+                ip4, ip6, p4, p6, timestamps4, timestamps6, opts4, opts6,
+                domains=domains, ssh_available=has_ssh, nr_timestamps=nr_timestamps
+            )
         else:
-            sc = SiblingCandidate(ip4, ip6, p4, p6, timestamps4, timestamps6, opts4, opts6, domains=domains,
-                                  ssh_available=has_ssh)
+            sc = SiblingCandidate(
+                ip4, ip6, p4, p6, timestamps4, timestamps6, opts4, opts6,
+                domains=domains, ssh_available=has_ssh
+            )
 
         return key, sc

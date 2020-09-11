@@ -1,5 +1,15 @@
-class ConfigurationException(Exception):
+class BusinessException(Exception):
+    """Thrown if a business error requires the program execution to abort"""
+    pass
+
+
+class ConfigurationException(BusinessException):
     """Thrown if a configuration error is encountered"""
+    pass
+
+
+class DataException(BusinessException):
+    """Thrown if invalid data is encountered"""
     pass
 
 

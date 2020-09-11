@@ -73,6 +73,16 @@ class FlagsConfig:
         self.do_print = args.print
 
 
+class HarvesterConfig:
+    def __init__(self):
+        self.runtime = libconstants.HARVESTING_RUNTIME
+        self.interval = libconstants.HARVESTING_INTERVAL
+        # timeout during the run
+        self.running_timeout = libconstants.HARVESTING_RESULTS_TIMEOUT
+        # timeout in the final collection stage
+        self.final_timeout = libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL
+
+
 class AppConfig:
     def __init__(self):
         self.args = parser.parse_args()
@@ -83,6 +93,7 @@ class AppConfig:
         self.geoip = GeoipConfig(self.args)
         self.trace_set = TraceSetConfig(self.args)
         self.port_scan = PortScanConfig(self.args)
+        self.harvester = HarvesterConfig()
 
         # start_index, end_index to restrict amount of data to process
         self.start_index = self.args.start_index

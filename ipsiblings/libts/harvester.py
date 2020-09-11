@@ -2,13 +2,13 @@
 #
 # (c) 2018 Marco Starke
 #
-
-
+import abc
 import multiprocessing
 import queue  # only exceptions
 import random
 import select
 import threading
+from typing import Dict
 
 import scapy.all as scapy
 
@@ -16,18 +16,21 @@ from .. import libconstants as const
 from .. import liblog
 from .. import libtools
 from .. import libtrace
+from ..config.model import HarvesterConfig
+from ..libtools import NicInfo
+from ..libtrace import TraceSet
 
 log = liblog.get_root_logger()
 
 
-class Harvester(object):
+class Harvester(metaclass=abc.ABCMeta):
     """
     Base class - TraceSetHarvester / CandidateHarvester
 
     Override __init__ and process_record functions.
     """
 
-    def __init__(self, *args, runtime=360, interval=10, iface='en0', **kwargs):
+    def __init__(self, nic: NicInfo, conf: HarvesterConfig, *args, **kwargs):
         """
         Base class __init__ must be called in sub class before constructing packets to send!
 
@@ -49,9 +52,8 @@ class Harvester(object):
         filled with the corresponding responses.
         Raises ValueError if data structure is empty or None
         """
-        self.runtime = runtime
-        self.interval = interval
-        self.iface = iface
+        self.conf = conf
+        self.nic = nic
 
         self.run_thread = None
 
@@ -67,7 +69,7 @@ class Harvester(object):
         self.stop_all = self.mp_manager.Value('B', 0)  # unsigned char
         self.runs_completed = self.mp_manager.Value('B', 0)
 
-        self.nr_runs = self.mp_manager.Value('I', int(runtime / interval))  # unsigned int
+        self.nr_runs = self.mp_manager.Value('I', int(self.conf.runtime / self.conf.interval))  # unsigned int
         self.run_counter = self.mp_manager.Value('I', 1)
         self.total_records = self.mp_manager.Value('I', 0)
 
@@ -75,27 +77,32 @@ class Harvester(object):
                                                                                                        const.V6_PORT,
                                                                                                        const.STOP_PORT)
 
-        self.v4pkt = scapy.Ether() / scapy.IP() / scapy.TCP(sport=const.V4_PORT, flags='S',
-                                                            options=[('Timestamp', (const.TS_INITIAL_VAL, 0)), (
-                                                                'WScale',
-                                                                0)])  # /scapy.Raw(load = const.PACKET_RESEARCH_MESSAGE)
-        self.v6pkt = scapy.Ether() / scapy.IPv6() / scapy.TCP(sport=const.V6_PORT, flags='S',
-                                                              options=[('Timestamp', (const.TS_INITIAL_VAL, 0)), (
-                                                                  'WScale',
-                                                                  0)])  # /scapy.Raw(load = const.PACKET_RESEARCH_MESSAGE)
+        self.v4pkt = scapy.Ether() / scapy.IP() / scapy.TCP(
+            sport=const.V4_PORT, flags='S', options=[
+                ('Timestamp', (const.TS_INITIAL_VAL, 0)),
+                ('WScale', 0)
+            ]
+        )  # /scapy.Raw(load = const.PACKET_RESEARCH_MESSAGE)
+        self.v6pkt = scapy.Ether() / scapy.IPv6() / scapy.TCP(
+            sport=const.V6_PORT, flags='S', options=[
+                ('Timestamp', (const.TS_INITIAL_VAL, 0)),
+                ('WScale', 0)
+            ]
+        )  # /scapy.Raw(load = const.PACKET_RESEARCH_MESSAGE)
 
         # since each process only reads one variable, it should be sufficient to use simple lists
         self.v4packets = []
         self.v6packets = []
 
-    def process_record(self, record, *args, **kwargs):
+    @abc.abstractmethod
+    def process_record(self, records):
         """
         Handles the assignment of records received to the corresponding objects.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _send4(self):
-        socket4 = scapy.conf.L2socket(iface=self.iface)
+        socket4 = scapy.conf.L2socket(iface=self.nic.name)
         for pkt in random.sample(self.v4packets, k=self.v4packets_length):
             if self.stop_all.value == 1:
                 log.debug('Stopping IPv4 sending process ...')
@@ -104,7 +111,7 @@ class Harvester(object):
         socket4.close()
 
     def _send6(self):
-        socket6 = scapy.conf.L2socket(iface=self.iface)
+        socket6 = scapy.conf.L2socket(iface=self.nic.name)
         for pkt in random.sample(self.v6packets, k=self.v6packets_length):
             if self.stop_all.value == 1:
                 log.debug('Stopping IPv6 sending process ...')
@@ -137,8 +144,15 @@ class Harvester(object):
                         continue  # if no timestamp available ignore packet
 
                     # (tcp_seq, node_ip, remote_port, remote_ts, received_ts, tcp_options, ip_version)
-                    record = (p.payload.payload.ack - 1, p.payload.src, p.payload.payload.sport, remote_ts, p.time,
-                              p[scapy.TCP].options, p.payload.version)
+                    record = (
+                        p.payload.payload.ack - 1,
+                        p.payload.src,
+                        p.payload.payload.sport,
+                        remote_ts,
+                        p.time,
+                        p[scapy.TCP].options,
+                        p.payload.version
+                    )
                     # local timestamps are provided as e.g. 1541763777.398191 (microseconds)
                     # remote timestamps in seconds only
 
@@ -155,7 +169,6 @@ class Harvester(object):
         sock.close()
 
     def _run(self):
-
         self.send4 = multiprocessing.Process(target=self._send4, name='({0}) send4'.format(self.run_counter.value))
         self.send6 = multiprocessing.Process(target=self._send6, name='({0}) send6'.format(self.run_counter.value))
 
@@ -184,7 +197,7 @@ class Harvester(object):
 
             # control the timing
             # blocks until interval passed (return False) or event is set (return True)
-            if self.runs_stop_event.wait(timeout=self.interval):
+            if self.runs_stop_event.wait(timeout=self.conf.interval):
                 break
 
     def start(self):
@@ -203,10 +216,12 @@ class Harvester(object):
 
     def _stop_sniff(self):
         # send STOP packet to localhost - to be sure do this for IPv4 and IPv6
-        p4 = scapy.Ether() / scapy.IP(dst='127.0.0.1') / scapy.TCP(dport=const.STOP_PORT) / scapy.Raw(
-            load=self.stop_packet_load)
-        p6 = scapy.Ether() / scapy.IPv6(dst='::1') / scapy.TCP(dport=const.STOP_PORT) / scapy.Raw(
-            load=self.stop_packet_load)
+        p4 = scapy.Ether() / scapy.IP(dst='127.0.0.1') / scapy.TCP(
+            dport=const.STOP_PORT
+        ) / scapy.Raw(load=self.stop_packet_load)
+        p6 = scapy.Ether() / scapy.IPv6(dst='::1') / scapy.TCP(
+            dport=const.STOP_PORT
+        ) / scapy.Raw(load=self.stop_packet_load)
         scapy.sendp(p4, verbose=0)
         scapy.sendp(p6, verbose=0)
 
@@ -220,7 +235,9 @@ class Harvester(object):
         if self.runs_completed.value != 1:  # only necessary if runs are not already completed
             if self.run_thread:
                 log.debug(
-                    'Waiting for _run thread to finish (this may take some time depending on number of packets to process) ...')
+                    'Waiting for _run thread to finish '
+                    '(this may take some time depending on number of packets to process) ...'
+                )
                 self.run_thread.join()
             else:
                 log.debug('No _run thread to join ...')
@@ -247,7 +264,13 @@ class Harvester(object):
     def total_records_processed(self):
         return self.total_records.value
 
-    def process_results(self, timeout):
+    def process_results_running(self):
+        return self._process_results(self.conf.running_timeout)
+
+    def process_results_final(self):
+        return self._process_results(self.conf.final_timeout)
+
+    def _process_results(self, timeout):
         """
         Queries the response_queue for records and writes them to the corresponding TraceSet object.
         Waits 'timeout' seconds for data, if no data is available return.
@@ -304,17 +327,18 @@ class TraceSetHarvester(Harvester):
     Collect timestamps to fill trace data of trace sets.
     """
 
-    def __init__(self, trace_set_dict, runtime=360, interval=10, iface='en0'):
+    def __init__(self, nic: NicInfo, trace_set_dict: Dict[str, TraceSet], conf: HarvesterConfig):
         if not trace_set_dict:
             raise ValueError('TraceSet dictionary is empty!')
 
-        super().__init__(runtime=runtime, interval=interval, iface=iface)
+        super().__init__(nic, conf)
 
         self.trace_set_dict = trace_set_dict
 
         # ( { ip4: { portlist } }, { ip6: { portlist } }, { ip4: { trace_set_id } }, { ip6: { trace_set_id } } )
         active_nodes4, active_nodes6, ip4_tracesets_lut, ip6_tracesets_lut = libtrace.get_all_active_nodes(
-            self.trace_set_dict)
+            self.trace_set_dict
+        )
         self.ip_tracesets_lut = {**ip4_tracesets_lut, **ip6_tracesets_lut}
 
         # prepare packets to send in each run
@@ -341,8 +365,12 @@ class TraceSetHarvester(Harvester):
         self.v4packets_length = len(self.v4packets)
         self.v6packets_length = len(self.v6packets)
 
-        log.info('Constructed packets to be sent each run: {0} v4 packets / {1} v6 packets / {2} combined'.format(
-            self.v4packets_length, self.v6packets_length, self.v4packets_length + self.v6packets_length))
+        log.info(
+            f'Constructed packets to be sent each run: '
+            f'{self.v4packets_length} v4 packets / '
+            f'{self.v6packets_length} v6 packets / '
+            f'{self.v4packets_length + self.v6packets_length} combined'
+        )
 
     def process_record(self, record):
         tcp_seq, ip, port, remote_ts, received_ts, tcp_options, ipversion = record
@@ -354,11 +382,11 @@ class TraceSetHarvester(Harvester):
 
 class CandidateHarvester(Harvester):
 
-    def __init__(self, candidate_pairs, runtime=360, interval=10, iface='en0'):
+    def __init__(self, nic: NicInfo, candidate_pairs, conf: HarvesterConfig):
         if not candidate_pairs:
             raise ValueError('Candidate pairs empty!')
 
-        super().__init__(runtime=runtime, interval=interval, iface=iface)
+        super().__init__(nic, conf)
 
         self.candidate_pairs = candidate_pairs
 
@@ -389,8 +417,12 @@ class CandidateHarvester(Harvester):
         self.v4packets_length = len(self.v4packets)
         self.v6packets_length = len(self.v6packets)
 
-        log.info('Constructed packets to be sent each run: {0} v4 packets / {1} v6 packets / {2} combined'.format(
-            self.v4packets_length, self.v6packets_length, self.v4packets_length + self.v6packets_length))
+        log.info(
+            f'Constructed packets to be sent each run: '
+            f'{self.v4packets_length} v4 packets / '
+            f'{self.v6packets_length} v6 packets / '
+            f'{self.v4packets_length + self.v6packets_length} combined'
+        )
 
     def process_record(self, record):
         tcp_seq, ip, port, remote_ts, received_ts, tcp_options, ipversion = record
