@@ -37,7 +37,6 @@ IFACE_IP6_ADDRESS = None
 ##########################
 
 # trace set options
-NR_TRACES_PER_TRACE_SET = 1  # repeats the traceroute process to find X different traces for one target
 INACTIVE_RESULTS_PER_TRACE_SET = 1  # for each target continue with next one if X empty results were obtained
 MAX_TRIES_FOR_NEW_TRACE = 1  # continue with next target if X traceroutes to find a new trace were not successful
 

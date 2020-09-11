@@ -117,57 +117,56 @@ def _do_prepare(ipdata, silent_trace_sets, trace_sets, wiring):
         # in case there are no new traces available to hit the requested number of traces
         no_new_trace_counter = 0
 
-        while nr_current_traces < const.NR_TRACES_PER_TRACE_SET:
-            # -> libconstants.TRACEROUTE_ADD_SOURCE_IP (False)
-            ip4tracert, ip6tracert = CPTraceroute(
-                (ip4, ip6), iface=wiring.nic.name, algorithm='traceroute', timeout=2
-            ).traceroute(result_timeout=3)
+        # -> libconstants.TRACEROUTE_ADD_SOURCE_IP (False)
+        ip4tracert, ip6tracert = CPTraceroute(
+            (ip4, ip6), iface=wiring.nic.name, algorithm='traceroute', timeout=2
+        ).traceroute(result_timeout=3)
 
-            try:
-                trace = libtrace.Trace().init(
-                    ip4, ip6,
-                    ip4tracert, ip6tracert,
-                    wiring.nic,
-                    skip_list=wiring.skip_list
-                )
-            except ValueError:
-                trace = None
+        try:
+            trace = libtrace.Trace().init(
+                ip4, ip6,
+                ip4tracert, ip6tracert,
+                wiring.nic,
+                skip_list=wiring.skip_list
+            )
+        except ValueError:
+            trace = None
 
-            if not trace or trace.id() in trace_set.get_traces():
-                no_new_trace_counter = no_new_trace_counter + 1
-                if trace:
-                    log.debug(
-                        'Trace {0} (with target {1} / {2}) already in current trace set! [{3}. retry]'.format(
-                            trace.id(), ip4, ip6, no_new_trace_counter))
-                else:
-                    log.debug('No trace data available for target ({0} / {1})! [{2}. retry]'.format(
-                        ip4, ip6, no_new_trace_counter
-                    ))
+        if not trace or trace.id() in trace_set.get_traces():
+            no_new_trace_counter = no_new_trace_counter + 1
+            if trace:
+                log.debug(
+                    'Trace {0} (with target {1} / {2}) already in current trace set! [{3}. retry]'.format(
+                        trace.id(), ip4, ip6, no_new_trace_counter))
+            else:
+                log.debug('No trace data available for target ({0} / {1})! [{2}. retry]'.format(
+                    ip4, ip6, no_new_trace_counter
+                ))
 
-                if no_new_trace_counter >= const.MAX_TRIES_FOR_NEW_TRACE:
-                    break
-                continue
+            if no_new_trace_counter >= const.MAX_TRIES_FOR_NEW_TRACE:
+                break
+            continue
 
-            nodes4, nodes6 = trace.get_global_valid_IPs(
-                apply_ignore_regex=bool(conf.paths.ip_ignores))  # only apply regex if ignore file was given
+        nodes4, nodes6 = trace.get_global_valid_IPs(
+            apply_ignore_regex=bool(conf.paths.ip_ignores))  # only apply regex if ignore file was given
 
-            tsports = TraceSetPortScan(nodes4, nodes6, wiring.nic, port_list=const.PORT_LIST).start()
-            while not tsports.finished():
-                tsports.process_results(timeout=1)
-            tsports.process_results(timeout=2)
-            tsports.stop()
+        tsports = TraceSetPortScan(nodes4, nodes6, wiring.nic, port_list=const.PORT_LIST).start()
+        while not tsports.finished():
+            tsports.process_results(timeout=1)
+        tsports.process_results(timeout=2)
+        tsports.stop()
 
-            ip4results, ip6results = tsports.results()
-            if not ip4results and not ip6results:
-                no_results_counter = no_results_counter + 1
-                nr_current_traces = nr_current_traces - 1  # do not increment if we have no active nodes
-                if no_results_counter >= const.INACTIVE_RESULTS_PER_TRACE_SET:
-                    # if there were more than X empty results continue with the next target
-                    break
+        ip4results, ip6results = tsports.results()
+        if not ip4results and not ip6results:
+            no_results_counter = no_results_counter + 1
+            nr_current_traces = nr_current_traces - 1  # do not increment if we have no active nodes
+            if no_results_counter >= const.INACTIVE_RESULTS_PER_TRACE_SET:
+                # if there were more than X empty results continue with the next target
+                break
 
-            trace.set_active_nodes((ip4results, ip6results))
-            trace_set.add_trace(trace)
-            nr_current_traces = nr_current_traces + 1
+        trace.set_active_nodes((ip4results, ip6results))
+        trace_set.add_trace(trace)
+        nr_current_traces = nr_current_traces + 1
 
         if trace_set.has_candidates():
             trace_sets[key] = trace_set

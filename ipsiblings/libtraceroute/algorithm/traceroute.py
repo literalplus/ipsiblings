@@ -73,8 +73,7 @@ class TracerouteAlgorithm(Algorithm):
         # replace 'six.itervalues(k)' with 'six.iteritems(k)' and use index 1 of variable 'y' -> 'y[1]'
         # data structure: trace['target_ip']['ttl'] = ('reply_ip', target_reached)
         #                 trace[str][int] = (str, bool)
-        # opened GitHub pull request #1388
-        #
+        # opened GitHub pull request #1388 - merged as of scapy 2.4.1
 
         for k, v in tr_res.get_trace()[str(self.params.ipaddress)].items():
             if v[0] == str(self.params.ipaddress) and const.TRACEROUTE_WITHOUT_DESTINATION_IP:
