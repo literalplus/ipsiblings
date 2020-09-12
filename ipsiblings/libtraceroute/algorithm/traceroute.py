@@ -68,13 +68,6 @@ class TracerouteAlgorithm(Algorithm):
         else:
             raise TracerouteException('Illegal IP version provided!')
 
-        #
-        # ATTENTION: needs fix in scapy/layers/inet.py (line 1147, v2.4.0) and scapy/layers/inet6.py (line 3470, v2.4.0)
-        # replace 'six.itervalues(k)' with 'six.iteritems(k)' and use index 1 of variable 'y' -> 'y[1]'
-        # data structure: trace['target_ip']['ttl'] = ('reply_ip', target_reached)
-        #                 trace[str][int] = (str, bool)
-        # opened GitHub pull request #1388 - merged as of scapy 2.4.1
-
         for k, v in tr_res.get_trace()[str(self.params.ipaddress)].items():
             if v[0] == str(self.params.ipaddress) and const.TRACEROUTE_WITHOUT_DESTINATION_IP:
                 continue

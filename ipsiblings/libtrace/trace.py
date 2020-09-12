@@ -125,14 +125,10 @@ class Trace(object):
         """
         self.v4target = v4target
         self.v6target = v6target
-        if isinstance(v4trace, dict):
-            self.v4trace = v4trace.values()
-        else:
-            self.v4trace = v4trace
-        if isinstance(v6trace, dict):
-            self.v6trace = v6trace.values()
-        else:
-            self.v6trace = v6trace
+
+        # we do not need trace routes
+        self.v4trace = [v4target]
+        self.v6trace = [v6target]
 
         if not v4trace or not v6trace:
             raise ValueError('No Trace data available')

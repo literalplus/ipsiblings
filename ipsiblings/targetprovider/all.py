@@ -1,7 +1,9 @@
 from ipsiblings.targetprovider.alexa import AlexaProvider
+from ipsiblings.targetprovider.bitcoin import BitcoinNodesProvider
 
 PROVIDERS = {
     'alexa': AlexaProvider(),
+    'bitcoin': BitcoinNodesProvider()
 }
 
 

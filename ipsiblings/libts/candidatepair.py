@@ -17,7 +17,10 @@ log = liblog.get_root_logger()
 class CandidatePair(object):
 
     def __init__(
-            self, ip4, ip6, ports4=None, ports6=None, tcp4_opts=None, tcp6_opts=None, ip4_ts=None, ip6_ts=None,
+            self, ip4, ip6,
+            ports4=None, ports6=None,
+            tcp4_opts=None, tcp6_opts=None,
+            ip4_ts=None, ip6_ts=None,
             domains=set()
     ):
         """
@@ -54,12 +57,8 @@ class CandidatePair(object):
     def add_ts_record(self, ip, port, remote_ts, received_ts, tcp_options, ipversion):
         if ipversion == const.IP_VERSION_4:
             tsdata = self.ip4_ts
-            # if not self.tcp4_opts: # usually done with portscanning for candidates
-            #   self.tcp4_opts = tcp_options
         else:  # hopefully 6
             tsdata = self.ip6_ts
-            # if not self.tcp6_opts: # usually done with portscanning for candidates
-            #   self.tcp6_opts = tcp_options
 
         if port in tsdata:
             tsdata[port].append((remote_ts, received_ts))
@@ -105,16 +104,16 @@ class CandidatePair(object):
             raise ValueError("IP version can only be 4 or 6!")
 
     def get_ips(self):
-        return (self.ip4, self.ip6)
+        return self.ip4, self.ip6
 
     def get_ports(self):
-        return (self.ports4, self.ports6)
+        return self.ports4, self.ports6
 
     def get_timestamps(self):
-        return (self.ip4_ts, self.ip6_ts)
+        return self.ip4_ts, self.ip6_ts
 
     def get_tcp_options(self):
-        return (self.tcp4_opts, self.tcp6_opts)
+        return self.tcp4_opts, self.tcp6_opts
 
     def get_domains(self):
         return self.domains
