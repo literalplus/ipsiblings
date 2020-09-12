@@ -14,12 +14,11 @@ import scapy.all as scapy
 from .. import libconstants as const
 from .. import liblog
 from .. import libtools
-from .. import libtrace
 from ..bootstrap import Wiring
 from ..bootstrap.exception import ConfigurationException
 from ..config.model import HarvesterConfig, AppConfig
 from ..libtools import NicInfo
-from ..preparation import PreparedTargets, PreparedTraceSets, PreparedPairs
+from ..preparation import PreparedTargets, PreparedPairs
 
 log = liblog.get_root_logger()
 
@@ -323,67 +322,6 @@ class Harvester(metaclass=abc.ABCMeta):
         return nr_records
 
 
-class TraceSetHarvester(Harvester):
-    """
-    Collect timestamps to fill trace data of trace sets.
-    """
-
-    def __init__(self, nic: NicInfo, prepared_trace_sets: PreparedTraceSets, conf: AppConfig):
-        if not prepared_trace_sets.get_models():
-            raise ValueError('TraceSet dictionary is empty!')
-
-        super().__init__(nic, conf.harvester)
-        self.base_dir = conf.base_dir
-
-        self.prepared_trace_sets = prepared_trace_sets
-
-        # ( { ip4: { portlist } }, { ip6: { portlist } }, { ip4: { trace_set_id } }, { ip6: { trace_set_id } } )
-        active_nodes4, active_nodes6, ip4_tracesets_lut, ip6_tracesets_lut = libtrace.get_all_active_nodes(
-            self.prepared_trace_sets.get_models()
-        )
-        self.ip_tracesets_lut = {**ip4_tracesets_lut, **ip6_tracesets_lut}
-
-        # prepare packets to send in each run
-        for ip4, portlist in active_nodes4.items():
-            tcp_seq = libtrace.get_ts_tcp_seq(ip4_tracesets_lut[ip4])
-            p = self.v4pkt.copy()
-            p.payload.dst = ip4
-            p.payload.payload.seq = tcp_seq
-            for port in portlist:
-                pkt = p.copy()
-                pkt.payload.payload.dport = int(port)
-                self.v4packets.append(pkt)
-
-        for ip6, portlist in active_nodes6.items():
-            tcp_seq = libtrace.get_ts_tcp_seq(ip6_tracesets_lut[ip6])
-            p = self.v6pkt.copy()
-            p.payload.dst = ip6
-            p.payload.payload.seq = tcp_seq
-            for port in portlist:
-                pkt = p.copy()
-                pkt.payload.payload.dport = int(port)
-                self.v6packets.append(pkt)
-
-        self.v4packets_length = len(self.v4packets)
-        self.v6packets_length = len(self.v6packets)
-
-        log.info(
-            f'Constructed packets to be sent each run: '
-            f'{self.v4packets_length} v4 packets / '
-            f'{self.v6packets_length} v6 packets / '
-            f'{self.v4packets_length + self.v6packets_length} combined'
-        )
-
-    def process_record(self, record):
-        tcp_seq, ip, port, remote_ts, received_ts, tcp_options, ipversion = record
-
-        trace_set_ids = self.ip_tracesets_lut[ip]
-        for ts_id in trace_set_ids:
-            self.prepared_trace_sets.trace_sets[ts_id].add_record(
-                ip, port, (remote_ts, received_ts), tcp_options, ipversion
-            )
-
-
 class CandidateHarvester(Harvester):
     def __init__(self, nic: NicInfo, prepared_pairs: PreparedPairs, conf: AppConfig):
         if not prepared_pairs.candidate_pairs:
@@ -435,9 +373,7 @@ class CandidateHarvester(Harvester):
 
 
 def provide_harvester_for(wiring: Wiring, prepared_targets: PreparedTargets) -> Harvester:
-    if prepared_targets.get_kind() == PreparedTraceSets.KIND:
-        return TraceSetHarvester(wiring.nic, prepared_targets.get_models(), wiring.conf.harvester)
-    elif prepared_targets.get_kind() == PreparedPairs.KIND:
+    if prepared_targets.get_kind() == PreparedPairs.KIND:
         return CandidateHarvester(wiring.nic, prepared_targets.get_models(), wiring.conf.harvester)
     else:
         raise ConfigurationException(f'Unable to provide harvester for targets of kind {prepared_targets.get_kind()}')

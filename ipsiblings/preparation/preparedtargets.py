@@ -1,9 +1,8 @@
 import abc
 from typing import Dict, Tuple, Union, TypeVar, Generic
 
-from ipsiblings import libtrace, liblog
+from ipsiblings import liblog
 from ipsiblings.bootstrap.exception import DataException
-from ipsiblings.libtrace import TraceSet
 from ipsiblings.libts.candidatepair import CandidatePair
 from ipsiblings.libts.serialization import write_candidate_pairs
 
@@ -48,46 +47,6 @@ class PreparedTargets(Generic[T], metaclass=abc.ABCMeta):
         if total_active_nodes > 0:
             log.info('IPv4 active nodes: {0} / IPv6 active nodes: {1}'.format(nr_active_nodes4, nr_active_nodes6))
             log.info('Total number active nodes: {0}'.format(total_active_nodes))
-
-
-class PreparedTraceSets(PreparedTargets[TraceSet]):
-    KIND = 'TraceSet'
-
-    def __init__(self, trace_sets):
-        self.trace_sets: Dict[str, TraceSet] = trace_sets
-        self.cleared = False
-
-    def _check_cleared(self):
-        if self.cleared:
-            raise DataException('Tried to access PreparedTraceSets after already cleared!')
-
-    def get_kind(self) -> str:
-        return self.KIND
-
-    def get_models(self) -> Dict[str, TraceSet]:
-        self._check_cleared()
-        return self.trace_sets
-
-    def get_model(self, key4, key6) -> Union[TraceSet, None]:
-        self._check_cleared()
-        return self.trace_sets.get(f'{key4}_{key6}')
-
-    def get_total_per_family(self) -> Tuple[int, int]:
-        self._check_cleared()
-        return libtrace.total_number_active_nodes(self.trace_sets)
-
-    def has_timestamps(self):
-        self._check_cleared()
-        return any([tset.has_timestamp_data() for tset in self.trace_sets.values()])
-
-    def notify_timestamps_added(self, base_dir):
-        self._check_cleared()
-        for tset in self.trace_sets.values():
-            tset.write_timestamp_data(base_dir)
-
-    def clear(self):
-        self.trace_sets.clear()
-        self.cleared = True
 
 
 class PreparedPairs(PreparedTargets[CandidatePair]):

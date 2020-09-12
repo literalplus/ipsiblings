@@ -1,2 +1,2 @@
-from .preparedtargets import PreparedTargets, PreparedTraceSets, PreparedPairs
+from .preparedtargets import PreparedTargets, PreparedPairs
 from .run import run

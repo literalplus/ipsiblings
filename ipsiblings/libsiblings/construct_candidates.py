@@ -16,7 +16,7 @@ from .. import libconstants as const
 from .. import liblog
 from ..bootstrap.exception import ConfigurationException
 from ..config import AppConfig
-from ..preparation import PreparedPairs, PreparedTargets, PreparedTraceSets
+from ..preparation import PreparedPairs, PreparedTargets
 
 log = liblog.get_root_logger()
 
@@ -58,108 +58,9 @@ def _construct_pair_candidates(
     return candidates
 
 
-def _construct_trace_candidates(
-        prepared_trace_sets: PreparedTraceSets, low_runtime=False, add_traces=False
-) -> Dict[str, SiblingCandidate]:
-    """
-    Constructs a dictionary structured as shown below.
-    Uses the port index which offers the most timestamps.
-
-    low_runtime             use LowRTSiblingCandidate class
-
-    Returns:
-    -> { ip4_port4_ip6_port6: SiblingCandidate }
-    """
-    trace_sets = prepared_trace_sets.trace_sets
-    if not trace_sets:
-        return {}
-
-    candidates = {}
-
-    # check if any trace set has timestamp data available
-    if not any([ts.has_timestamp_data() for ts in trace_sets.values()]):
-        log.warning('No timestamp data available! Trace sets need harvesting first!')
-        return candidates
-
-    for trace_set in trace_sets.values():
-        if not trace_set.has_timestamp_data():
-            continue
-
-        v4nodes, v6nodes = trace_set.get_active_nodes()
-        candidates_ips = itertools.product(v4nodes.keys(), v6nodes.keys())  # [ (ip4, ip6) ]
-        td4 = trace_set.get_trace_data()[4]  # { ip: { port: [ (remote_ts, received_ts) ] } }
-        td6 = trace_set.get_trace_data()[6]
-        tcp_options = trace_set.get_tcp_options()
-        trace_set_id = trace_set.id()
-
-        if add_traces:
-            trace_data = (
-                [trace.get_trace_lists() for trace in trace_set.get_traces().values()], trace_set.get_target())
-        else:
-            trace_data = None
-
-        # for each responding node in this trace set
-        for cand_ip4, cand_ip6 in candidates_ips:
-            # tcp options
-            if tcp_options:
-                opt4 = tcp_options.get(cand_ip4)
-                opt6 = tcp_options.get(cand_ip6)
-            else:
-                opt4, opt6 = None, None
-            # timestamps
-            port_ts4 = td4.get(cand_ip4)
-            port_ts6 = td6.get(cand_ip6)
-
-            if not port_ts4 or not port_ts6:  # if no timestamps available for this ip continue
-                log.info(
-                    f'[{trace_set_id}] {cand_ip4} / {cand_ip6} - Not enough timestamp data available ... skipping ...'
-                )
-                continue
-
-            ports4 = list(port_ts4.keys())
-            ports6 = list(port_ts6.keys())
-            has_ssh = const.SSH_PORT in ports4 and const.SSH_PORT in ports6
-
-            # use port which delivers the maximum number of timestamps
-            port_index4, timestamps4 = max(port_ts4.items(), key=lambda x: len(x[1]))
-            port_index6, timestamps6 = max(port_ts6.items(), key=lambda x: len(x[1]))
-            # default branch -> use the lowest common port or the lowest of v4/v6 timestamps
-            # intersecting_ports = set(port_ts4.keys()).intersection(set(port_ts6.keys()))
-            # if not intersecting_ports: # no common ports
-            #   # choose the lowest port
-            #   port_index4, port_index6 = sorted(port_ts4.keys())[0], sorted(port_ts6.keys())[0]
-            #   timestamps4, timestamps6 = port_ts4[port_index4], port_ts6[port_index6]
-            # else:
-            #   port_index = sorted(intersecting_ports)[0] # take the lowest port in common
-            #   timestamps4, timestamps6 = port_ts4[port_index], port_ts6[port_index]
-            #   port_index4 = port_index6 = port_index
-
-            key = '{0}_{1}_{2}_{3}'.format(cand_ip4, port_index4, cand_ip6, port_index6)
-            if key in candidates:  # no need to recreate SiblingCnadidate object
-                continue
-
-            if low_runtime:
-                siblingcandidate = LowRTSiblingCandidate(
-                    cand_ip4, cand_ip6, port_index4, port_index6, timestamps4,
-                    timestamps6, opt4, opt6, ssh_available=has_ssh,
-                    trace_set_id=trace_set_id, trace_data=trace_data
-                )
-            else:
-                siblingcandidate = SiblingCandidate(
-                    cand_ip4, cand_ip6, port_index4, port_index6, timestamps4,
-                    timestamps6, opt4, opt6, ssh_available=has_ssh,
-                    trace_set_id=trace_set_id, trace_data=trace_data
-                )
-            candidates[key] = siblingcandidate
-
-    return candidates
-
-
 def construct_candidates_for(prepared_targets: PreparedTargets, conf: AppConfig) -> Dict[str, SiblingCandidate]:
     if isinstance(prepared_targets, PreparedPairs):
         return _construct_pair_candidates(prepared_targets, low_runtime=conf.candidates.low_runtime)
-    elif isinstance(prepared_targets, PreparedTraceSets):
-        return _construct_trace_candidates(prepared_targets, low_runtime=conf.candidates.low_runtime)
     else:
         raise ConfigurationException(
             f'Unable to construct candidates for targets of kind {prepared_targets.get_kind()}'

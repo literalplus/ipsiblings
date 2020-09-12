@@ -8,7 +8,6 @@ import contextlib
 import csv
 import ipaddress
 import os
-from typing import Union
 
 from .candidatepair import CandidatePair
 from .. import libconstants as const

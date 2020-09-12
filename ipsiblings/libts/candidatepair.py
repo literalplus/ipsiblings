@@ -55,6 +55,7 @@ class CandidatePair(object):
         self.domains.add(domain)
 
     def add_ts_record(self, ip, port, remote_ts, received_ts, tcp_options, ipversion):
+        # TODO: We probably need to set TCPopts here since we no longer set it in the port scan
         if ipversion == const.IP_VERSION_4:
             tsdata = self.ip4_ts
         else:  # hopefully 6
@@ -64,20 +65,6 @@ class CandidatePair(object):
             tsdata[port].append((remote_ts, received_ts))
         else:
             tsdata[port] = [(remote_ts, received_ts)]
-
-    def assign_portscan_record(self, port, tcp_opts, ipversion):
-        self.add_port(port, ipversion)
-        self.set_tcp_options(tcp_opts, ipversion)
-
-    def add_port(self, port, ipversion):
-        if ipversion == const.IP_VERSION_4:
-            self.ports4.add(port)
-            self.is_responsive4 = True
-        elif ipversion == const.IP_VERSION_6:
-            self.ports6.add(port)
-            self.is_responsive6 = True
-        else:
-            raise ValueError("IP version can only be 4 or 6!")
 
     def set_ports4(self, ports):
         if ports:

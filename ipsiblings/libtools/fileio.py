@@ -7,10 +7,8 @@ import csv
 import errno
 import ipaddress
 import os
-import re
 
 from ipsiblings.libtools.misc import is_iterable
-from .trie import Trie
 from .. import liblog
 
 log = liblog.get_root_logger()

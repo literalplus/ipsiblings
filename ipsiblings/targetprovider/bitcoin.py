@@ -1,5 +1,5 @@
 import ipaddress
-from typing import List, Dict, Union
+from typing import Dict, Union
 
 import requests
 
@@ -17,10 +17,6 @@ class BitcoinNodesProvider(TargetProvider):
         # No configuration necessary
         pass
 
-    def provide_targets(self) -> List[(List[str], str, str)]:
-        """Provide targets as a list of (domains, ip4, ip6)"""
-        raise NotImplementedError
-
     def provide_candidates(self) -> Dict[(str, str), CandidatePair]:
         """Provide targets as a mapping (ip4, ip6) -> CandidatePair"""
         nodes = self.get_nodes()
@@ -30,7 +26,9 @@ class BitcoinNodesProvider(TargetProvider):
         for node4 in nodes4:
             for node6 in nodes6:
                 pairs[(node4.ip_str, node6.ip_str)] = CandidatePair(
-                    node4.ip_str, node6.ip_str, domains={node4.hostname, node6.hostname}
+                    node4.ip_str, node6.ip_str,
+                    ports4={8333}, ports6={8333},
+                    domains={node4.hostname, node6.hostname}
                 )
         return pairs
 

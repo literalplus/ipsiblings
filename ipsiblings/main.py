@@ -50,19 +50,6 @@ def _validate_config(conf):
 def _bridge_config_to_legacy(conf: config.AppConfig, const: libconstants):
     log.setLevel(conf.log_level)
     const.BASE_DIRECTORY = conf.base_dir
-    # PORT_LIST selection based on --router-ports/--server-ports options or operation mode (-c/-t)
-    # prioritize the explicit arguments
-    if conf.port_scan.router_portlist:
-        const.PORT_LIST = const.PORT_LIST_ROUTER
-    elif conf.port_scan.server_portlist:
-        const.PORT_LIST = const.PORT_LIST_SERVER
-    else:
-        if conf.candidates.available:
-            const.PORT_LIST = const.PORT_LIST_SERVER
-        elif conf.flags.has_targets or conf.flags.load_tracesets:
-            const.PORT_LIST = const.PORT_LIST_ROUTER
-        else:
-            const.PORT_LIST = const.PORT_LIST_SERVER
 
 
 def handle_post_tasks(candidates, conf):

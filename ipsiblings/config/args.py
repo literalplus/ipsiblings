@@ -24,12 +24,6 @@ def _prepare_parser():
     mutualgrp.add_argument('-c', '--candidates', action='store',
                            help='parse candidates from csv file or top list (-s)',
                            default=None, nargs='?', const='None')
-    mutualgrp.add_argument('-t', '--trace-targets', action='store',
-                           help='trace target hosts from csv file or top list (-s)', default=None, nargs='?',
-                           const='None')
-    # -l also works for already constructed TraceSets in combination with Alexa/Cisco Top list
-    mutualgrp.add_argument('-l', '--load', action='store_true',
-                           help='load previously saved trace sets from base directory', default=False)
     mutualgrp.add_argument('--alexa-toplist', action='store', dest='alexa_toplist_dir',
                            help='loads the alexa top list from the internet and saves it to the given directory or current working directory',
                            default=None, nargs='?', const='cwd')
@@ -45,21 +39,17 @@ def _prepare_parser():
     opt_grp.add_argument('-r', '--run-harvest', action='store_true', help='perform harvesting for candidate IPs',
                          default=False)
     opt_grp.add_argument('-s', '--resolved', action='store_true',
-                         help='construct candidates or trace targets from resolved (alexa top) list '
+                         help='construct candidate targets from resolved (alexa top) list '
                               '(use with -c/-t for operation mode)',
                          default=False)
     opt_grp.add_argument('-f', '--resolved-file', action='store',
                          help='csv file holding resolved (alexa) domains and IPs', default=None)
     opt_grp.add_argument('-o', '--download-alexa', action='store_true',
                          help='allows downloading alexa top list from the internet', default=False)
-    opt_grp.add_argument('--router-ports', action='store_true',
-                         help='use the comprehensive port list for non-server devices', default=False)
-    opt_grp.add_argument('--server-ports', action='store_true', help='use the much smaller port list for servers',
-                         default=False)
     opt_grp.add_argument('--from', action='store', type=int, dest='start_index',
-                         help='restricts candidates/targets to a start index', default=None)
+                         help='restricts candidates to a start index', default=None)
     opt_grp.add_argument('--to', action='store', type=int, dest='end_index',
-                         help='restricts candidates/targets to an end index (excluded)', default=None)
+                         help='restricts candidates to an end index (excluded)', default=None)
     opt_grp.add_argument('--low-runtime', action='store_true', help='use only few timestamps for evaluation',
                          default=False)
     opt_grp.add_argument('--print', action='store_true', help='print charts to pdf file', default=False)
@@ -67,7 +57,6 @@ def _prepare_parser():
                          nargs='?', const=libconstants.RESULT_FILE_NAME)
     opt_grp.add_argument('--no-evaluation', action='store_true',
                          help='do not perform any calculations/evaluations on sibling candidates', default=False)
-    opt_grp.add_argument('--cdn-file', action='store', help='load CDN networks for IP filtering', default=None)
     opt_grp.add_argument('--write-pairs', action='store', help='write constructed IP pairs to file', default=None,
                          nargs='?', const=libconstants.IP_PAIRS_FILE_NAME)
     opt_grp.add_argument('--no-ssh-keyscan', action='store_true', help='do not scan for public ssh keys',
@@ -88,7 +77,7 @@ def _prepare_parser():
     provider_grp = created_parser.add_argument_group(title='Provider choices', description=None)
     provider_grp.add_argument(
         '--target-provider', action='store', help='Target provider',
-        choices=targetprovider.get_provider_names(), default='alexa'
+        choices=targetprovider.get_provider_names(), default='bitcoin'
     )
 
     return created_parser

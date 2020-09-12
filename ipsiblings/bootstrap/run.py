@@ -8,6 +8,10 @@ from ipsiblings.libsiblings import SiblingCandidate
 from ipsiblings.libts.harvester import provide_harvester_for
 from ipsiblings.preparation import PreparedTargets
 
+"""
+Runs the actual business logic of the application, calling high-level API methods of other modules.
+"""
+
 log = liblog.get_root_logger()
 
 
@@ -36,7 +40,6 @@ def prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig
     if conf.skip_evaluation:
         log.warning('No evaluation requested (--no-evaluation). Exiting.')
         raise JustExit
-    # stop here if only portscan was requested
     if not prepared_targets.has_timestamps():
         raise DataException('No timestamps available, was only a port scan requested?')
     candidates = libsiblings.construct_candidates_for(prepared_targets, conf)

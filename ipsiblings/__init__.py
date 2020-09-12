@@ -8,9 +8,3 @@ __version__ = '0.0.1'
 __author__ = 'Marco Starke'
 __license__ = 'GPLv3'
 __copyright__ = 'Copyright (c) 2018 Marco Starke'
-
-
-# import matplotlib
-# import libconstants as const
-
-# matplotlib.use(const.MATPLOTLIB_BACKEND) # set matplotlib backend

@@ -211,13 +211,6 @@ Exapmle:
 SSH-Keys: `ip key-type key`  
 Example: `192.168.4.2 ssh-ed25519 AAAAPT4gV0UgTE9WRSBBTklNQUxTIDw9IHwgPT4gV0UgTE9WRSBBTklNQUxTIDw9Cg==`
 
-##### CDN Filter: `ip/netsize`  
-Example:
-```
-# this is a comment
-192.168.0.0/16
-2001:db8::/32
-```
 
 ##### IP Ignore File:
 IPv4 and IPv6 separated by `<LF> = <LF>`  
@@ -227,56 +220,6 @@ IPv4 and IPv6 separated by `<LF> = <LF>`
 =
 # here starts v6 section
 2001:db8::42
-```
-
-
-## Trace Sets and Traces
-
-A Trace Set is identified based on a unique ID which refers to the MD5 hash of the IPv4 and IPv6 traceroute targets combined to a string of the form `ip4_ip6`.
-Each Trace Set can hold multiple distinct Traces.
-Traces within such a set are identified by their own unique ID based on an MD5 hash of the IPv4 and IPv6 traceroute target, the IP addresses of the IPv4 traceroute as well as the IPv6 traceroute and the IPv4 and IPv6 traceroute lengths.
-This ensures that distinct traceroutes can be easily identified.
-```python
-# Trace Set ID
-def _id(self):
-  str_to_hash = '{0}_{1}'.format(self.target[0], self.target[1])
-  h = hashlib.md5()
-  h.update(str_to_hash.encode('utf-8'))
-  return h.hexdigest()
-
-# Trace ID
-def _id(self):
-  h = hashlib.md5()
-  h.update(self.v4target.encode('utf-8'))
-  h.update(self.v6target.encode('utf-8'))
-  for ip in self.v4trace:
-    h.update(ip.encode('utf-8'))
-  for ip in self.v6trace:
-    h.update(ip.encode('utf-8'))
-  h.update(str(self.v4length).encode('utf-8'))
-  h.update(str(self.v6length).encode('utf-8'))
-  return h.hexdigest()
-```
-
-Trace Sets are logically represented by a folder named with the Trace Set ID.
-Within this folder the files are named according to their purpose and with the trace ID appended.  
-Example:
-
-```
-project
-└── 003667a665178ad655b2fd22f2843ade
-    ├── data.txt
-    ├── target.txt
-    ├── tcp_options.txt
-    ├── trace_2722b0887d809b34efe65ea3ca7b3b9b.active_nodes.txt
-    ├── trace_2722b0887d809b34efe65ea3ca7b3b9b.active_nodes.txt.pcap
-    ├── trace_2722b0887d809b34efe65ea3ca7b3b9b.txt
-    ├── trace_6c2740d3fae54fc34277eaa4202a1e69.active_nodes.txt
-    ├── trace_6c2740d3fae54fc34277eaa4202a1e69.active_nodes.txt.pcap
-    ├── trace_6c2740d3fae54fc34277eaa4202a1e69.txt
-    ├── trace_e3859ee72356ce3c7be7182c10c314f7.active_nodes.txt
-    ├── trace_e3859ee72356ce3c7be7182c10c314f7.active_nodes.txt.pcap
-    └── trace_e3859ee72356ce3c7be7182c10c314f7.txt
 ```
 
 ## Links

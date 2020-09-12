@@ -21,12 +21,6 @@ class PathsConfig:
         self.cdns = args.cdn_file
 
 
-class PortScanConfig:
-    def __init__(self, args):
-        self.router_portlist = args.router_ports
-        self.server_portlist = args.server_ports
-
-
 class CandidatesConfig:
     def __init__(self, args):
         # examine nodes given in candidate csv file
@@ -49,12 +43,6 @@ class GeoipConfig:
         self.do_update = args.update_geo_dbs
 
 
-class TraceSetConfig:
-    def __init__(self, args):
-        # True: load trace set data from base directory; False: run active node discovery with given csv file
-        self.do_load = args.load
-
-
 class TargetProviderConfig:
     def __init__(self, args):
         self.provider = args.target_provider
@@ -68,8 +56,6 @@ class FlagsConfig:
     def __init__(self, args, paths: PathsConfig):
         # True: perform harvesting task for the identified trace sets or the loaded candidates
         self.do_harvest = args.run_harvest
-        # this allows us to distinguish whether candidate or target tasks should be performed
-        self.has_targets = bool(paths.target_csv)
         self.do_print = args.print
 
 
@@ -84,6 +70,10 @@ class HarvesterConfig:
 
 
 class AppConfig:
+    """
+    Main entry point for accessing the configuration.
+    """
+
     def __init__(self):
         self.args = parser.parse_args()
         self.paths = PathsConfig(self.args)
@@ -91,8 +81,6 @@ class AppConfig:
         self.targetprovider = TargetProviderConfig(self.args)
         self.candidates = CandidatesConfig(self.args)
         self.geoip = GeoipConfig(self.args)
-        self.trace_set = TraceSetConfig(self.args)
-        self.port_scan = PortScanConfig(self.args)
         self.harvester = HarvesterConfig()
 
         # start_index, end_index to restrict amount of data to process

@@ -16,14 +16,14 @@ import socket
 import sys
 import urllib.request
 import zipfile
-from typing import Dict, List
+from typing import Dict
 
+from . import TargetProvider
 from .. import libconstants as const, config
 from .. import liblog
 from .. import libtools
 from ..bootstrap.exception import ConfigurationException
 from ..libts.candidatepair import CandidatePair
-from . import TargetProvider
 
 log = liblog.get_root_logger()
 
@@ -71,11 +71,6 @@ class AlexaProvider(TargetProvider):
                 toplist_file = None
             else:
                 toplist_file = conf.paths.candidates_csv
-        elif conf.flags.has_targets:  # -t
-            if conf.paths.target_csv == 'None':  # no additional argument given with -t
-                toplist_file = None
-            else:
-                toplist_file = conf.paths.target_csv
         else:  # should never happen
             toplist_file = None  # os.path.join(config.base_dir, const.ALEXA_FILE_NAME)
         return toplist_file
@@ -85,7 +80,7 @@ class AlexaProvider(TargetProvider):
             log.info('Successfully loaded Alexa Top List file [{0}]'.format(toplist_file))
         log.info('Starting name resolution process ...')
         try:
-            const.ALEXA.resolve_toplist(write_unresolvable=True)  # this will take a long time ...
+            self.instance.resolve_toplist(write_unresolvable=True)  # this will take a long time ...
         finally:
             resolved_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_RESOLVED_FILE_NAME)
             unresolvable_fname = os.path.join(const.BASE_DIRECTORY, const.ALEXA_UNRESOLVABLE_FILE_NAME)
@@ -95,9 +90,6 @@ class AlexaProvider(TargetProvider):
 
     def provide_candidates(self) -> Dict[(str, str), CandidatePair]:
         return self.instance.construct_candidates(one_per_domain=False)
-
-    def provide_targets(self) -> List[(List[str], str, str)]:
-        return self.instance.construct_targets(one_per_domain=False)
 
 
 class Alexa:
@@ -367,61 +359,6 @@ class Alexa:
                 else:
                     fname = os.path.join(os.path.dirname(fname), const.ALEXA_UNRESOLVABLE_FILE_NAME)
                 self.save_unresolvable(fname)
-
-    def construct_targets(self, one_per_domain=False):
-        """
-        Constructs target array [(domain(s), ip4, ip6)] for all IPs per domain.
-        If one_per_domain is True, one randomly chosen IPv4 and IPv6 will be
-        used as target for one domain.
-        Uses the resolved dict of the instance.
-        """
-        # TODO: This seems to do the same thing as construct_candidates() - merge these?
-        # TODO: Is the difference de-duplication?
-        if not self.resolved:
-            return None
-
-        log.info('Started target construction')
-
-        targets = {}  # { (ip4, ip6): [ domains ] }
-        for domain, ips in self.resolved.items():  # { domain: ([ips4], [ips6]) }
-            ips4, ips6 = list(ips[0]), list(ips[1])
-            if one_per_domain:
-                rnd4 = random.sample(range(len(ips4), len(ips4)))
-                rnd6 = random.sample(range(len(ips6), len(ips6)))
-                for i in range(rnd4):
-                    ip4_index = rnd4[i]
-                    if libtools.is_global(ips4[ip4_index]):
-                        ip4 = ips4[ip4_index]
-                        break
-                for i in range(rnd6):
-                    ip6_index = rnd6[i]
-                    if libtools.is_global(ips6[ip6_index]):
-                        ip6 = ips4[ip6_index]
-                        break
-                if (ip4, ip6) in targets:
-                    targets[(ip4, ip6)].append(domain)
-                else:
-                    targets[(ip4, ip6)] = [domain]
-            else:
-                glbl_res4 = libtools.is_global(ips4, ipversion=4)
-                glbl_res6 = libtools.is_global(ips6, ipversion=6)
-                valid4 = [ip for ip, valid in zip(ips4, glbl_res4) if valid]
-                valid6 = [ip for ip, valid in zip(ips6, glbl_res6) if valid]
-
-                if not valid4 or not valid6:  # skip this domain -> no global valid IP pair
-                    continue
-
-                for ip4, ip6 in [(x, y) for x in valid4 for y in valid6]:
-                    if (ip4, ip6) in targets:
-                        targets[(ip4, ip6)].append(domain)
-                    else:
-                        targets[(ip4, ip6)] = [domain]
-
-        targets_prepared = []
-        for ips, domains in targets.items():
-            targets_prepared.append((domains, ips[0], ips[1]))
-
-        return targets_prepared
 
     def construct_candidates(self, one_per_domain=False):
         """
