@@ -3,9 +3,9 @@ from typing import Dict, Union
 
 import requests
 
+from ipsiblings.preparation.candidatepair import CandidatePair
 from . import TargetProvider
 from .. import config, liblog
-from ..libts.candidatepair import CandidatePair
 
 API_BASE = "https://bitnodes.io/api/v1"
 API_SNAPSHOTS = f"{API_BASE}/snapshots"

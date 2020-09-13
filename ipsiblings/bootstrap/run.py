@@ -4,8 +4,8 @@ from typing import Dict
 from ipsiblings import liblog, preparation, bootstrap, config, libsiblings
 from ipsiblings.bootstrap import Wiring
 from ipsiblings.bootstrap.exception import JustExit, DataException
+from ipsiblings.harvesting.harvester import provide_harvester_for
 from ipsiblings.libsiblings import SiblingCandidate
-from ipsiblings.libts.harvester import provide_harvester_for
 from ipsiblings.preparation import PreparedTargets
 
 """

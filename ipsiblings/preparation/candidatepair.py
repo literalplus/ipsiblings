@@ -8,8 +8,8 @@
 This module provides functions to retrieve remote timestamps.
 """
 
-from .. import libconstants as const
-from .. import liblog
+from ipsiblings import libconstants as const
+from ipsiblings import liblog
 
 log = liblog.get_root_logger()
 

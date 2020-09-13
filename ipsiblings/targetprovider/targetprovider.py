@@ -1,8 +1,8 @@
 import abc
 from typing import Dict
 
+from ipsiblings.preparation.candidatepair import CandidatePair
 from .. import config
-from ..libts.candidatepair import CandidatePair
 
 
 class TargetProvider(metaclass=abc.ABCMeta):

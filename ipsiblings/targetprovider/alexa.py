@@ -18,12 +18,12 @@ import urllib.request
 import zipfile
 from typing import Dict
 
+from ipsiblings.preparation.candidatepair import CandidatePair
 from . import TargetProvider
 from .. import libconstants as const, config
 from .. import liblog
 from .. import libtools
 from ..bootstrap.exception import ConfigurationException
-from ..libts.candidatepair import CandidatePair
 
 log = liblog.get_root_logger()
 

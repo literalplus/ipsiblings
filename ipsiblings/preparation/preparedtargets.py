@@ -3,8 +3,8 @@ from typing import Dict, Tuple, Union, TypeVar, Generic
 
 from ipsiblings import liblog
 from ipsiblings.bootstrap.exception import DataException
-from ipsiblings.libts.candidatepair import CandidatePair
-from ipsiblings.libts.serialization import write_candidate_pairs
+from ipsiblings.preparation.candidatepair import CandidatePair
+from ipsiblings.preparation.serialization import write_candidate_pairs
 
 T = TypeVar('T')
 log = liblog.get_root_logger()

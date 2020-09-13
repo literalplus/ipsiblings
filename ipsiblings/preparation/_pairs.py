@@ -1,9 +1,9 @@
 from ipsiblings.preparation.preparedtargets import PreparedPairs
+from ipsiblings.preparation.serialization import load_candidate_pairs
 from ._util import _reduce_map
 from .. import liblog
 from ..bootstrap import Wiring
 from ..bootstrap.exception import DataException
-from ..libts.serialization import load_candidate_pairs
 
 log = liblog.get_root_logger()
 

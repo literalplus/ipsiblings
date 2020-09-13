@@ -1,4 +1,4 @@
-scapy~=2.4.3
+scapy~=2.4.4
 netifaces~=0.10.9
 numpy~=1.18.5
 scipy~=1.4.1

@@ -9,11 +9,11 @@ import csv
 import ipaddress
 import os
 
-from .candidatepair import CandidatePair
-from .. import libconstants as const
-from .. import liblog
-from .. import libtools
-from ..libtools import SkipList, NO_SKIPS
+from ipsiblings import libconstants as const
+from ipsiblings import liblog
+from ipsiblings import libtools
+from ipsiblings.libtools import SkipList, NO_SKIPS
+from ipsiblings.preparation.candidatepair import CandidatePair
 
 log = liblog.get_root_logger()
 
