@@ -28,7 +28,7 @@ class NicInfo:
         return f'NicInfo({self.name}: mac={self.mac}, ip4={self.ip4}, ip6={self.ip6})'
 
 
-def obtain_nic():
+def obtain_nic() -> NicInfo:
     nic_list = _get_dualstack_nic_names()
     if not nic_list:
         raise ConfigurationException('Unable to find any Dual-Stack NIC')

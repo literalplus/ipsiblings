@@ -14,12 +14,11 @@ import scapy.all as scapy
 from ipsiblings import libconstants as const
 from ipsiblings import liblog
 from ipsiblings.bootstrap import Wiring
-from ipsiblings.bootstrap.exception import ConfigurationException
-from ipsiblings.config.model import HarvesterConfig, AppConfig
+from ipsiblings.bootstrap.exception import DataException
+from ipsiblings.config.model import HarvesterConfig
 from ipsiblings.harvesting._harvestreceiver import HarvestReceiver
 from ipsiblings.libtools import NicInfo
-from ipsiblings.preparation import PreparedTargets, PreparedPairs
-from ipsiblings.preparation.candidatepair import CandidatePair
+from ipsiblings.preparation import PreparedTargets, Target
 
 log = liblog.get_root_logger()
 
@@ -31,7 +30,7 @@ class Harvester(metaclass=abc.ABCMeta):
     Override __init__ and process_record functions.
     """
 
-    def __init__(self, nic: NicInfo, conf: HarvesterConfig, *args, **kwargs):
+    def __init__(self, nic: NicInfo, conf: HarvesterConfig, targets: PreparedTargets):
         """
         Base class __init__ must be called in sub class before constructing packets to send!
 
@@ -55,6 +54,14 @@ class Harvester(metaclass=abc.ABCMeta):
         """
         self.conf = conf
         self.nic = nic
+        if not targets.targets:
+            raise DataException("Not harvesting empty candidate set")
+        self.ipaddr_to_target: Dict[str, Target] = {target.address: target for target in targets}
+        self.v4pkt = scapy.Ether() / scapy.IP() / self._make_tcp_layer()
+        self.v6pkt = scapy.Ether() / scapy.IPv6() / self._make_tcp_layer()
+        self.v4packets, self.v6packets = self._prepare_packets(targets)
+        self.v4packets_length, self.v6packets_length = len(self.v4packets), len(self.v6packets)
+
         self.mp_manager = multiprocessing.Manager()
         self.stop_all = self.mp_manager.Value('B', 0)  # unsigned char
         self.receiver = HarvestReceiver(
@@ -72,12 +79,6 @@ class Harvester(metaclass=abc.ABCMeta):
         self.run_counter = self.mp_manager.Value('I', 1)
         self.total_records = self.mp_manager.Value('I', 0)
 
-        self.v4pkt = scapy.Ether() / scapy.IP() / self._make_tcp_layer()
-        self.v6pkt = scapy.Ether() / scapy.IPv6() / self._make_tcp_layer()
-
-        # since each process only reads one variable, it should be sufficient to use simple lists
-        self.v4packets, self.v6packets = self._prepare_packets()
-        self.v4packets_length, self.v6packets_length = len(self.v4packets), len(self.v6packets)
         log.info(
             f'Constructed packets to be sent each run: '
             f'{self.v4packets_length} v4 packets / '
@@ -85,22 +86,22 @@ class Harvester(metaclass=abc.ABCMeta):
             f'{self.v4packets_length + self.v6packets_length} overall'
         )
 
-    @abc.abstractmethod
-    def process_record(self, records):
-        """
-        Handles the assignment of records received to the corresponding objects.
-        records contains tuples of the form:
-        (tcp_seq, node_ip, remote_port, remote_ts, received_ts, tcp_options, ip_version)
-        """
-        raise NotImplementedError
+    def process_record(self, record):
+        tcp_seq, ip, port, remote_ts, received_ts, tcp_options, ip_version = record
+        target = self.ipaddr_to_target[ip]
+        if target:
+            target.handle_timestamp(remote_ts, received_ts, tcp_options)
+        else:
+            log.debug(f'Unexpected packet from IP {ip}')
 
-    @abc.abstractmethod
-    def _prepare_packets(self) -> Tuple[List[scapy.Packet], List[scapy.Packet]]:
-        """
-        Prepares packets for both IPv4 and IPv6 protocols that will later be sent.
-        :return: packets v4, packets v6
-        """
-        raise NotImplementedError
+    def _prepare_packets(self, targets: PreparedTargets) -> Tuple[List[scapy.Packet], List[scapy.Packet]]:
+        v4packets, v6packets = [], []
+        for target in targets:
+            # Duplicate packets for an IP are prevented by targets working like a dict keyed by IP address
+            packet = self.v4pkt.copy() if target.ip_version == 4 else self.v6pkt.copy()
+            packet.dst = target.address
+            packet.payload.payload.dport = target.port
+        return v4packets, v6packets
 
     def _make_tcp_layer(self):
         return scapy.TCP(
@@ -276,55 +277,5 @@ class Harvester(metaclass=abc.ABCMeta):
         return nr_records
 
 
-class CandidateHarvester(Harvester):
-    def __init__(self, nic: NicInfo, prepared_pairs: PreparedPairs, conf: AppConfig):
-        if not prepared_pairs.candidate_pairs:
-            raise ValueError('Candidate pairs empty!')
-        super().__init__(nic, conf.harvester)
-        self.base_dir = conf.base_dir
-        self.prepared_pairs = prepared_pairs
-        self.ipaddr_to_pair = self._prepare_ipaddr_to_pairs()
-
-    def _prepare_ipaddr_to_pairs(self) -> Dict[str, CandidatePair]:
-        ipaddr_to_pair = {}
-        for cp in self.prepared_pairs.get_models().values():
-            if not cp.is_responsive():
-                continue
-
-            if cp.ip4 not in self.ipaddr_to_pair:
-                ipaddr_to_pair[cp.ip4] = cp
-            if cp.ip6 not in self.ipaddr_to_pair:
-                ipaddr_to_pair[cp.ip6] = cp
-        return ipaddr_to_pair
-
-    def _prepare_packets(self) -> Tuple[List[scapy.Packet], List[scapy.Packet]]:
-        v4packets, v6packets = [], []
-        for cp in self.prepared_pairs.get_models().values():
-            if not cp.is_responsive():
-                continue
-            p4, p6 = self.v4pkt.copy(), self.v6pkt.copy()
-            p4.payload.dst, p6.payload.dst = cp.ip4, cp.ip6
-            for port in cp.ports4:
-                pkt = p4.copy()
-                pkt.payload.payload.dport = int(port)
-                v4packets.append(pkt)
-            for port in cp.ports6:
-                pkt = p6.copy()
-                pkt.payload.payload.dport = int(port)
-                v6packets.append(pkt)
-        return v4packets, v6packets
-
-    def process_record(self, record):
-        tcp_seq, ip, port, remote_ts, received_ts, tcp_options, ipversion = record
-        cp = self.ipaddr_to_pair[ip]
-        if cp:
-            cp.add_ts_record(ip, port, remote_ts, received_ts, tcp_options, ipversion)
-        else:
-            log.debug(f'Unexpected packet from IP {ip}')
-
-
 def provide_harvester_for(wiring: Wiring, prepared_targets: PreparedTargets) -> Harvester:
-    if isinstance(prepared_targets, PreparedPairs):
-        return CandidateHarvester(wiring.nic, prepared_targets, wiring.conf)
-    else:
-        raise ConfigurationException(f'Unable to provide harvester for targets of kind {prepared_targets.get_kind()}')
+    return Harvester(wiring.nic, wiring.conf.harvester, prepared_targets)

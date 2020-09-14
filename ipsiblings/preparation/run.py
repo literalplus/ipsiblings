@@ -1,22 +1,29 @@
-from ipsiblings.preparation.preparedtargets import PreparedTargets
-from ._pairs import prepare_pairs
-from ._util import _prepare_trace_set_dirs
+from typing import Dict
+
+from ipsiblings.preparation.preparedtargets import PreparedTargets, Target
+from ._util import _prepare_trace_set_dirs, _reduce_map
 from ..bootstrap import Wiring
-from ..bootstrap.exception import ConfigurationException
+from ..bootstrap.exception import DataException
 
 
-def _do_prepare(wiring: Wiring) -> PreparedTargets:
+def _prepare_pairs(wiring: Wiring) -> Dict[str, Target]:
     conf = wiring.conf
-    if conf.candidates.available:
-        return prepare_pairs(wiring)
-    else:
-        raise ConfigurationException('No valid action requested.')
+    targets = wiring.target_provider.provide()
+    if not targets:
+        if conf.targetprovider.resolved_ips_path:
+            raise DataException(
+                f'Target provider did not provide any candidate pairs '
+                f'from {conf.targetprovider.resolved_ips_path}'
+            )
+        else:
+            raise DataException('Target provider did not provide any candidate pairs')
+    return _reduce_map(targets, conf, 'candidate pairs')
 
 
 def run(wiring: Wiring) -> PreparedTargets:
     conf = wiring.conf
     if not conf.flags.load_tracesets:
         _prepare_trace_set_dirs(conf)
-    prepared_targets = _do_prepare(wiring)
-    prepared_targets.print_summary()
-    return prepared_targets
+    targets = PreparedTargets(_prepare_pairs(wiring), type(wiring.target_provider).__name__)
+    targets.print_summary()
+    return targets

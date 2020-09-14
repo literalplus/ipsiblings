@@ -17,7 +17,9 @@ import os
 import pathlib
 import sys
 import traceback
+from typing import Dict, Tuple
 
+from ipsiblings.libsiblings import SiblingCandidate
 from . import config, bootstrap, libconstants
 from . import keyscan
 from . import liblog
@@ -34,12 +36,6 @@ csv.field_size_limit(262144)
 
 
 def _validate_config(conf):
-    if conf.targetprovider.resolved_ips_path and not conf.targetprovider.has_resolved:
-        config.print_usage_and_exit('-f/--resolved-file can only be used with -s/--resolved')
-
-    if conf.targetprovider.do_download and not conf.targetprovider.has_resolved:
-        config.print_usage_and_exit('-o/--download-alexa can only be used with -s/--resolved')
-
     if conf.end_index is not None:
         if conf.start_index < 0 or conf.end_index < 1:
             config.print_usage_and_exit('--from/--to can not be negative/zero')
@@ -52,7 +48,7 @@ def _bridge_config_to_legacy(conf: config.AppConfig, const: libconstants):
     const.BASE_DIRECTORY = conf.base_dir
 
 
-def handle_post_tasks(candidates, conf):
+def handle_post_tasks(candidates: Dict[Tuple, SiblingCandidate], conf: config.AppConfig):
     handle_ssh_keyscan(candidates, conf)
     log.info('Calculations for evaluation started ...')
     for c in candidates.values():
@@ -62,24 +58,23 @@ def handle_post_tasks(candidates, conf):
             log.exception('Exception during evaluation')
     log.info('Finished sibling candidate calculations')
     ##### OUTFILE #####
-    if conf.candidates.out_csv:
-        resultfile = pathlib.Path(conf.candidates.out_csv)
+    if conf.paths.candidates_out:
+        resultfile = pathlib.Path(conf.paths.candidates_out)
         if not resultfile.is_absolute():
-            resultfile = libconstants.BASE_DIRECTORY / resultfile
-        log.info('Writing resultfile [{0}] ...'.format(resultfile))
-        nr_records = libsiblings.write_results(candidates.values(), resultfile,
-                                               low_runtime=conf.candidates.low_runtime)
-        log.info('Wrote {0} result records to file'.format(nr_records))
+            resultfile = conf.base_dir / resultfile
+        log.info(f'Writing generated candidates to {resultfile}...')
+        nr_records = libsiblings.write_results(
+            candidates.values(), resultfile, low_runtime=conf.candidates.low_runtime
+        )
+        log.info(f'Wrote {nr_records} result records.')
     ##### PLOT #####
-    if conf.flags.do_print:  # plots all candidates to base_directory/const.PLOT_FILE_NAME
+    if conf.flags.export_plots:  # plots all candidates to base_directory/const.PLOT_FILE_NAME
         log.info('Starting plot process ...')
         libsiblings.plot_all(candidates.values(), libconstants.PLOT_FILE_NAME)
         log.info('Finished printing charts')
-    if not conf.candidates.out_csv and not conf.flags.do_print:
-        log.info('Nothing more to do ... Exiting ...')
 
 
-def handle_ssh_keyscan(candidates, conf):
+def handle_ssh_keyscan(candidates: Dict[Tuple, SiblingCandidate], conf):
     if not conf.candidates.skip_keyscan:
         log.info('Preparing ssh-keyscan ...')
         sshkeyscan = keyscan.Keyscan(

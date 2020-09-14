@@ -166,36 +166,25 @@ Step 4 is carried out by applying functions contained in the evaluation script o
 
 
 ## File Formats
+Data is stored in tab-separated values (TSV) files. The reason for this
+is that we have nested lists which we want to separate using a reasonable
+separator. The separator hierarchy is TAB, `,`, `:`.
+
+Target information for the `filesystem` target provider is stored using
+tuples of the following format:
+
+| Field                  | Example                                  | Description                                                                                                                                                                                                                            |   |   |
+|------------------------|------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|---|
+| * IP Version           | 4                                        | IP Version of the address                                                                                                                                                                                                              |   |   |
+| * IP Address           | 127.0.0.1                                | Target IP address                                                                                                                                                                                                                      |   |   |
+| * Port                 | 8333                                     | Target TCP port                                                                                                                                                                                                                        |   |   |
+| Target Domains         | bitcoin.example.com,bitcoin2.example.com | Domains known to be associated with this target, comma-separated.                                                                                                                                                                      |   |   |
+| TCP Options            | Timestamp:1234:0,MSS:1024                | TCP Options captured with the first harvested timestamp, comma-separated. The constant string `--None--` if absent. Multiple values for the same option are separated by colons, and the first field is always the name of the option. |   |   |
+| ...TSval               | 1234                                     | First captured TCP timestamp value for this target, integer as returned by the TCP stack. The granularity of this varies and is not defined by the standard.                                                                           |   |   |
+| ...Reception Timestamp | 34132453.567                             | Reception timestamp populated by our TCP stack, in seconds since the Unix epoch, with fractional values.                                                                                                                               |   |   |
+| ...                    |                                          | The last two fields (marked with `...`) are repeated for every received timestamp.  
 
 ##### Hostlists: `domain,ip4,ip6`
-
-##### Candidate Pairs: `ip4;ip4ports;ip6;ip6ports;domains`
-Example: `192.168.42.42;22,80;2001:db8:0:ff00::42;22,80;domain1.com,domain2.com`
-
-##### TCP Options: `ip,option:value,option:value1:value2, ...`
-Example: `192.168.0.42,MSS:1460,NOP:None,NOP:None,Timestamp:356986792:1337,NOP:None,WScale:7`
-
-##### Timestamp Data:
-```
-ip
-port_A,tcp_ts_X,received_ts_X,tcp_ts_Y,received_ts_Y, ...
-port_B,tcp_ts_I,received_ts_I,tcp_ts_J,received_ts_J, ...
-<LF>
-```
-IPv4 and IPv6 separated by `<LF><LF> = <LF><LF>`  
-Example:
-```
-192.168.4.2
-53,2834518011,1546891762.097881,2834519211,1546891763.297063
-443,2834518039,1546891762.125485,2834519439,1546891763.525016
-80,2834520208,1546891764.296607,2834522208,1546891766.296377
-
-=
-
-2001:db8:ff00::4
-22,357063953,1546891762.880278,357065703,1546891769.879826
-80,357064417,1546891764.735809,357064917,1546891766.735792
-```
 
 ##### SSH-Agents: `ip;identification_string`
 IPv4 and IPv6 separated by `<LF><LF> = <LF><LF>`  

@@ -14,6 +14,7 @@ from scipy import stats
 from . import SiblingCandidate, SiblingEvaluationError
 from .. import libconstants as const
 from .. import liblog
+from ..preparation import Target
 
 log = liblog.get_root_logger()
 
@@ -21,65 +22,15 @@ log = liblog.get_root_logger()
 class LowRTSiblingCandidate(SiblingCandidate):
 
     def __init__(
-            self, ip4, ip6, port4, port6, ip4_ts, ip6_ts, ip4_tcpopts, ip6_tcpopts,
-            nr_timestamps=None, domains=None, ssh_available=False, ssh_keys=None, trace_set_id=None, trace_data=None
+            self, target4: Target, target6: Target
     ):
         # Limit the number of timestamps with nr_timestamps to have all candidates
         # the same amount of timestamps for evaluation
+        # TODO: ^ We had this concept before, might need it again
+        # NOTE: This class previously duplicated the constructor of super
+        super().__init__(target4, target6)
 
-        self.sibling_status = const.SIB_STATUS_UNKNOWN
-        self.calc_finished = False  # flag to check if calculations have finished (due to error or valid result)
-        self.is_sibling = False
-        self.calc_error = False  # flag to check if exception occurred -> correct status assignment
-
-        self.ip4 = ip4
-        self.ip6 = ip6
-        self.port4 = port4
-        self.port6 = port6
-        self.ip4_tcpopts = ip4_tcpopts
-        self.ip6_tcpopts = ip6_tcpopts
-        self.domains = domains  # may be None
-
-        dt = numpy.dtype('int64, float64')  # data type for numpy array
-        columns = ['remote', 'received']  # column/index name -> e.g. access with ip4_ts['remote']
-        dt.names = columns
-
-        if nr_timestamps and nr_timestamps > 1:
-            self.ip4_ts = numpy.array(ip4_ts[:nr_timestamps], dtype=dt)
-            self.ip6_ts = numpy.array(ip6_ts[:nr_timestamps], dtype=dt)
-            self.number_of_timestamps = nr_timestamps
-        else:
-            self.ip4_ts = numpy.array(ip4_ts, dtype=dt)
-            self.ip6_ts = numpy.array(ip6_ts, dtype=dt)
-            self.number_of_timestamps = min(len(self.ip4_ts), len(self.ip6_ts))
-
-        self.recv_offset4 = self.ip4_ts['received'][0]  # timestamp data e.g. 1541886109.485699 (float)
-        self.recv_offset6 = self.ip6_ts['received'][0]
-        self.tcp_offset4 = self.ip4_ts['remote'][0]  # timestamp data e.g. 1541886109 (uint32)
-        self.tcp_offset6 = self.ip6_ts['remote'][0]
-
-        self.tcp_opts_differ = self.calc_tcp_opts_differ()  # if None, no tcp options are available -> ignore
-        # if None, no geo information available; additionally, fills self.geodiffs if locations differ and available
-        self.geoloc_diff = self.calc_geolocation_differ()
-
-        self.ssh_available = ssh_available
-        if ssh_keys:  # { 4: { type: key }, 6: { type: key } }
-            self.ssh4 = ssh_keys[4]
-            self.ssh6 = ssh_keys[6]
-            self.ssh_keys_match = self.keys_match()
-        else:
-            self.ssh_keys_match = None
-            self.ssh4 = {}
-            self.ssh6 = {}
-
-        self.agent4 = ''
-        self.agent6 = ''
-        self.ssh_agents_match = None
-
-        if trace_set_id:  # trace set where the candidate belongs to [optional]
-            self.trace_set_id = trace_set_id
-        if trace_data:
-            self.trace_data = trace_data
+        self.number_of_timestamps = min(len(self.ip4_ts), len(self.ip6_ts))
 
     def get_features(self, key_list=None, substitute_none=None):
         """

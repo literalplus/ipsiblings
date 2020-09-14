@@ -3,9 +3,9 @@ from typing import Dict, Union
 
 import requests
 
-from ipsiblings.preparation.candidatepair import CandidatePair
+from ipsiblings import config, liblog
+from ipsiblings.preparation.target import Target
 from . import TargetProvider
-from .. import config, liblog
 
 API_BASE = "https://bitnodes.io/api/v1"
 API_SNAPSHOTS = f"{API_BASE}/snapshots"
@@ -17,20 +17,20 @@ class BitcoinNodesProvider(TargetProvider):
         # No configuration necessary
         pass
 
-    def provide_candidates(self) -> Dict[(str, str), CandidatePair]:
+    def provide(self) -> Dict[str, Target]:
         """Provide targets as a mapping (ip4, ip6) -> CandidatePair"""
-        nodes = self.get_nodes()
-        nodes4 = [node for node in nodes if node.protocol_version == 4]
-        nodes6 = [node for node in nodes if node.protocol_version == 6]
-        pairs: Dict[(str, str), CandidatePair] = {}
-        for node4 in nodes4:
-            for node6 in nodes6:
-                pairs[(node4.ip_str, node6.ip_str)] = CandidatePair(
-                    node4.ip_str, node6.ip_str,
-                    ports4={8333}, ports6={8333},
-                    domains={node4.hostname, node6.hostname}
-                )
-        return pairs
+        nodes = self.fetch_nodes()
+        targets: Dict[str, Target] = {}
+        for node in nodes:
+            target = Target(Target.make_key(node.ip_version, node.ip_str, node.port))
+            target.add_domain(node.hostname)
+            targets[node.ip_str] = target
+        return targets
+
+    def fetch_nodes(self):
+        raw_nodes = self._obtain_nodes_raw()
+        nodes_incl_onions = [Node(addr, node_raw) for (addr, node_raw) in raw_nodes.items()]
+        return filter(lambda n: not n.is_onion, nodes_incl_onions)
 
     def _obtain_nodes_raw(self):
         print(" ... Looking for snapshots")
@@ -44,7 +44,7 @@ class BitcoinNodesProvider(TargetProvider):
 
     def get_ground_truth_pairs(self):
         by_host = dict()
-        for node in self.get_nodes():
+        for node in self.fetch_nodes():
             key = node.hostname
             host_candidates = by_host.get(key, [])
             by_host[key] = host_candidates + [node]
@@ -60,11 +60,6 @@ class BitcoinNodesProvider(TargetProvider):
 
         print(f" *** Found {len(candidates)} duplicates.")
         return candidates
-
-    def get_nodes(self):
-        raw_nodes = self._obtain_nodes_raw()
-        nodes_incl_onions = [Node(addr, node_raw) for (addr, node_raw) in raw_nodes.items()]
-        return filter(lambda n: not n.is_onion, nodes_incl_onions)
 
 
 class Node:

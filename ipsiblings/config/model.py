@@ -1,39 +1,23 @@
 import os
-import time
 
 from .args import parser
-from .. import libconstants
 from .. import liblog
 
 
 class PathsConfig:
     def __init__(self, args):
-        # base directory where data will be read from or written to
-        if args.directory:
-            self.base_dir = os.path.join(args.directory, '')
-        else:
-            self.base_dir = os.path.join(libconstants.BASE_DIRECTORY, time.strftime("%Y-%m-%d_%H.%M.%S"))
-        # trace sets without answering nodes will be written to this directory
-        self.base_dir_silent = os.path.join(self.base_dir, libconstants.DIRECTORY_SILENT_NODES, '')
-        self.ip_ignores = args.ignore_file
-        # trace targets csv file
-        self.target_csv = args.trace_targets
-        self.cdns = args.cdn_file
+        self.base_dir = os.path.join(args.base_dir, args.run_id)
+        self.ip_ignores = args.ignore_ips_from
+        self.eval_out = args.eval_results_to
+        self.candidates_out = args.candidates_to
 
 
 class CandidatesConfig:
     def __init__(self, args):
-        # examine nodes given in candidate csv file
-        self.in_csv = args.candidates
-        self.out_csv = args.resultfile
-        # determine if we deal with concrete (submitted) nodes or trace sets containing candidate nodes
-        # evaluate to true if no additional argument for -c/-t is given
-        self.available = bool(self.in_csv)
         self.low_runtime = args.low_runtime
         self.skip_keyscan = args.no_ssh_keyscan
         self.only_keyscan = args.only_ssh_keyscan
-        # If set, candidate pairs will be saved but nothing else will happen
-        self.just_write_pairs_to = args.write_pairs
+        self.skip_evaluation = args.skip_eval
 
 
 class GeoipConfig:
@@ -45,28 +29,23 @@ class GeoipConfig:
 
 class TargetProviderConfig:
     def __init__(self, args):
-        self.provider = args.target_provider
-        self.toplist_dir = args.alexa_toplist_dir
-        self.resolved_ips_path = args.resolved_file
-        self.has_resolved = args.resolved
-        self.do_download = args.download_alexa
+        self.provider = args.targets_from
 
 
 class FlagsConfig:
-    def __init__(self, args, paths: PathsConfig):
-        # True: perform harvesting task for the identified trace sets or the loaded candidates
-        self.do_harvest = args.run_harvest
-        self.do_print = args.print
+    def __init__(self, args):
+        self.do_harvest = args.do_harvest
+        self.export_plots = args.export_plots
 
 
 class HarvesterConfig:
-    def __init__(self):
-        self.runtime = libconstants.HARVESTING_RUNTIME
-        self.interval = libconstants.HARVESTING_INTERVAL
+    def __init__(self, args):
+        self.runtime = args.harvest_time
+        self.interval = args.harvest_interval
         # timeout during the run
-        self.running_timeout = libconstants.HARVESTING_RESULTS_TIMEOUT
+        self.running_timeout = args.harvest_timeout
         # timeout in the final collection stage
-        self.final_timeout = libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL
+        self.final_timeout = args.harvest_timeout_final
 
 
 class AppConfig:
@@ -76,12 +55,13 @@ class AppConfig:
 
     def __init__(self):
         self.args = parser.parse_args()
+        self.run_id = self.args.run_id
         self.paths = PathsConfig(self.args)
-        self.flags = FlagsConfig(self.args, self.paths)
+        self.flags = FlagsConfig(self.args)
         self.targetprovider = TargetProviderConfig(self.args)
         self.candidates = CandidatesConfig(self.args)
         self.geoip = GeoipConfig(self.args)
-        self.harvester = HarvesterConfig()
+        self.harvester = HarvesterConfig(self.args)
 
         # start_index, end_index to restrict amount of data to process
         self.start_index = self.args.start_index
@@ -95,7 +75,7 @@ class AppConfig:
 
     @property
     def base_dir(self):
-        return self.paths.base_dir
+        return os.path.join(self.paths.base_dir)
 
     @property
     def log_level(self):

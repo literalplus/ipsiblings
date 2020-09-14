@@ -1,6 +1,6 @@
 import gc
 
-from .. import libgeo, liblog, libtools, libconstants, targetprovider
+from .. import libgeo, liblog, libtools, libconstants, preparation
 from ..config.model import AppConfig
 from ..libtools import SkipList
 
@@ -16,7 +16,7 @@ class Wiring:
         self.geo: libgeo.Geo = libgeo.Geo(conf.geoip)
         self.nic = libtools.network.obtain_nic()
         self.log = liblog.get_root_logger()
-        self.target_provider = targetprovider.get_provider(conf.targetprovider.provider)
+        self.target_provider = preparation.get_provider(conf.targetprovider.provider)
         self.skip_list = SkipList(conf.paths.ip_ignores)
 
 

@@ -1,9 +1,9 @@
-from ipsiblings.targetprovider.alexa import AlexaProvider
-from ipsiblings.targetprovider.bitcoin import BitcoinNodesProvider
+from ipsiblings.preparation.provider.bitcoin import BitcoinNodesProvider
+from ipsiblings.preparation.provider.filesystem import FilesystemProvider
 
 PROVIDERS = {
-    'alexa': AlexaProvider(),
-    'bitcoin': BitcoinNodesProvider()
+    'bitcoin': BitcoinNodesProvider(),
+    'filesystem': FilesystemProvider()
 }
 
 

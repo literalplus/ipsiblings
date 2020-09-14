@@ -17,8 +17,10 @@ from scipy import stats
 from .error import SiblingEvaluationError
 from .. import libconstants as const
 from .. import liblog
+from ..preparation import Target
 
 log = liblog.get_root_logger()
+
 
 # TODO: This class absolutely needs to be split, at least the evaluation logic!
 
@@ -28,81 +30,65 @@ class SiblingCandidate(object):
     Represents a concrete SiblingCandidate.
     """
 
-    TS_DIFF_THRESHOLD = 0.305211037  # ours; Sheitle at al. use 0.2557
+    TS_DIFF_THRESHOLD = 0.305211037  # ours; Scheitle at al. use 0.2557
 
     def __init__(
-            self, ip4, ip6, port4, port6, ip4_ts, ip6_ts, ip4_tcpopts, ip6_tcpopts,
-            domains=None, ssh_available=False, ssh_keys=None, trace_set_id=None, trace_data=None
+            self, target4: Target, target6: Target
     ):
+        # TODO: Reduce v4/v6 duplication by splitting data into two objects like with Target
         self.sibling_status = const.SIB_STATUS_UNKNOWN
         self.calc_finished = False  # flag to check if calculations have finished (due to error or valid result)
         self.is_sibling = False
         self.calc_error = False  # flag to check if exception occurred -> correct status assignment
 
-        self.ip4 = ip4
-        self.ip6 = ip6
-        self.port4 = port4
-        self.port6 = port6
-        self.domains = domains  # may be None
-        self.recv_offset4 = None
-        self.recv_offset6 = None
+        self.ip4, self.port4 = target4.address, target4.port
+        self.ip6, self.port6 = target6.address, target6.port
+        self.ip4_tcpopts, self.ip6_tcpopts = target4.tcp_options, target6.tcp_options
+        self.domains = target4.domains + target6.domains
 
         dt = numpy.dtype('int64, float64')  # data type for numpy array
         columns = ['remote', 'received']  # column/index name -> e.g. access with ip4_ts['remote']
         dt.names = columns
 
-        self.ip4_ts = numpy.array(ip4_ts, dtype=dt)
-        self.ip6_ts = numpy.array(ip6_ts, dtype=dt)
+        self.ip4_ts = numpy.array(target4.timestamps.timestamps, dtype=dt)
+        self.ip6_ts = numpy.array(target4.timestamps.timestamps, dtype=dt)
         self.recv_offset4 = self.ip4_ts['received'][0]  # timestamp data e.g. 1541886109.485699 (float)
         self.recv_offset6 = self.ip6_ts['received'][0]
         self.tcp_offset4 = self.ip4_ts['remote'][0]  # timestamp data e.g. 1541886109 (uint32)
         self.tcp_offset6 = self.ip6_ts['remote'][0]
 
-        self.ip4_tcpopts = ip4_tcpopts
-        self.ip6_tcpopts = ip6_tcpopts
         self.tcp_opts_differ = self.calc_tcp_opts_differ()  # if None, no tcp options are available -> ignore
         # if None, no geo information available; additionally, fills self.geodiffs if locations differ and available
         self.geoloc_diff = self.calc_geolocation_differ()
 
-        self.ssh_available = ssh_available
-        if ssh_keys:  # { 4: { type: key }, 6: { type: key } }
-            self.ssh4 = ssh_keys[4]
-            self.ssh6 = ssh_keys[6]
-            self.ssh_keys_match = self.keys_match()
-        else:
-            self.ssh_keys_match = None
-            self.ssh4 = {}
-            self.ssh6 = {}
+        self.ssh_available = False  # TODO: We need a new concept to determine if we have SSH
+        self.ssh_keys_match = None  # TODO: SSH keys used to be taken as parameters
+        self.ssh4 = {}
+        self.ssh6 = {}
 
         self.agent4 = ''
         self.agent6 = ''
         self.ssh_agents_match = None
 
-        if trace_set_id:  # trace set where the candidate belongs to [optional]
-            self.trace_set_id = trace_set_id
-        if trace_data:
-            self.trace_data = trace_data
-
     def __hash__(self):
-        return hash(self.ip4 + '_' + str(self.port4) + '_' + self.ip6 + '_' + str(self.port6))
+        return hash(self.key)
 
     def __eq__(self, other):
         if isinstance(other, SiblingCandidate):
-            return self.ip4 == other.ip4 and self.ip6 == other.ip6 and self.port4 == other.port4 and self.port6 == other.port6
+            return self.key == other.key
         return NotImplemented
 
     def __str__(self):
-        if getattr(self, 'trace_set_id', None):
-            ts_id_str = ' - TraceSet ID: {0}'.format(self.trace_set_id)
-        else:
-            ts_id_str = ''
         p4_str = '({0})'.format(self.port4)
         p6_str = '({0})'.format(self.port6)
-        return 'SiblingCandidate - {0:<15} {1:>7}   <=>   {3:<7} {2:<39}{4}'.format(
-            self.ip4, p4_str, self.ip6, p6_str, ts_id_str
-        )
+        return f'SiblingCandidate - {self.ip4:<15} {p4_str:>7}   <=>   {p6_str:<7} {self.ip6:<39}'
+
+    @property
+    def key(self):
+        return self.ip4, self.port4, self.ip6, self.port6
 
     def has_ssh(self):
+        # TODO: Currently defunct, see note in constructor (if it's gone, this comment is probably obsolete)
         return self.ssh_available
 
     def addsshkey(self, type, key, version):
@@ -1130,4 +1116,3 @@ class SiblingCandidate(object):
 
         self.spl_percent_val = perc_val
         return True
-

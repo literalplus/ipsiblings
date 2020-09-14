@@ -11,14 +11,16 @@ import pathlib
 import shlex
 import subprocess
 import threading
+from typing import Dict, Tuple
 
 from . import libconstants as const
 from . import liblog
+from .libsiblings import SiblingCandidate
 
 log = liblog.get_root_logger()
 
 
-def assign_key_data(candidates, keyfile, agentfile):
+def assign_key_data(candidates: Dict[str, SiblingCandidate], keyfile, agentfile):
     # load keys
     keys = {4: {}, 6: {}}
     k = keys[4]
@@ -67,8 +69,11 @@ def assign_key_data(candidates, keyfile, agentfile):
 
 class Keyscan(object):
 
-    def __init__(self, candidates, directory=None, timeout=600, key_file_name=const.SSH_KEYS_FILENAME,
-                 agent_file_name=const.SSH_AGENTS_FILENAME, keyscan_command=const.SSH_KEYSCAN_COMMAND):
+    def __init__(
+            self, candidates: Dict[Tuple, SiblingCandidate], directory=None, timeout=600,
+            key_file_name=const.SSH_KEYS_FILENAME, agent_file_name=const.SSH_AGENTS_FILENAME,
+            keyscan_command=const.SSH_KEYSCAN_COMMAND
+    ):
         # candidates: type(candidate) == SiblingCandidate
         self.directory = directory
         self.timeout = timeout
