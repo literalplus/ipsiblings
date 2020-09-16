@@ -1,13 +1,13 @@
 import gc
 from typing import Dict, Tuple
 
-from ipsiblings import liblog, preparation, bootstrap, config, libsiblings
-from ipsiblings.bootstrap import Wiring
-from ipsiblings.bootstrap.exception import JustExit, DataException
-from ipsiblings.harvesting.harvester import provide_harvester_for
-from ipsiblings.libsiblings import SiblingCandidate
-from ipsiblings.preparation import PreparedTargets
-from ipsiblings.preparation.serialization import TargetSerialization
+from .wiring import Wiring
+from .. import liblog, preparation, config, libsiblings
+from ..config import HarvesterConfig
+from ..harvesting.harvester import Harvester
+from ..libtools import NicInfo
+from ..model import SiblingCandidate, PreparedTargets, JustExit, DataException
+from ..preparation.serialization import TargetSerialization
 
 """
 Runs the actual business logic of the application, calling high-level API methods of other modules.
@@ -16,14 +16,18 @@ Runs the actual business logic of the application, calling high-level API method
 log = liblog.get_root_logger()
 
 
-def perform_harvesting(prepared_targets: PreparedTargets, wiring: bootstrap.Wiring):
+def _provide_harvester_for(nic: NicInfo, conf: HarvesterConfig, prepared_targets: PreparedTargets) -> Harvester:
+    return Harvester(nic, conf, prepared_targets)
+
+
+def _perform_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
     conf = wiring.conf
     if conf.flags.do_harvest:
         if prepared_targets.has_timestamps():
             log.warning(f'Not harvesting, it was already done - {prepared_targets.kind}')
             return
         log.info('Starting harvesting task ...')
-        harvester = provide_harvester_for(wiring, prepared_targets)
+        harvester = _provide_harvester_for(wiring.nic, wiring.conf.harvester, prepared_targets)
         try:
             harvester.start()
             while not harvester.finished():
@@ -37,8 +41,8 @@ def perform_harvesting(prepared_targets: PreparedTargets, wiring: bootstrap.Wiri
             log.info('Finished writing obtained timestamps.')
 
 
-def prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig) -> Dict[Tuple, SiblingCandidate]:
-    if conf.skip_evaluation:
+def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig) -> Dict[Tuple, SiblingCandidate]:
+    if conf.flags.skip_evaluation:
         log.warning('No evaluation requested (--no-evaluation). Exiting.')
         raise JustExit
     if not prepared_targets.has_timestamps():
@@ -52,9 +56,9 @@ def prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig
 
 def run(wiring: Wiring) -> Dict[Tuple, SiblingCandidate]:
     conf = wiring.conf
-    prepared_targets = preparation.run(wiring)
-    perform_harvesting(prepared_targets, wiring)
-    candidates = prepare_evaluation(prepared_targets, conf)
+    prepared_targets = preparation.run(conf, wiring.target_provider)
+    _perform_harvesting(prepared_targets, wiring)
+    candidates = _prepare_evaluation(prepared_targets, conf)
     prepared_targets.clear()
     gc.collect()
     return candidates

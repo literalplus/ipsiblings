@@ -1,14 +1,13 @@
 from typing import Dict
 
-from ipsiblings.preparation.preparedtargets import PreparedTargets, Target
-from ._util import _prepare_trace_set_dirs, _reduce_map
-from ..bootstrap import Wiring
-from ..bootstrap.exception import DataException
+from ._util import _reduce_map
+from .provider import TargetProvider
+from ..config import AppConfig
+from ..model import DataException, PreparedTargets, Target
 
 
-def _prepare_pairs(wiring: Wiring) -> Dict[str, Target]:
-    conf = wiring.conf
-    targets = wiring.target_provider.provide()
+def _prepare_pairs(conf: AppConfig, target_provider: TargetProvider) -> Dict[str, Target]:
+    targets = target_provider.provide()
     if not targets:
         if conf.targetprovider.resolved_ips_path:
             raise DataException(
@@ -20,10 +19,7 @@ def _prepare_pairs(wiring: Wiring) -> Dict[str, Target]:
     return _reduce_map(targets, conf, 'candidate pairs')
 
 
-def run(wiring: Wiring) -> PreparedTargets:
-    conf = wiring.conf
-    if not conf.flags.load_tracesets:
-        _prepare_trace_set_dirs(conf)
-    targets = PreparedTargets(_prepare_pairs(wiring), type(wiring.target_provider).__name__)
+def run(conf: AppConfig, target_provider: TargetProvider) -> PreparedTargets:
+    targets = PreparedTargets(_prepare_pairs(conf, target_provider), type(target_provider).__name__)
     targets.print_summary()
     return targets

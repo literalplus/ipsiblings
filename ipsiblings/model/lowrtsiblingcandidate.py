@@ -11,10 +11,11 @@ import numpy
 from scipy import interpolate
 from scipy import stats
 
-from . import SiblingCandidate, SiblingEvaluationError
+from .exception import SiblingEvaluationError
+from .siblingcandidate import SiblingCandidate
+from .target import Target
 from .. import libconstants as const
 from .. import liblog
-from ..preparation import Target
 
 log = liblog.get_root_logger()
 

@@ -9,11 +9,9 @@
 
 from typing import Dict, Union, Tuple
 
-from .lowrtsiblingcandidate import LowRTSiblingCandidate
-from .siblingcandidate import SiblingCandidate
 from .. import liblog
 from ..config import AppConfig
-from ..preparation import PreparedTargets, Target
+from ..model import SiblingCandidate, LowRTSiblingCandidate, Target, PreparedTargets
 
 log = liblog.get_root_logger()
 

@@ -15,7 +15,7 @@ from typing import Dict, Tuple
 
 from . import libconstants as const
 from . import liblog
-from .libsiblings import SiblingCandidate
+from .model import SiblingCandidate
 
 log = liblog.get_root_logger()
 

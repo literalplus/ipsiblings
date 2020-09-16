@@ -11,7 +11,7 @@ from .. import liblog
 log = liblog.get_root_logger()
 
 
-def reply_tcp_RA(dst, dport, sport, ipversion=const.IP_VERSION_4):
+def reply_tcp_ra(dst, dport, sport, ipversion=const.IP_VERSION_4):
     p = scapy.Ether()
     if ipversion is const.IP_VERSION_4:
         p = p / scapy.IP(dst=dst)
@@ -29,18 +29,3 @@ def get_ip_version(packet):
         return packet.payload.version
     else:
         return packet.version
-
-
-def get_ts(packet):
-    """
-    Returns the TCP options timestamp tuple (TSval, TSecr) if available or 'None'.
-    ASSUMPTION: TCP layer is present!
-    """
-    try:
-        for opt in packet[scapy.TCP].options:
-            if opt[0] == 'Timestamp':
-                return opt[1]
-    except Exception as e:
-        log.error('Exception: {0}'.format(str(e)))
-
-    return None

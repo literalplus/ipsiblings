@@ -1,8 +1,8 @@
 from typing import Dict, Union
 
-from . import Target
+from .exception import DataException
+from .target import Target
 from .. import liblog
-from ..bootstrap.exception import DataException
 
 log = liblog.get_root_logger()
 

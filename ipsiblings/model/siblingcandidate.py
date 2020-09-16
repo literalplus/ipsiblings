@@ -11,13 +11,12 @@ import collections
 
 import matplotlib.pyplot as plt
 import numpy
-from scipy import interpolate
-from scipy import stats
+from scipy import interpolate, stats
 
-from .error import SiblingEvaluationError
+from .exception import SiblingEvaluationError
+from .target import Target
 from .. import libconstants as const
 from .. import liblog
-from ..preparation import Target
 
 log = liblog.get_root_logger()
 

@@ -36,6 +36,8 @@ class FlagsConfig:
     def __init__(self, args):
         self.do_harvest = args.do_harvest
         self.export_plots = args.export_plots
+        self.only_init = args.only_init
+        self.skip_evaluation = args.skip_eval
 
 
 class HarvesterConfig:
@@ -69,9 +71,6 @@ class AppConfig:
         if self.start_index is None:
             self.start_index = 0
         self.verbosity = self.args.verbose - self.args.quiet
-        # run initialization only for debugging reasons
-        self.debug = self.args.debug
-        self.skip_evaluation = self.args.no_evaluation
 
     @property
     def base_dir(self):

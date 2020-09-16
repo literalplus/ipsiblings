@@ -1,10 +1,8 @@
 import argparse
-import os
-import sys
 import textwrap
 from datetime import datetime
 
-from .. import libconstants, preparation
+from .. import libconstants
 
 
 def _prepare_parser():
@@ -15,23 +13,21 @@ def _prepare_parser():
 
     path_grp = created_parser.add_argument_group(title='Paths', description=None)
     path_grp.add_argument(
-        '-d', '--base-dir', action='store', help='Base directory for application data', default='./target'
+        '-d', '--base-dir', help='Base directory for application data', default='./target'
     )
     path_grp.add_argument(
-        '-i', '--ignore-ips-from', action='store',
-        help='File of IP addresses to ignore for all operations', default=None
+        '-i', '--ignore-ips-from', help='File of IP addresses to ignore for all operations'
     )
     path_grp.add_argument(
-        '--eval-results-to', action='store', help='Write evaluation results to file',
-        default=None, nargs='?', const=libconstants.RESULT_FILE_NAME
+        '--eval-results-to', help='Write evaluation results to file', nargs='?', const=libconstants.RESULT_FILE_NAME
     )
     path_grp.add_argument(
-        '--candidates-to', action='store', help='Write generated sibling candidates to a file', default=None
+        '--candidates-to', help='Write generated sibling candidates to a file'
     )
     path_grp.add_argument(
-        '--run-id', action='store',
+        '--run-id',
         help='Identifier for the run to contribute to, appended to the base directory. Generated if not given.',
-        default=None, nargs='?', const=datetime.now().strftime("run_%Y-%M-%dT%H_%m_%S")
+        default=datetime.now().strftime("run_%Y-%M-%dT%H_%m_%S")
     )
 
     eval_grp = created_parser.add_argument_group(title='Evaluation', description=None)
@@ -46,6 +42,10 @@ def _prepare_parser():
     skip_grp.add_argument(
         '--skip-eval', action='store_true',
         help='Skip any interpretation of collected data', default=False
+    )
+    skip_grp.add_argument(
+        '--only-init', action='store_true',
+        help='Exit after loading configuration', default=False
     )
     skip_grp.add_argument(
         '--no-ssh-keyscan', action='store_true', help='Do not scan for SSH host keys', default=False
@@ -69,46 +69,39 @@ def _prepare_parser():
     target_grp = created_parser.add_argument_group(title='Target nodes', description=None)
     target_grp.add_argument(
         '--targets-from', action='store', help='Where to get target nodes from',
-        choices=preparation.get_provider_names(), default='bitcoin'
+        choices=['bitcoin', 'filesystem'], default='bitcoin'  # choices relate to preparation.provider.all
     )
     target_grp.add_argument(
-        '--from', action='store', type=int, dest='start_index', help='Index of first target to consider', default=None
+        '--from', type=int, dest='start_index', help='Index of first target to consider'
     )
     target_grp.add_argument(
-        '--to', action='store', type=int, dest='end_index', help='Index of first target to skip', default=None
+        '--to', type=int, dest='end_index', help='Index of first target to skip'
     )
     harvest_grp = created_parser.add_argument_group(title='Timestamp Collection', description=None)
     harvest_grp.add_argument(
-        '-h', '--do-harvest', action='store_true', help='Do collect (harvest) timestamps if not present', default=False
+        '--do-harvest', action='store_true', help='Do collect (harvest) timestamps if not present', default=False
     )
     harvest_grp.add_argument(
-        '-ht', '--harvest-time', action='store', help='Collection duration, seconds',
+        '-ht', '--harvest-time', help='Collection duration, seconds',
         default=libconstants.HARVESTING_RUNTIME
     )
     harvest_grp.add_argument(
-        '-hi', '--harvest-interval', action='store', help='Collection interval for a single node, seconds',
-        default=libconstants.HARVESTING_RUNTIME
+        '-hi', '--harvest-interval', help='Collection interval for a single node, seconds',
+        default=libconstants.HARVESTING_INTERVAL
     )
     harvest_grp.add_argument(
-        '-htr', '--harvest-timeout', action='store',
+        '-htr', '--harvest-timeout',
         help='Wait at least this many seconds for timestamp replies per iteration '
              '(Should not be too long so that the next run can start in time)',
         default=libconstants.HARVESTING_RESULTS_TIMEOUT
     )
     harvest_grp.add_argument(
-        '-htf', '--harvest-timeout-final', action='store',
+        '-htf', '--harvest-timeout-final',
         help='Wait at least this long for timestamp replies after the last iteration',
         default=libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL
     )
 
     return created_parser
-
-
-def print_usage_and_exit(message):
-    parser.print_usage(sys.stderr)
-    basename = os.path.basename(sys.argv[0])
-    sys.stderr.write(f'{basename}: error: {message}\n')
-    sys.exit(2)
 
 
 parser = _prepare_parser()

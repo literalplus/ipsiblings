@@ -8,7 +8,7 @@ import errno
 import ipaddress
 import os
 
-from ipsiblings.libtools.misc import is_iterable
+from .misc import is_iterable
 from .. import liblog
 
 log = liblog.get_root_logger()

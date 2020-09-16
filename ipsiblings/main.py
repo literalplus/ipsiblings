@@ -13,19 +13,17 @@ This is the main module.
 """
 
 import csv
-import os
 import pathlib
 import sys
-import traceback
 from typing import Dict, Tuple
 
-from ipsiblings.libsiblings import SiblingCandidate
-from . import config, bootstrap, libconstants
 from . import keyscan
+from . import libconstants, config, bootstrap
 from . import liblog
 from . import libsiblings
 from . import settings
-from .bootstrap.exception import JustExit, BusinessException
+from .config.util import print_usage_and_exit
+from .model import JustExit, BusinessException, SiblingCandidate, DataException
 
 # setup root logger
 log = liblog.setup_root_logger()
@@ -38,9 +36,9 @@ csv.field_size_limit(262144)
 def _validate_config(conf):
     if conf.end_index is not None:
         if conf.start_index < 0 or conf.end_index < 1:
-            config.print_usage_and_exit('--from/--to can not be negative/zero')
+            print_usage_and_exit('--from/--to can not be negative/zero')
         if conf.start_index >= conf.end_index:
-            config.print_usage_and_exit('--to can not be less or equal to --from')
+            print_usage_and_exit('--to can not be less or equal to --from')
 
 
 def _bridge_config_to_legacy(conf: config.AppConfig, const: libconstants):
@@ -110,8 +108,8 @@ def main():
     bootstrap.bridge_wiring_to_legacy(wiring, libconstants)
 
     # debug run requested, exiting now
-    if conf.debug:
-        log.warning('DEBUG run -> exiting now ...')
+    if conf.flags.only_init:
+        log.warning('Exiting after initialisation as requested.')
         raise JustExit
 
     log.info('Started')
@@ -137,6 +135,7 @@ if __name__ == '__main__':
 
     try:
         if libconstants.OPTIMIZE_OS_SETTINGS:
+            # noinspection PyUnboundLocalVariable
             os_settings.optimize_system_config()
         if libconstants.DISABLE_TIME_SYNC_SERVICE:
             os_settings.disable_timesync()
@@ -145,20 +144,15 @@ if __name__ == '__main__':
 
         ret = main()  # start main execution
 
-    except BusinessException:
-        log.exception()
+    except (BusinessException, DataException):
+        log.exception("An error occurred during execution")
         ret = -3
     except JustExit:
         ret = 0
-    except Exception as e:
+    except Exception:
         error = True
-        exc_type, exc_object, exc_traceback = sys.exc_info()
-        ef = traceback.extract_tb(exc_traceback)[-1]  # get the inner most error frame
-        string = '{0} in {1} (function: \'{2}\') at line {3}: "{4}" <{5}>'.format(exc_type.__name__,
-                                                                                  os.path.basename(ef.filename),
-                                                                                  ef.name, ef.lineno, str(e), ef.line)
-        log.critical(string)
-        print('CRITICAL: {0}'.format(string), file=sys.stderr)  # additionally print to stderr
+        log.exception("Unexpected exception encountered")
+        ret = -4
     except (KeyboardInterrupt, SystemExit):
         error = True
         raise

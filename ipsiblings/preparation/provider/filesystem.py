@@ -2,8 +2,8 @@ import csv
 from typing import Dict, Tuple
 
 from ipsiblings import config, liblog
+from ipsiblings.model import Target
 from ipsiblings.preparation.serialization import TargetSerialization
-from ipsiblings.preparation.target import Target
 
 log = liblog.get_root_logger()
 

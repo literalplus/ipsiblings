@@ -16,3 +16,8 @@ class DataException(BusinessException):
 class JustExit(Exception):
     """Thrown if an early non-error exit was requested, preventing further execution"""
     pass
+
+
+class SiblingEvaluationError(Exception):
+    def __init__(self, sibling_status=None):
+        self.sibling_status = sibling_status

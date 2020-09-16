@@ -1,13 +1,13 @@
 from typing import List, Tuple, Union, Iterable
 
-from ipsiblings.harvesting.harvestedtimestamps import HarvestedTimestamps
+from .timestamps import Timestamps
 
 
 class Target:
     def __init__(self, key: Tuple[int, str, int]):
         self.ip_version, self.address, self.port = key
         self.tcp_options: Union[None, List[Tuple[str, Union[Iterable, str]]]] = None
-        self.timestamps = HarvestedTimestamps(self.ip_version, self.address, self.port)
+        self.timestamps = Timestamps(self.ip_version, self.address, self.port)
         self.domains = set()
 
     @classmethod

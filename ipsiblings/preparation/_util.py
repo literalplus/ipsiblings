@@ -1,7 +1,6 @@
 import sys
 
-from ipsiblings import liblog, libtools
-from ipsiblings.bootstrap.exception import ConfigurationException
+from ipsiblings import liblog
 
 log = liblog.get_root_logger()
 
@@ -43,14 +42,3 @@ def _reduce_list(inp_list, conf, what):
     log.info(f'Reduced loaded {what} from size [{original_len}] to [{len(result)}] '
              f'(indices [{conf.start_index}] to [{conf.end_index}])')
     return result
-
-
-def _prepare_trace_set_dirs(conf):
-    # create base directory
-    dir_status = libtools.create_directories(conf.base_dir)
-    if dir_status is None:
-        log.info(f'Directory [{conf.base_dir}] already exists')
-    elif dir_status:
-        log.info(f'Successfully created base directory [{conf.base_dir}]')
-    else:  # False
-        raise ConfigurationException(f'Unable to create basedir for trace sets {conf.base_dir}')

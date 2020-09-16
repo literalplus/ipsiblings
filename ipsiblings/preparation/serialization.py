@@ -8,9 +8,8 @@ import csv
 import os
 from typing import Tuple, List, Union, Iterable
 
-from ipsiblings import liblog
-from ipsiblings import libtools
-from ipsiblings.preparation import PreparedTargets
+from .. import liblog, libtools
+from ..model import PreparedTargets
 
 log = liblog.get_root_logger()
 

@@ -13,12 +13,10 @@ import scapy.all as scapy
 
 from ipsiblings import libconstants as const
 from ipsiblings import liblog
-from ipsiblings.bootstrap import Wiring
-from ipsiblings.bootstrap.exception import DataException
-from ipsiblings.config.model import HarvesterConfig
+from ipsiblings.config import HarvesterConfig
 from ipsiblings.harvesting._harvestreceiver import HarvestReceiver
 from ipsiblings.libtools import NicInfo
-from ipsiblings.preparation import PreparedTargets, Target
+from ipsiblings.model import Target, PreparedTargets, DataException
 
 log = liblog.get_root_logger()
 
@@ -275,7 +273,3 @@ class Harvester(metaclass=abc.ABCMeta):
             self._stop_sniff()
 
         return nr_records
-
-
-def provide_harvester_for(wiring: Wiring, prepared_targets: PreparedTargets) -> Harvester:
-    return Harvester(wiring.nic, wiring.conf.harvester, prepared_targets)

@@ -11,7 +11,7 @@ import netifaces
 from .misc import is_iterable
 from .. import libconstants as const
 from .. import liblog
-from ..bootstrap.exception import ConfigurationException
+from ..model import ConfigurationException
 
 log = liblog.get_root_logger()
 
@@ -170,7 +170,7 @@ def resolve_host_dual(hoststr):
     return ipaddress.ip_address(addrv4), ipaddress.ip_address(addrv6)
 
 
-def parse_IP(target):
+def parse_ip(target):
     """
     Returns ipaddress.ip_address(target), None otherwise.
     """
@@ -182,12 +182,12 @@ def parse_IP(target):
     return address
 
 
-def get_IP_from_str(hoststr, ipversion=const.IP_VERSION_4):
+def get_ip_from_str(hoststr, ipversion=const.IP_VERSION_4):
     """
     Returns ipaddress.IPv{4,6}Address or None if error occurred.
     If hoststr is either a valid IPv4 or IPv6, ipversion parameter is ignored!
     """
-    address = parse_IP(hoststr)
+    address = parse_ip(hoststr)
     if address:
         return address
     else:

@@ -4,8 +4,8 @@ from typing import Dict, Union
 import requests
 
 from ipsiblings import config, liblog
-from ipsiblings.preparation.target import Target
-from . import TargetProvider
+from ipsiblings.model import Target
+from .targetprovider import TargetProvider
 
 API_BASE = "https://bitnodes.io/api/v1"
 API_SNAPSHOTS = f"{API_BASE}/snapshots"

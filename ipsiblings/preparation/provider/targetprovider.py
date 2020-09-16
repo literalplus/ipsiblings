@@ -1,7 +1,7 @@
 import abc
 
-from ipsiblings import config
-from ipsiblings.preparation import PreparedTargets
+from ... import config
+from ...model import PreparedTargets
 
 
 class TargetProvider(metaclass=abc.ABCMeta):

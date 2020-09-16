@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 
-class HarvestedTimestamps:
+class Timestamps:
     """Collects timestamps harvested for a single IP, port, and address family."""
 
     def __init__(self, ip_version: int, target_ip: str, target_port: int):
