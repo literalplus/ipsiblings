@@ -43,6 +43,13 @@ class HarvesterConfig:
         self.final_timeout = args.harvest_timeout_final
 
 
+class OsTunerConfig:
+    def __init__(self, args):
+        self.skip_sysctls = args.skip_os_sysctls
+        self.skip_firewall = args.skip_os_iptables
+        self.skip_timesync = args.skip_os_ntp
+
+
 class AppConfig:
     """
     Main entry point for accessing the configuration.
@@ -56,6 +63,7 @@ class AppConfig:
         self.targetprovider = TargetProviderConfig(self.args)
         self.candidates = CandidatesConfig(self.args)
         self.harvester = HarvesterConfig(self.args)
+        self.os_tuner = OsTunerConfig(self.args)
 
         # start_index, end_index to restrict amount of data to process
         self.start_index = self.args.start_index

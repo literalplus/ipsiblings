@@ -97,6 +97,24 @@ def _prepare_parser():
         default=libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL
     )
 
+    os_grp = created_parser.add_argument_group(
+        title='OPERATING SYSTEM SETTINGS',
+        description='By default, we adapt some global (!!) OS settings. '
+                    'The previous values are saved to ./settings.bak and restored when the application exits.'
+    )
+    os_grp.add_argument(
+        '--skip-os-sysctls', action='store_true',
+        help='Skip overwriting necessary sysctls', default=False
+    )
+    os_grp.add_argument(
+        '--skip-os-iptables', action='store_true',
+        help='Skip adding necessary iptables rules', default=False
+    )
+    os_grp.add_argument(
+        '--skip-os-ntp', action='store_true',
+        help='Skip disabling NTP client', default=False
+    )
+
     return created_parser
 
 

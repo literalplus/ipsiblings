@@ -1,5 +1,6 @@
 from .model import AppConfig, FlagsConfig, PathsConfig, \
-    CandidatesConfig, TargetProviderConfig, HarvesterConfig
+    CandidatesConfig, TargetProviderConfig, HarvesterConfig, \
+    OsTunerConfig
 
 """
 Handles configuration of the application via command-line parameters and provides this information grouped by

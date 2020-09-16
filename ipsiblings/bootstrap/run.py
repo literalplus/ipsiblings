@@ -2,7 +2,7 @@ import gc
 from typing import Dict, Tuple
 
 from .wiring import Wiring
-from .. import liblog, preparation, config, libsiblings
+from .. import liblog, preparation, config, libsiblings, evaluation
 from ..config import HarvesterConfig
 from ..harvesting.harvester import Harvester
 from ..libtools import NicInfo
@@ -54,11 +54,11 @@ def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfi
     return candidates
 
 
-def run(wiring: Wiring) -> Dict[Tuple, SiblingCandidate]:
-    conf = wiring.conf
-    prepared_targets = preparation.run(conf, wiring.target_provider)
+def run(wiring: Wiring):
+    log.info('Application is running.')
+    prepared_targets = preparation.run(wiring.conf, wiring.target_provider)
     _perform_harvesting(prepared_targets, wiring)
-    candidates = _prepare_evaluation(prepared_targets, conf)
+    candidates = _prepare_evaluation(prepared_targets, wiring.conf)
     prepared_targets.clear()
     gc.collect()
-    return candidates
+    evaluation.run(candidates, wiring.conf)

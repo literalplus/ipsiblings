@@ -19,9 +19,6 @@ WRITE_OS_SETTINGS_TO_FILE = True
 OS_SETTINGS_FILE_NAME = 'settings.bak'
 # disable time sync during measurements -> OS dependent
 DISABLE_TIME_SYNC_SERVICE = not DISABLE_ALL
-# set the command to be used in the settings module (preferred) or in the following two constants
-TIME_SYNC_START_COMMAND = None  # 'timedatectl set-ntp on'
-TIME_SYNC_STOP_COMMAND = None  # 'timedatectl set-ntp off'
 
 # apply firewall rules defined in settings.py for respective OS
 FIREWALL_APPLY_RULES = not DISABLE_ALL
