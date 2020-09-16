@@ -1,4 +1,4 @@
-from .model import AppConfig, FlagsConfig, GeoipConfig, PathsConfig, \
+from .model import AppConfig, FlagsConfig, PathsConfig, \
     CandidatesConfig, TargetProviderConfig, HarvesterConfig
 
 """

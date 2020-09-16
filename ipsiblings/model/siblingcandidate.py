@@ -462,12 +462,11 @@ class SiblingCandidate(object):
                     return True
 
     def calc_geolocation_differ(self, geoloc_obj=None):
+        # TODO: MaxMind API changed, if we need this again, check here:
+        # https://blog.maxmind.com/2019/12/18/significant-changes-to-accessing-and-using-geolite2-databases/
         geo = None
-        # const.GEO > geoloc_obj
         if geoloc_obj:
             geo = geoloc_obj
-        if const.GEO:
-            geo = const.GEO
         if not geo:
             return None
 

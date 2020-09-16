@@ -59,13 +59,6 @@ def _prepare_parser():
     logmutualgrp.add_argument('-v', '--verbose', action='count', help='Increase verbosity once per call', default=0)
     logmutualgrp.add_argument('-q', '--quiet', action='count', help='Decrease verbosity once per call', default=0)
 
-    geo_grp = created_parser.add_argument_group(title='Geolocation', description=None)
-    geo_grp.add_argument('--city-db', action='store', help='Custom MaxMind city database', default=None)
-    geo_grp.add_argument('--asn-db', action='store', help='Custom MaxMind ASN database', default=None)
-    geo_grp.add_argument(
-        '--update-geo-dbs', action='store_true', help='Update geolocation databases', default=False
-    )
-
     target_grp = created_parser.add_argument_group(title='Target nodes', description=None)
     target_grp.add_argument(
         '--targets-from', action='store', help='Where to get target nodes from',

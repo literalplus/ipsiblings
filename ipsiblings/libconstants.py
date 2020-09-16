@@ -216,26 +216,7 @@ CDN_HOP_THRESHOLD = 3
 # file name for writing filtered cdn pairs
 CDN_FILTERED_FILENAME = 'cdns_filtered.csv'
 
-### holds the instance of the Geo class; initialized in main.py
-GEO = None
-
-### MaxMind GeoIP2
-GEO_DB_BASE_DIR = '/root/thesis/geoip/'
-GEO_CITY_DB_FILE = 'GeoLite2-City.mmdb'
-GEO_ASN_DB_FILE = 'GeoLite2-ASN.mmdb'
-
-GEO_CITY_DB_URL = 'http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz'
-GEO_ASN_DB_URL = 'http://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz'
-
 ########
-
-### Alexa Top List ###
-ALEXA_URL = 'https://s3.amazonaws.com/alexa-static/top-1m.csv.zip'
-ALEXA_FILE_NAME = 'top-1m.csv'
-ALEXA_RESOLVED_FILE_NAME = 'alexa_resolved.csv'
-ALEXA_RESOLVED_FILENAME_ERRORCASE = 'alexa_resolved.csv.error'  # in case of error, all previously resolved entries will be written to this file
-ALEXA_UNRESOLVABLE_FILE_NAME = 'alexa_unresolvable.csv'
-ALEXA_UNRESOLVABLE_FILENAME_ERRORCASE = 'alexa_unresolvable.csv.error'
 
 ### timestamp constants ###
 PACKET_RESEARCH_MESSAGE = 'research_scan'

@@ -20,13 +20,6 @@ class CandidatesConfig:
         self.skip_evaluation = args.skip_eval
 
 
-class GeoipConfig:
-    def __init__(self, args):
-        self.city_db = args.city_db
-        self.asn_db = args.asn_db
-        self.do_update = args.update_geo_dbs
-
-
 class TargetProviderConfig:
     def __init__(self, args):
         self.provider = args.targets_from
@@ -62,7 +55,6 @@ class AppConfig:
         self.flags = FlagsConfig(self.args)
         self.targetprovider = TargetProviderConfig(self.args)
         self.candidates = CandidatesConfig(self.args)
-        self.geoip = GeoipConfig(self.args)
         self.harvester = HarvesterConfig(self.args)
 
         # start_index, end_index to restrict amount of data to process
