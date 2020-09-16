@@ -1,14 +1,17 @@
 import re
 
-from ipsiblings import liblog, libtools
+from retrie.trie import Trie
+
+from ipsiblings import liblog
 
 log = liblog.get_root_logger()
 
 
 class SkipList:
     """Handles a skip-list of IP addresses to ignore per address family."""
+
     def __init__(self, filename):
-        self.rev4, self. rev6 = self._make_regexes(filename)
+        self.rev4, self.rev6 = self._make_regexes(filename)
 
     def _make_regexes(self, filename):
         """
@@ -19,13 +22,13 @@ class SkipList:
 
         v4ignore, v6ignore = parse_ignore_file(filename)
 
-        trie = libtools.Trie()
+        trie = Trie()
         for v4a in v4ignore:
             a = v4a.strip().strip('*').lower()
             trie.add(a)
         v4regex = re.compile(r'^' + trie.pattern(), re.IGNORECASE)
 
-        trie = libtools.Trie()
+        trie = Trie()
         for v6a in v6ignore:
             a = v6a.strip().strip('*').lower()
             trie.add(a)

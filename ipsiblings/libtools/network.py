@@ -58,7 +58,7 @@ def _get_dualstack_nic_names():
                     if ipaddress.ip_address(addresses['addr']).is_global:
                         has_ipv4 = True
                         break  # we have a valid global IPv4 address -> break
-                except:
+                except (KeyError, ValueError):
                     continue
         else:  # interface does not have an IPv4 address
             continue
@@ -69,7 +69,7 @@ def _get_dualstack_nic_names():
                     if ipaddress.ip_address(addresses['addr'].split('%')[0]).is_global:  # so split off the scope
                         has_ipv6 = True
                         break  # we have a valid global IPv6 address -> break
-                except:
+                except (KeyError, ValueError):
                     continue
         else:  # interface does not have an IPv6 address
             continue
