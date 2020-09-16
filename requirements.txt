@@ -1,3 +1,4 @@
+# IMPORTANT: Runtime dependencies also need to be added to setup.py !
 scapy~=2.4.4
 netifaces~=0.10.9
 numpy~=1.18.5

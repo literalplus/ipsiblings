@@ -211,6 +211,23 @@ IPv4 and IPv6 separated by `<LF> = <LF>`
 2001:db8::42
 ```
 
+## Execution
+via pip/setuptools:
+
+```bash
+python3 -m pip install -e .
+```
+
+## Distribution
+As per https://packaging.python.org/tutorials/packaging-projects/.
+
+Increment the version number in `setup.py`.
+Then run `./local_install.sh`.
+
+You can deploy this to a Linux server using the `remote_install.sh` script.
+Note that you need to have `python3 python3-venv cmake` installed
+on the remote server if it is running Debian.
+
 ## Links
 
 [Scapy](https://scapy.net/)  

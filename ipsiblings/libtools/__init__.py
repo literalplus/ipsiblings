@@ -6,5 +6,4 @@ from .misc import *
 from .network import *
 from .packets import *
 from .skiplist import *
-from .trie import *
 from .validation import *

@@ -11,12 +11,12 @@ def _prepare_parser():
         description=textwrap.dedent('IP Siblings Toolset')
     )
 
-    path_grp = created_parser.add_argument_group(title='Paths', description=None)
+    path_grp = created_parser.add_argument_group(title='PATHS', description=None)
     path_grp.add_argument(
-        '-d', '--base-dir', help='Base directory for application data', default='./target'
+        '-d', '--base-dir', help='Base directory for application data (default ./target)', default='./target'
     )
     path_grp.add_argument(
-        '-i', '--ignore-ips-from', help='File of IP addresses to ignore for all operations'
+        '--ignore-ips-from', help='File of IP addresses to ignore for all operations'
     )
     path_grp.add_argument(
         '--eval-results-to', help='Write evaluation results to file', nargs='?', const=libconstants.RESULT_FILE_NAME
@@ -26,11 +26,11 @@ def _prepare_parser():
     )
     path_grp.add_argument(
         '--run-id',
-        help='Identifier for the run to contribute to, appended to the base directory. Generated if not given.',
+        help='Identifier for the run to contribute to, appended to the base directory. (default current date-time)',
         default=datetime.now().strftime("run_%Y-%M-%dT%H_%m_%S")
     )
 
-    eval_grp = created_parser.add_argument_group(title='Evaluation', description=None)
+    eval_grp = created_parser.add_argument_group(title='EVALUATION', description=None)
     eval_grp.add_argument(
         '--low-runtime', action='store_true', help='Use low-runtime evaluation methods', default=False
     )
@@ -38,7 +38,7 @@ def _prepare_parser():
         '--export-plots', action='store_true', help='Export plots after evaluation', default=False
     )
 
-    skip_grp = created_parser.add_argument_group(title='Skip steps', description=None)
+    skip_grp = created_parser.add_argument_group(title='SKIP STEPS', description=None)
     skip_grp.add_argument(
         '--skip-eval', action='store_true',
         help='Skip any interpretation of collected data', default=False
@@ -54,43 +54,46 @@ def _prepare_parser():
         '--only-ssh-keyscan', action='store_true', help='Exit after keyscan', default=False
     )
 
-    log_grp = created_parser.add_argument_group(title='Logging', description=None)
+    log_grp = created_parser.add_argument_group(title='LOGGING', description=None)
     logmutualgrp = log_grp.add_mutually_exclusive_group()
     logmutualgrp.add_argument('-v', '--verbose', action='count', help='Increase verbosity once per call', default=0)
     logmutualgrp.add_argument('-q', '--quiet', action='count', help='Decrease verbosity once per call', default=0)
 
-    target_grp = created_parser.add_argument_group(title='Target nodes', description=None)
+    target_grp = created_parser.add_argument_group(title='TARGET NODES', description=None)
     target_grp.add_argument(
-        '--targets-from', action='store', help='Where to get target nodes from',
+        '--targets-from', action='store', help='Where to get target nodes from (default bitcoin)',
         choices=['bitcoin', 'filesystem'], default='bitcoin'  # choices relate to preparation.provider.all
     )
     target_grp.add_argument(
-        '--from', type=int, dest='start_index', help='Index of first target to consider'
+        '--from', type=int, dest='start_index', help='Index of first target to consider (default 0)'
     )
     target_grp.add_argument(
-        '--to', type=int, dest='end_index', help='Index of first target to skip'
+        '--to', type=int, dest='end_index', help='Index of first target to skip (default none)'
     )
-    harvest_grp = created_parser.add_argument_group(title='Timestamp Collection', description=None)
+    harvest_grp = created_parser.add_argument_group(title='TIMESTAMP COLLECTION', description=None)
     harvest_grp.add_argument(
-        '--do-harvest', action='store_true', help='Do collect (harvest) timestamps if not present', default=False
+        '--do-harvest', action='store_true', help='Collect (harvest) timestamps if not present', default=False
     )
     harvest_grp.add_argument(
-        '-ht', '--harvest-time', help='Collection duration, seconds',
+        '-ht', '--harvest-time', help=f'Collection duration, seconds (default {libconstants.HARVESTING_RUNTIME})',
         default=libconstants.HARVESTING_RUNTIME
     )
     harvest_grp.add_argument(
-        '-hi', '--harvest-interval', help='Collection interval for a single node, seconds',
+        '-hi', '--harvest-interval',
+        help=f'Collection interval for a single node, seconds  (default {libconstants.HARVESTING_INTERVAL})',
         default=libconstants.HARVESTING_INTERVAL
     )
     harvest_grp.add_argument(
         '-htr', '--harvest-timeout',
         help='Wait at least this many seconds for timestamp replies per iteration '
-             '(Should not be too long so that the next run can start in time)',
+             '(Should not be too long so that the next run can start in time) '
+             f'(default {libconstants.HARVESTING_RESULTS_TIMEOUT})',
         default=libconstants.HARVESTING_RESULTS_TIMEOUT
     )
     harvest_grp.add_argument(
         '-htf', '--harvest-timeout-final',
-        help='Wait at least this long for timestamp replies after the last iteration',
+        help='Wait at least this long for timestamp replies after the last iteration '
+             f'(default {libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL})',
         default=libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL
     )
 

@@ -100,7 +100,7 @@ def handle_ssh_keyscan(candidates: Dict[Tuple, SiblingCandidate], conf):
         raise JustExit
 
 
-def main():
+def _do_run_application():
     conf = config.AppConfig()
     _validate_config(conf)
     _bridge_config_to_legacy(conf, libconstants)
@@ -119,19 +119,12 @@ def main():
     return 0
 
 
-################################################################################
-################################################################################
-################################################################################
-
-if __name__ == '__main__':
+def main():
     if settings.dependency_error():
         sys.exit(-1)  # do not continue ...
 
     if libconstants.OPTIMIZE_OS_SETTINGS or libconstants.DISABLE_TIME_SYNC_SERVICE or libconstants.FIREWALL_APPLY_RULES:
         os_settings = settings.Settings(backup_to_file=libconstants.WRITE_OS_SETTINGS_TO_FILE)
-
-    ret = -42
-    error = False
 
     try:
         if libconstants.OPTIMIZE_OS_SETTINGS:
@@ -142,7 +135,7 @@ if __name__ == '__main__':
         if libconstants.FIREWALL_APPLY_RULES:
             os_settings.enable_firewall_rules()
 
-        ret = main()  # start main execution
+        ret = _do_run_application()  # start main execution
 
     except (BusinessException, DataException):
         log.exception("An error occurred during execution")
@@ -150,12 +143,8 @@ if __name__ == '__main__':
     except JustExit:
         ret = 0
     except Exception:
-        error = True
         log.exception("Unexpected exception encountered")
         ret = -4
-    except (KeyboardInterrupt, SystemExit):
-        error = True
-        raise
     finally:
         # remove any applied firewall rules
         if libconstants.FIREWALL_APPLY_RULES:
@@ -168,3 +157,7 @@ if __name__ == '__main__':
             os_settings.restore_system_config()
 
     sys.exit(ret)
+
+
+if __name__ == '__main__':
+    main()
