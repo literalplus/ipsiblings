@@ -37,25 +37,31 @@ class OsTuner(metaclass=abc.ABCMeta):
 class SysctlTuner(OsTuner):
     # Values taken from https://github.com/tumi8/siblings/blob/master/src/measure_ts.py#L149
     _RECOMMENDED_SYSCTLS = {
-        # apply for IPv6 as well: https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt
-        # TODO: Why are we doing this? Is this necessary? We use raw sockets anyways?
-        '/proc/sys/net/ipv4/tcp_keepalive_time': 10,  # start TCP keepalive after 10 seconds
-        '/proc/sys/net/ipv4/tcp_keepalive_intvl': 10,  # send TCP keepalive packet every 10 seconds
-        # ref: https://www.kernel.org/doc/html/latest/admin-guide/sysctl/net.html - all bytes
-        '/proc/sys/net/core/wmem_max': 212992000,  # 212 MB; maximum send socket buffer (window)
-        '/proc/sys/net/core/wmem_default': 212992000,  # default send socket buffer (window)
-        '/proc/sys/net/core/rmem_max': 212992000,  # maximal receive socket buffer (window)
-        '/proc/sys/net/core/rmem_default': 212992000,  # default receive socket buffer (window)
-        # ref: https://www.kernel.org/doc/html/latest/admin-guide/sysctl/kernel.html#pid-max
-        # apparently, pid_max can be safely reduced later:
-        # https://serverfault.com/questions/648287/reduce-pid-max-safely
-        # allow a huge number of processes/threads/PIDs (default 32k if < 32 CPU threads)
-        '/proc/sys/kernel/pid_max': 327680,
-        '/proc/sys/kernel/threads-max': 1283200,  # allow a huge number of processes/threads/PIDs
+        # NOTE: Scheitle et al. set tcp_keepalive_time and tcp_keepalive_intvl, but we do not need this
+        # since this applies to the TCP stack, which we circumvent by using raw sockets for TS measurement.
+        # ref: https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt
+        # tcp_keepalive_time: After x seconds (default 2h) of no activity, ask the peer if it is still alive
+        # tcp_keepalive_intvl: If no reply to the previous, repeat every x seconds (default 75s) - by default 9 times
+
+        # ref: https://www.kernel.org/doc/html/latest/admin-guide/sysctl/net.html - all bytes, defaults 212 KB
+        # we set these to 21.2 MB, in contrast to Scheitle et al. which set them to 212.9 MB (a lot)
+        # 212 MB might become an issue for systems that have other TCP traffic as well
+        # Minimal Ethernet packet: 64 B (incl. 46 B payload)
+        # IPv6 header: 40 B, IPv4 header: 20-60 B
+        # TCP header: 20 B + 1.25 B timestamp -> 24 B
+        # Eth payloads are 64 and 44 B, resulting in L2 frames of 82 and 64 B
+        # Even for 10k nodes, this amounts to (82+64)*10k = 1.46 MB per execution <<< 21.2 MB
+        # (and this already ignores that the driver is already sending packets while we are still writing
+        # (with python) (which is slow))
+        '/proc/sys/net/core/wmem_max': 21299200,  # 21.2 MB; maximum send socket buffer (window)
+        '/proc/sys/net/core/wmem_default': 21299200,  # default send socket buffer (window)
+        '/proc/sys/net/core/rmem_max': 21299200,  # maximal receive socket buffer (window)
+        '/proc/sys/net/core/rmem_default': 21299200,  # default receive socket buffer (window)
+
         # ref: https://www.kernel.org/doc/html/latest/admin-guide/sysctl/vm.html
-        # TODO: Isn't the ratio ignored if we set overcommit_memory to 1 (not 2)? Why set this?
-        '/proc/sys/vm/overcommit_ratio': 5000,  # python parallelism requires lots of vm -> overcommit
-        '/proc/sys/vm/overcommit_memory': 1  # 1 = assume there is always enough memory
+        # NOTE: Scheitle et al. also set overcommit_ratio, but this is ignored for
+        # overcommit_memory=1, so we skip it.
+        '/proc/sys/vm/overcommit_memory': 1,  # 1 = assume there is always enough memory
     }
 
     def __init__(self):
@@ -107,6 +113,8 @@ class SysctlTuner(OsTuner):
 
 
 class FirewallTuner(OsTuner):
+    # We drop these packets so that they do not reach the TCP stack, but we see them anyways since we are using
+    # raw sockets, which see all bytes on the wire.
     _APPLY_COMMANDS = [
         f'iptables -t raw -A PREROUTING -p tcp --dport {const.V4_PORT} -j DROP',
         f'ip6tables -t raw -A PREROUTING -p tcp --dport {const.V6_PORT} -j DROP'
@@ -132,6 +140,7 @@ class FirewallTuner(OsTuner):
 
 
 class TimesyncTuner(OsTuner):
+    # We disable NTP since time adjustments on our side would interfere with TS measurements.
     def apply(self):
         self._set_ntp_state('off')
 

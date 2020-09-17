@@ -37,91 +37,68 @@ https://github.com/scipy/scipy/blob/d6fdfc742323e013e0af3fdd41029dfe36087ab3/sci
 ## Usage Message main.py
 
 ```
-usage: main.py
-               (-c [CANDIDATES] | -t [TRACE_TARGETS] | -l | --alexa-toplist [ALEXA_TOPLIST_DIR] | --debug)
-               [-h] [-d DIRECTORY] [-i IGNORE_FILE] [-r] [-s]
-               [-f RESOLVED_FILE] [-o] [--router-ports] [--server-ports]
-               [--from START_INDEX] [--to END_INDEX] [--low-runtime] [--print]
-               [--resultfile [RESULTFILE]] [--no-evaluation]
-               [--cdn-file CDN_FILE] [--write-pairs [WRITE_PAIRS]]
-               [--no-ssh-keyscan] [--only-ssh-keyscan] [-v | -q]
-               [--city-db CITY_DB] [--asn-db ASN_DB] [--update-geo-dbs]
+usage: ipsiblings [-h] [-d BASE_DIR] [--ignore-ips-from IGNORE_IPS_FROM] [--eval-results-to [EVAL_RESULTS_TO]] [--candidates-to CANDIDATES_TO] [--run-id RUN_ID] [--low-runtime] [--export-plots]
+                  [--skip-eval] [--only-init] [--no-ssh-keyscan] [--only-ssh-keyscan] [-v | -q] [--targets-from {bitcoin,filesystem}] [--from START_INDEX] [--to END_INDEX] [--do-harvest]
+                  [-ht HARVEST_TIME] [-hi HARVEST_INTERVAL] [-htr HARVEST_TIMEOUT] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
 
 IP Siblings Toolset
 
-The argument of -c/-t option (combined with -s option) can be used with alexa
-top list file if resolution is required.
-[Any other file formatted in that way can be used.]
-
-required argument, exactly one:
-  -c [CANDIDATES], --candidates [CANDIDATES]
-                        parse candidates from csv file or top list (-s)
-  -t [TRACE_TARGETS], --trace-targets [TRACE_TARGETS]
-                        trace target hosts from csv file or top list (-s)
-  -l, --load            load previously saved trace sets from base directory
-  --alexa-toplist [ALEXA_TOPLIST_DIR]
-                        loads the alexa top list from the internet and saves
-                        it to the given directory or current working directory
-  --debug               debug run (only run initialization)
-
 optional arguments:
   -h, --help            show this help message and exit
-  -d DIRECTORY, --directory DIRECTORY
-                        base directory to store and load trace sets
-  -i IGNORE_FILE, --ignore-file IGNORE_FILE
-                        nodes to ignore are listed in this file
-  -r, --run-harvest     perform harvesting for candidate IPs
-  -s, --resolved        construct candidates or trace targets from resolved
-                        (alexa top) list (use with -c/-t for operation mode)
-  -f RESOLVED_FILE, --resolved-file RESOLVED_FILE
-                        csv file holding resolved (alexa) domains and IPs
-  -o, --download-alexa  allows downloading alexa top list from the internet
-  --router-ports        use the comprehensive port list for non-server devices
-  --server-ports        use the much smaller port list for servers
-  --from START_INDEX    restricts candidates/targets to a start index
-  --to END_INDEX        restricts candidates/targets to an end index
-                        (excluded)
-  --low-runtime         use only few timestamps for evaluation
-  --print               print charts to pdf file
-  --resultfile [RESULTFILE]
-                        write evaluation results to file
-  --no-evaluation       do not perform any calculations/evaluations on sibling
-                        candidates
-  --cdn-file CDN_FILE   load CDN networks for IP filtering
-  --write-pairs [WRITE_PAIRS]
-                        write constructed IP pairs to file
-  --no-ssh-keyscan      do not scan for public ssh keys
-  --only-ssh-keyscan    exit after keyscan
 
-optional logging arguments:
-  -v, --verbose         increase verbosity once per call
-  -q, --quiet           decrease verbosity once per call
+PATHS:
+  -d BASE_DIR, --base-dir BASE_DIR
+                        Base directory for application data (default ./target)
+  --ignore-ips-from IGNORE_IPS_FROM
+                        File of IP addresses to ignore for all operations
+  --eval-results-to [EVAL_RESULTS_TO]
+                        Write evaluation results to file
+  --candidates-to CANDIDATES_TO
+                        Write generated sibling candidates to a file
+  --run-id RUN_ID       Identifier for the run to contribute to, appended to the base directory. (default current date-time)
 
-optional geolocation arguments:
-  --city-db CITY_DB     custom MaxMind city database
-  --asn-db ASN_DB       custom MaxMind ASN database
-  --update-geo-dbs      update geolocation databases
+EVALUATION:
+  --low-runtime         Use low-runtime evaluation methods
+  --export-plots        Export plots after evaluation
+
+SKIP STEPS:
+  --skip-eval           Skip any interpretation of collected data
+  --only-init           Exit after loading configuration
+  --no-ssh-keyscan      Do not scan for SSH host keys
+  --only-ssh-keyscan    Exit after keyscan
+
+LOGGING:
+  -v, --verbose         Increase verbosity once per call
+  -q, --quiet           Decrease verbosity once per call
+
+TARGET NODES:
+  --targets-from {bitcoin,filesystem}
+                        Where to get target nodes from (default bitcoin)
+  --from START_INDEX    Index of first target to consider (default 0)
+  --to END_INDEX        Index of first target to skip (default none)
+
+TIMESTAMP COLLECTION:
+  --do-harvest          Collect (harvest) timestamps if not present
+  -ht HARVEST_TIME, --harvest-time HARVEST_TIME
+                        Collection duration, seconds (default 36000)
+  -hi HARVEST_INTERVAL, --harvest-interval HARVEST_INTERVAL
+                        Collection interval for a single node, seconds (default 60)
+  -htr HARVEST_TIMEOUT, --harvest-timeout HARVEST_TIMEOUT
+                        Wait at least this many seconds for timestamp replies per iteration (Should not be too long so that the next run can start in time) (default 20)
+  -htf HARVEST_TIMEOUT_FINAL, --harvest-timeout-final HARVEST_TIMEOUT_FINAL
+                        Wait at least this long for timestamp replies after the last iteration (default 120)
+
+OPERATING SYSTEM SETTINGS:
+  By default, we adapt some global (!!) OS settings. The previous values are saved to ./settings.bak and restored when the application exits.
+
+  --skip-os-sysctls     Skip overwriting necessary sysctls
+  --skip-os-iptables    Skip adding necessary iptables rules
+  --skip-os-ntp         Skip disabling NTP client
+
 ```
 
-## Files `ipsiblings/`
-
-`libconstants.py`: Global settings and parameter configurations  
-`settings.py`: Handling of OS specific prerequisites for acquisition tasks  
-`liblog.py`: Logging facility  
-`main.py`: CLI parsing and executional tasks  
-`libtools.py`: Contains necessary and useful functions  
-`resolved.py`: Deals with Top Lists and domain resolution  
-`algorithms/`: Directory holding different traceroute algorithms  
-`libalgorithm.py`: Register new traceroute algorithms here  
-`cdnfilter.py`: Filter targets within CDN networks based on provided IP network list  
-`libtraceroute.py`: Traceroute logic  
-`libtrace.py`: Trace Set and Trace objects and structures  
-`libts.py`: Port scanning and acquisition tasks  
-`libsiblings.py`: Represents a sibling candidate and corresponding functions  
-`libgeo.py`: Geolocation service interface and related functions  
-`keyscan.py`: SSH keys and agents acquisition  
-`stats.py`: Statistics  
-`evaluation.py`: Functions used for model construction and evaluation
+## Architecture
+description TBD, but trust me there is one
 
 ## Files `scripts/`
 
@@ -227,6 +204,26 @@ Then run `./local_install.sh`.
 You can deploy this to a Linux server using the `remote_install.sh` script.
 Note that you need to have `python3 python3-venv cmake` installed
 on the remote server if it is running Debian.
+
+## Why we need root access
+It is desirable for the measuring platform not to run as root user.
+
+For raw socket access, we could use `CAP_NET_RAW`, passed to the
+Python process via ambient capabilities, as described
+[here](https://stackoverflow.com/a/47982075/1117552).
+We could provide a C/Rust/CPython binary wrapper that does
+this, since we do not want the general Python executable
+(even of a venv) to have that capability, which allows to
+read and write ALL network traffic of the system.
+
+**However,** we cannot modify sysctl values if we are not root,
+which means we'd need to move that logic into the wrapper as
+well, and also have the wrapper setuid to root, which
+is an improvement but still not the best. Further, the
+OS settings logic is complex enough that we wouldn't want
+it to be written in C if avoidable.
+
+Hence, for the time being, we still require to be run as root.
 
 ## Links
 
