@@ -27,7 +27,7 @@ def _prepare_parser():
     path_grp.add_argument(
         '--run-id',
         help='Identifier for the run to contribute to, appended to the base directory. (default current date-time)',
-        default=datetime.now().strftime("run_%Y-%M-%dT%H_%m_%S")
+        default=datetime.now().strftime("run_%Y-%m-%dT%H_%M_%S")
     )
 
     eval_grp = created_parser.add_argument_group(title='EVALUATION', description=None)

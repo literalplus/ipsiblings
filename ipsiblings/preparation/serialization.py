@@ -26,11 +26,10 @@ class TargetSerialization:
         with open(cls.get_targets_path(directory), 'w', newline='', encoding='utf-8') as targets_file:
             writer = csv.writer(targets_file, delimiter=cls.PRIMARY_DELIMITER)
             for target in prepared_targets:
-                writer.writerow(target.key + (
+                writer.writerow(list(target.key) + [
                     ",".join(target.domains),
-                    cls.tcp_options_to_str(target.tcp_options) if target.tcp_options else cls.NONE_MARKER,
-                    [value for tup in target.timestamps.timestamps for value in tup]
-                ))
+                    cls.tcp_options_to_str(target.tcp_options) if target.tcp_options else cls.NONE_MARKER
+                ] + [value for tup in target.timestamps.timestamps for value in tup])
 
     @classmethod
     def get_timestamps_path(cls, directory):
