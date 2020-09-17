@@ -39,11 +39,14 @@ def _perform_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
             prepared_targets.notify_timestamps_added()
             TargetSerialization.export_targets(prepared_targets, conf.base_dir)
             log.info('Finished writing obtained timestamps.')
+    else:
+        log.info(f'No harvesting requested, exporting targets without timestamps.')
+        TargetSerialization.export_targets(prepared_targets, conf.base_dir)
 
 
 def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig) -> Dict[Tuple, SiblingCandidate]:
     if conf.flags.skip_evaluation:
-        log.warning('No evaluation requested (--no-evaluation). Exiting.')
+        log.warning('No evaluation requested. Exiting.')
         raise JustExit
     if not prepared_targets.has_timestamps():
         raise DataException('No timestamps available, was only a port scan requested?')
