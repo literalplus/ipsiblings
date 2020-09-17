@@ -64,4 +64,3 @@ echo -e "\e[36m Done, should be installed in the venv at /root/ipsiblings.\e[0m"
 ENDSSH
 )
 ssh -t "$SSH_HOST" "$MAIN_SSH_COMMAND" || exit 2
-ssh -t "$SSH_HOST" "$MAIN_SSH_COMMAND" || exit 2
