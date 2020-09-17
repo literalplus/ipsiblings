@@ -115,9 +115,10 @@ class SysctlTuner(OsTuner):
 class FirewallTuner(OsTuner):
     # We drop these packets so that they do not reach the TCP stack, but we see them anyways since we are using
     # raw sockets, which see all bytes on the wire.
+    # Use -I instead of -A so that other rules don't interfere
     _APPLY_COMMANDS = [
-        f'iptables -t raw -A PREROUTING -p tcp --dport {const.V4_PORT} -j DROP',
-        f'ip6tables -t raw -A PREROUTING -p tcp --dport {const.V6_PORT} -j DROP'
+        f'iptables -t raw -I PREROUTING -p tcp --dport {const.V4_PORT} -j DROP',
+        f'ip6tables -t raw -I PREROUTING -p tcp --dport {const.V6_PORT} -j DROP'
     ]
     _REVERT_COMMANDS = [
         f'iptables -t raw -D PREROUTING -p tcp --dport {const.V4_PORT} -j DROP',
@@ -172,6 +173,7 @@ class OsTuning(object):
             self.tuners.append(TimesyncTuner())
 
     def apply(self):
+        log.info(f'Tuning OS settings via {[type(t).__name__ for t in self.tuners]}')
         for tuner in self.tuners:
             tuner.apply()
 
