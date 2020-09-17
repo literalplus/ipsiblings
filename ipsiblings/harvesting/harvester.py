@@ -55,8 +55,8 @@ class Harvester(metaclass=abc.ABCMeta):
         if not targets.targets:
             raise DataException("Not harvesting empty candidate set")
         self.ipaddr_to_target: Dict[str, Target] = {target.address: target for target in targets}
-        self.v4pkt = scapy.Ether() / scapy.IP() / self._make_tcp_layer()
-        self.v6pkt = scapy.Ether() / scapy.IPv6() / self._make_tcp_layer()
+        self.v4pkt = scapy.Ether() / scapy.IP() / self._make_tcp_layer(const.V4_PORT)
+        self.v6pkt = scapy.Ether() / scapy.IPv6() / self._make_tcp_layer(const.V6_PORT)
         self.v4packets, self.v6packets = self._prepare_packets(targets)
         self.v4packets_length, self.v6packets_length = len(self.v4packets), len(self.v6packets)
 
@@ -96,14 +96,22 @@ class Harvester(metaclass=abc.ABCMeta):
         v4packets, v6packets = [], []
         for target in targets:
             # Duplicate packets for an IP are prevented by targets working like a dict keyed by IP address
-            packet = self.v4pkt.copy() if target.ip_version == 4 else self.v6pkt.copy()
-            packet.dst = target.address
-            packet.payload.payload.dport = target.port
+            if target.ip_version == 4:
+                eth_packet = self.v4pkt.copy()
+                vpackets = v4packets
+            else:
+                eth_packet = self.v6pkt.copy()
+                vpackets = v6packets
+            ip_packet = eth_packet.payload
+            ip_packet.dst = target.address
+            tcp_packet = ip_packet.payload
+            tcp_packet.dport = int(target.port)
+            vpackets.append(eth_packet)
         return v4packets, v6packets
 
-    def _make_tcp_layer(self):
+    def _make_tcp_layer(self, port: int):
         return scapy.TCP(
-            sport=const.V4_PORT, flags='S', options=[
+            sport=port, flags='S', options=[
                 ('Timestamp', (const.TS_INITIAL_VAL, 0)),
                 ('WScale', 0)
             ]

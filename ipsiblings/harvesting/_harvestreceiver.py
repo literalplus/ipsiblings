@@ -16,15 +16,13 @@ class HarvestReceiver:
         self.stop_port = stop_port
         self.stop_payload = f'STOP_{random.getrandbits(64)}'
         all_ports = payload_ports + [stop_port]
-        self.packet_filter = f'((tcp) and (' \
-                             " or ".join([f'(dst port {port})' for port in all_ports]) + \
-                             f'))'
+        ports_filter = " or ".join([f'(dst port {port})' for port in all_ports])
+        self.packet_filter = f'((tcp) and ({ports_filter}))'
         self.response_queue = mp_manager.Queue()
         self.stop_all = stop_all  # stop flag
 
     def run(self):
         # https://github.com/secdev/scapy/issues/989 - own sniff implementation
-
         # from that issue, might be interesting to change to AsyncSniffer: https://github.com/secdev/scapy/pull/1999
 
         with scapy.conf.L2listen(filter=self.packet_filter) as sock:
@@ -44,7 +42,6 @@ class HarvestReceiver:
                 except Exception as e:
                     log.warning('[Ignored] Sniff Exception: {0} - {1}'.format(type(e).__name__, e))
                     continue
-            log.debug('Sniff process terminated.')
 
     def _is_stop_packet(self, packet: scapy.Packet):
         return packet[scapy.TCP].dport == self.stop_port and \

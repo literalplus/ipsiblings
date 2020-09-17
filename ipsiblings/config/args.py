@@ -75,23 +75,27 @@ def _prepare_parser():
         '--do-harvest', action='store_true', help='Collect (harvest) timestamps if not present', default=False
     )
     harvest_grp.add_argument(
-        '-ht', '--harvest-time', help=f'Collection duration, seconds (default {libconstants.HARVESTING_RUNTIME})',
+        '--really-harvest', action='store_true', help='Harvest even if we already have timestamps', default=False
+    )
+    harvest_grp.add_argument(
+        '-ht', '--harvest-time', type=int,
+        help=f'Collection duration, seconds (default {libconstants.HARVESTING_RUNTIME})',
         default=libconstants.HARVESTING_RUNTIME
     )
     harvest_grp.add_argument(
-        '-hi', '--harvest-interval',
+        '-hi', '--harvest-interval', type=int,
         help=f'Collection interval for a single node, seconds  (default {libconstants.HARVESTING_INTERVAL})',
         default=libconstants.HARVESTING_INTERVAL
     )
     harvest_grp.add_argument(
-        '-htr', '--harvest-timeout',
+        '-htr', '--harvest-timeout', type=int,
         help='Wait at least this many seconds for timestamp replies per iteration '
              '(Should not be too long so that the next run can start in time) '
              f'(default {libconstants.HARVESTING_RESULTS_TIMEOUT})',
         default=libconstants.HARVESTING_RESULTS_TIMEOUT
     )
     harvest_grp.add_argument(
-        '-htf', '--harvest-timeout-final',
+        '-htf', '--harvest-timeout-final', type=int,
         help='Wait at least this long for timestamp replies after the last iteration '
              f'(default {libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL})',
         default=libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL

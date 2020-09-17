@@ -33,4 +33,4 @@ class FilesystemProvider:
                     local_ts = float(ts_data[even_idx + 1])
                     target.handle_timestamp(remote_ts, local_ts, None)
                 targets[key] = target
-        return {address: target for ((_, address, _), target) in targets}
+        return {address: target for ((_, address, _), target) in targets.items()}

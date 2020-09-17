@@ -22,8 +22,9 @@ def _provide_harvester_for(nic: NicInfo, conf: HarvesterConfig, prepared_targets
 
 def _perform_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
     conf = wiring.conf
+    TargetSerialization.export_targets(prepared_targets, conf.base_dir)
     if conf.flags.do_harvest:
-        if prepared_targets.has_timestamps():
+        if prepared_targets.has_timestamps() and not conf.flags.always_harvest:
             log.warning(f'Not harvesting, it was already done - {prepared_targets.kind}')
             return
         log.info('Starting harvesting task ...')
@@ -41,7 +42,6 @@ def _perform_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
             log.info('Finished writing obtained timestamps.')
     else:
         log.info(f'No harvesting requested, exporting targets without timestamps.')
-        TargetSerialization.export_targets(prepared_targets, conf.base_dir)
 
 
 def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig) -> Dict[Tuple, SiblingCandidate]:

@@ -59,9 +59,9 @@ pip3 install --upgrade "$WHEEL_PATH" || exit 3
 ENDCMD
 echo -e "\e[36m Prepared setup script.\e[33m"
 echo -en "\e[0m"
-read -p "Enter to continue, Ctrl-C to abort: " -n 1 -r
 sudo bash /root/.ipsiblings_tmp_script.sh || echo "Setup script failed :("
 echo -e "\e[36m Done, should be installed in the venv at /root/ipsiblings.\e[0m"
 ENDSSH
 )
+ssh -t "$SSH_HOST" "$MAIN_SSH_COMMAND" || exit 2
 ssh -t "$SSH_HOST" "$MAIN_SSH_COMMAND" || exit 2

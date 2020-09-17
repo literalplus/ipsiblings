@@ -28,6 +28,7 @@ class TargetProviderConfig:
 class FlagsConfig:
     def __init__(self, args):
         self.do_harvest = args.do_harvest
+        self.always_harvest = args.really_harvest
         self.export_plots = args.export_plots
         self.only_init = args.only_init
         self.skip_evaluation = args.skip_eval
