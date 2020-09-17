@@ -13,9 +13,12 @@ log = liblog.get_root_logger()
 
 
 class BitcoinNodesProvider(TargetProvider):
+    def __init__(self):
+        self.ip_versions = {4, 6}
+
     def configure(self, conf: config.AppConfig) -> None:
-        # No configuration necessary
-        pass
+        if conf.targetprovider.skip_v6:
+            self.ip_versions = {4}
 
     def provide(self) -> Dict[str, Target]:
         """Provide targets as a mapping (ip4, ip6) -> CandidatePair"""
@@ -29,8 +32,9 @@ class BitcoinNodesProvider(TargetProvider):
 
     def fetch_nodes(self):
         raw_nodes = self._obtain_nodes_raw()
-        nodes_incl_onions = [Node(addr, node_raw) for (addr, node_raw) in raw_nodes.items()]
-        return filter(lambda n: not n.is_onion, nodes_incl_onions)
+        nodes_all_versions = [Node(addr, node_raw) for (addr, node_raw) in raw_nodes.items()]
+        # Note that Onion is IP version -1, i.e. excluded here
+        return filter(lambda n: n.ip_version in self.ip_versions, nodes_all_versions)
 
     def _obtain_nodes_raw(self):
         print(" ... Looking for snapshots")

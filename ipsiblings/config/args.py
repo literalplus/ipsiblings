@@ -78,6 +78,9 @@ def _prepare_parser():
         '--really-harvest', action='store_true', help='Harvest even if we already have timestamps', default=False
     )
     harvest_grp.add_argument(
+        '--skip-v6', action='store_true', help='Skip IPv6 addresses (for testing purposes only)', default=False
+    )
+    harvest_grp.add_argument(
         '-ht', '--harvest-time', type=int,
         help=f'Collection duration, seconds (default {libconstants.HARVESTING_RUNTIME})',
         default=libconstants.HARVESTING_RUNTIME

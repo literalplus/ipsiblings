@@ -23,6 +23,7 @@ class CandidatesConfig:
 class TargetProviderConfig:
     def __init__(self, args):
         self.provider = args.targets_from
+        self.skip_v6 = args.skip_v6
 
 
 class FlagsConfig:
