@@ -70,8 +70,8 @@ class SysctlTuner(OsTuner):
     def apply(self):
         self.original_values = self._read_current_sysctls()
         self._store_to_file(self.original_values)
-        for sysctl, new_value in self._RECOMMENDED_SYSCTLS:
-            self._set_sysctl(sysctl, new_value)
+        for sysctl, new_value in self._RECOMMENDED_SYSCTLS.items():
+            self._set_sysctl(sysctl, str(new_value))
 
     def _read_current_sysctls(self) -> Dict[str, str]:
         original_values: Dict[str, str] = {}
@@ -105,7 +105,7 @@ class SysctlTuner(OsTuner):
             raise BusinessException(f'Failed to set sysctl {sysctl} to {new_value}')
 
     def try_revert(self):
-        for sysctl, original_value in self.original_values:
+        for sysctl, original_value in self.original_values.items():
             try:
                 self._set_sysctl(sysctl, original_value)
             except Exception:
