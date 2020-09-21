@@ -2,16 +2,16 @@
 #
 # (c) 2018 Marco Starke
 #
-# Most code in this file is based on or taken from the work of Scheitle et al. 2017:
+# The code in this file is loosely based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
 #
 
 from typing import Dict, Union, Tuple
 
-from .. import liblog
-from ..config import AppConfig
-from ..model import SiblingCandidate, LowRTSiblingCandidate, Target, PreparedTargets
+from ipsiblings import liblog
+from ipsiblings.config import AppConfig
+from ipsiblings.model import SiblingCandidate, LowRTSiblingCandidate, Target, PreparedTargets
 
 log = liblog.get_root_logger()
 

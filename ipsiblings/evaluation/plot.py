@@ -12,8 +12,8 @@ import os
 import matplotlib  # rc_context -> {'interactive': False }
 import matplotlib.backends.backend_pdf  # PdfPages
 
-from .. import libconstants as const
-from .. import liblog
+from ipsiblings import libconstants as const
+from ipsiblings import liblog
 
 log = liblog.get_root_logger()
 

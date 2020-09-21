@@ -12,16 +12,8 @@ PYTHON_VERSION_MAJOR = 3
 PYTHON_VERSION_MINOR = 6
 
 #### SERVICES AND OPTIMIZATION ####
-DISABLE_ALL = True
-# Configuration object to apply system dependent optimization settings
-OPTIMIZE_OS_SETTINGS = not DISABLE_ALL
-WRITE_OS_SETTINGS_TO_FILE = True
 OS_SETTINGS_FILE_NAME = 'settings.bak'
-# disable time sync during measurements -> OS dependent
-DISABLE_TIME_SYNC_SERVICE = not DISABLE_ALL
 
-# apply firewall rules defined in settings.py for respective OS
-FIREWALL_APPLY_RULES = not DISABLE_ALL
 
 ##########################
 #### OPTION CONSTANTS ####
@@ -86,9 +78,6 @@ PLOT_FILE_NAME = 'plot.pdf'
 
 # results file name
 RESULT_FILE_NAME = 'results.csv'
-
-# ip_pairs file name
-IP_PAIRS_FILE_NAME = 'ip_pairs.csv'
 
 # ssh keyscan constatns
 SSH_PORT = 22

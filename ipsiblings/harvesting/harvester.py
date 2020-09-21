@@ -15,8 +15,7 @@ from ipsiblings import libconstants as const
 from ipsiblings import liblog
 from ipsiblings.config import HarvesterConfig
 from ipsiblings.harvesting._harvestreceiver import HarvestReceiver
-from ipsiblings.libtools import NicInfo
-from ipsiblings.model import Target, PreparedTargets, DataException
+from ipsiblings.model import Target, PreparedTargets, DataException, NicInfo
 
 log = liblog.get_root_logger()
 

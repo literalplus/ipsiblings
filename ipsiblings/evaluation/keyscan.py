@@ -13,9 +13,9 @@ import subprocess
 import threading
 from typing import Dict, Tuple
 
-from . import libconstants as const
-from . import liblog
-from .model import SiblingCandidate
+from ipsiblings import libconstants as const
+from ipsiblings import liblog
+from ipsiblings.model import SiblingCandidate
 
 log = liblog.get_root_logger()
 

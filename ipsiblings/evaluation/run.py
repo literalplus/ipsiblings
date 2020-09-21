@@ -1,7 +1,8 @@
 import pathlib
 from typing import Dict, Tuple
 
-from .. import libconstants, config, keyscan, liblog, libsiblings
+from . import plot, keyscan, export
+from .. import libconstants, config, liblog
 from ..model import JustExit, SiblingCandidate
 
 log = liblog.get_root_logger()
@@ -50,12 +51,12 @@ def run(candidates: Dict[Tuple, SiblingCandidate], conf: config.AppConfig):
         if not resultfile.is_absolute():
             resultfile = conf.base_dir / resultfile
         log.info(f'Writing generated candidates to {resultfile}...')
-        nr_records = libsiblings.write_results(
+        nr_records = export.write_results(
             candidates.values(), resultfile, low_runtime=conf.candidates.low_runtime
         )
         log.info(f'Wrote {nr_records} result records.')
     ##### PLOT #####
     if conf.flags.export_plots:  # plots all candidates to base_directory/const.PLOT_FILE_NAME
         log.info('Starting plot process ...')
-        libsiblings.plot_all(candidates.values(), libconstants.PLOT_FILE_NAME)
+        plot.plot_all(candidates.values(), libconstants.PLOT_FILE_NAME)
         log.info('Finished printing charts')

@@ -9,7 +9,7 @@
 
 import csv
 
-from .. import liblog
+from ipsiblings import liblog
 
 log = liblog.get_root_logger()
 
