@@ -118,6 +118,8 @@ class Harvester(metaclass=abc.ABCMeta):
 
     def _send4(self):
         socket4 = scapy.conf.L2socket(iface=self.nic.name)
+        # randomisation has significance at least for the fact that time difference between start of v4 and v6
+        # series is used as an identifying metric
         for pkt in random.sample(self.v4packets, k=self.v4packets_length):
             if self.stop_all.value == 1:
                 log.debug('Stopping IPv4 sending process ...')
@@ -127,6 +129,8 @@ class Harvester(metaclass=abc.ABCMeta):
 
     def _send6(self):
         socket6 = scapy.conf.L2socket(iface=self.nic.name)
+        # randomisation has significance at least for the fact that time difference between start of v4 and v6
+        # series is used as an identifying metric
         for pkt in random.sample(self.v6packets, k=self.v6packets_length):
             if self.stop_all.value == 1:
                 log.debug('Stopping IPv6 sending process ...')

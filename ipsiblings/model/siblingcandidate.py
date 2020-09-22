@@ -15,6 +15,7 @@ from scipy import interpolate, stats
 
 from .exception import SiblingEvaluationError
 from .target import Target
+from .timestampseries import TimestampSeries
 from .. import libconstants as const
 from .. import liblog
 
@@ -35,6 +36,10 @@ class SiblingCandidate(object):
             self, target4: Target, target6: Target
     ):
         # TODO: Reduce v4/v6 duplication by splitting data into two objects like with Target
+        self.series4 = TimestampSeries(target4.timestamps)
+        self.series6 = TimestampSeries(target6.timestamps)
+
+        # BELOW: old API
         self.sibling_status = const.SIB_STATUS_UNKNOWN
         self.calc_finished = False  # flag to check if calculations have finished (due to error or valid result)
         self.is_sibling = False
@@ -326,12 +331,12 @@ class SiblingCandidate(object):
             #   raise SiblingEvaluationError(sibling_status = const.SIB_STATUS_TCP_OPTIONS_DIFFER)
 
             # frequency calculation
-            if not self.calc_frequency():
+            if not self.calc_frequency():  # MIGRATED
                 # set status and hz4, Xi4, Vi4, hz4_R2, hz4_raw; hz6, Xi6, Vi6, hz6_R2, hz6_raw
                 raise SiblingEvaluationError()
 
             # calculate and check raw tcp timestamp value
-            if not self.calc_raw_tcp_timestamp_value():
+            if not self.calc_raw_tcp_timestamp_value():  # MIGRATED
                 # sets raw_timestamp_diff
                 log.error('Raw TCP timestamp difference calculation error')
                 raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_RAW_TS_DISTANCE_ERROR)
@@ -343,6 +348,7 @@ class SiblingCandidate(object):
             #   raise SiblingEvaluationError(sibling_status = const.SIB_STATUS_FREQ_DIFF_TOO_HIGH)
 
             if const.SIB_FRT_CALC_ADDITIONAL_FEATURES:
+                # FIXME: Needs to be migrated to SiblingProperty
 
                 # offset calculations
                 if not self.calc_time_offsets():
@@ -607,6 +613,7 @@ class SiblingCandidate(object):
         #   log.error('IPv6 - r-squared below defined threshold (< {0}) - maybe randomized TS: {1} / {2}'.format(const.SIB_FREQ_IP6_R2_MIN, self.ip4, self.ip6))
         #   return False
 
+        # REPLACED by CleanSeriesProperty and FrequencyProperty
         self.hz4, self.Xi4, self.Vi4, self.hz4_R2, self.hz4_raw = hz4, Xi4, Vi4, hz4_R2, hz4_raw
         self.hz6, self.Xi6, self.Vi6, self.hz6_R2, self.hz6_raw = hz6, Xi6, Vi6, hz6_R2, hz6_raw
         self.hz_diff = abs(self.hz4_raw - self.hz6_raw)
@@ -614,6 +621,7 @@ class SiblingCandidate(object):
         return True
 
     def calc_raw_tcp_timestamp_value(self):
+        # REPLACED by FirstTimestampDiffProperty
         try:
             # tcp time distance in seconds
             tcp_time_distance = (self.tcp_offset6 - self.tcp_offset4) / numpy.mean(
