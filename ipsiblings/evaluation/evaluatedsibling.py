@@ -1,6 +1,6 @@
 import abc
 from enum import Enum, auto
-from typing import Dict, Type, Optional, TypeVar
+from typing import Dict, Type, Optional, TypeVar, Generic
 
 from ipsiblings.model import SiblingCandidate, TimestampSeries
 
@@ -11,6 +11,27 @@ class SiblingProperty(metaclass=abc.ABCMeta):
     def provide_for(cls, evaluated_sibling: 'EvaluatedSibling') -> Optional['SiblingProperty']:
         """Returns a new instance for given EvaluatedSibling. Raises if dynamic provision is not supported."""
         raise NotImplementedError
+
+
+RT = TypeVar('RT')
+
+
+class FamilySpecificSiblingProperty(SiblingProperty, Generic[RT], metaclass=abc.ABCMeta):
+    """
+    Abstract base class for address-family-specific properties.
+    Must set properties data4 and data6 of type RT in the constructor.
+    Provides access to these two via self[4] and self[6].
+    """
+
+    def __getitem__(self, item) -> RT:
+        if item == 4:
+            # noinspection PyUnresolvedReferences
+            return self.data4
+        elif item == 6:
+            # noinspection PyUnresolvedReferences
+            return self.data6
+        else:
+            raise KeyError
 
 
 class SiblingStatus(Enum):

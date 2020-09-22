@@ -348,32 +348,30 @@ class SiblingCandidate(object):
             #   raise SiblingEvaluationError(sibling_status = const.SIB_STATUS_FREQ_DIFF_TOO_HIGH)
 
             if const.SIB_FRT_CALC_ADDITIONAL_FEATURES:
-                # FIXME: Needs to be migrated to SiblingProperty
-
                 # offset calculations
-                if not self.calc_time_offsets():
+                if not self.calc_time_offsets():  # MIGRATED
                     # set status and tcp_ts_offsets4, tcp_ts_offsets6
                     raise SiblingEvaluationError()
 
                 # denoise calculations
-                if not self.calc_denoise():
+                if not self.calc_denoise():  # MIGRATED
                     # set status and denoised4 and denoised6
                     raise SiblingEvaluationError()
 
                 # calculate outlier removal
-                if not self.calc_outlier_removal():
+                if not self.calc_outlier_removal():  # MIGRATED
                     log.error('Mean removal error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_MEAN_REMOVAL_ERROR)
 
-                if not self.calc_pairwise_point_distance():
+                if not self.calc_pairwise_point_distance():  # MIGRATED
                     log.error('Pairwise point distance calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_PPD_ERROR)
 
-                if not self.calc_ppd_mean_median_thresholds():
+                if not self.calc_ppd_mean_median_thresholds():  # MIGRATED
                     log.error('PPD mean/median threshold calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_PPD_THRESHOLD_ERROR)
 
-                if not self.calc_sigma_outlier_removal():
+                if not self.calc_sigma_outlier_removal():  # MIGRATED
                     log.error('Two sigma outlier removal calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_SIGMA_OUTLIER_REMOVAL_ERROR)
 

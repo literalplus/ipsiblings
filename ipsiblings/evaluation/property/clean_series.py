@@ -1,7 +1,7 @@
 import numpy
 from numpy.lib import recfunctions
 
-from ipsiblings.evaluation.evaluatedsibling import SiblingProperty, EvaluatedSibling
+from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
 from ipsiblings.model import TimestampSeries
 
 # The code in this file is based on the work of Scheitle et al. 2017:
@@ -21,7 +21,7 @@ class NormTimestampSeries(TimestampSeries):
         super(NormTimestampSeries, self).__init__(source.key, structured_data)
 
 
-class NormSeriesProperty(SiblingProperty):
+class NormSeriesProperty(FamilySpecificSiblingProperty[NormTimestampSeries]):
     """
     Provides normalised timestamp series for each address family.
     Each of these series has effects of obvious integer overflows removed.
@@ -58,13 +58,5 @@ class NormSeriesProperty(SiblingProperty):
         return NormTimestampSeries(series, clean_reception_times, clean_ts_vals)
 
     def __init__(self, clean4: NormTimestampSeries, clean6: NormTimestampSeries):
-        self.clean4 = clean4
-        self.clean6 = clean6
-
-    def __getitem__(self, item) -> NormTimestampSeries:
-        if item == 4:
-            return self.clean4
-        elif item == 6:
-            return self.clean6
-        else:
-            raise KeyError
+        self.data4 = clean4
+        self.data6 = clean6

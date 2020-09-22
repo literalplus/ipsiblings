@@ -11,6 +11,7 @@ class FirstTimestampDiffProperty(SiblingProperty):
     Converts the first TSval timestamps to seconds and computes the difference between IPv4 and IPv6 trace.
     This is then compared to the difference in reception timestamps.
     The provided value is how far these differences are apart (absolute).
+    Often referred to as Delta-tcp-raw.
     Depends on FrequencyProperty.
     """
 

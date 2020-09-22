@@ -4,7 +4,7 @@
 import numpy
 import scipy.stats as scipy_stats
 
-from ipsiblings.evaluation.evaluatedsibling import SiblingProperty, EvaluatedSibling
+from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
 from ipsiblings.evaluation.property.clean_series import NormTimestampSeries, NormSeriesProperty
 
 
@@ -18,7 +18,7 @@ class FrequencyInfo:
         self.frequency = round(slope_raw)  # Kohno et al. Section 4.3
 
 
-class FrequencyProperty(SiblingProperty):
+class FrequencyProperty(FamilySpecificSiblingProperty[FrequencyInfo]):
     """
     Provides the frequency of the remote clock.
     Depends on CleanSeriesProperty.
@@ -30,19 +30,11 @@ class FrequencyProperty(SiblingProperty):
         return cls(clean_prop[4], clean_prop[6])
 
     def __init__(self, clean4: NormTimestampSeries, clean6: NormTimestampSeries):
-        self.freq4 = FrequencyInfo(clean4)
-        self.freq6 = FrequencyInfo(clean6)
-        self.diff = abs(self.freq4.frequency_raw - self.freq6.frequency_raw)
-        self.r_squared_diff = abs(self.freq4.r_squared - self.freq6.r_squared)
+        self.data4 = FrequencyInfo(clean4)
+        self.data6 = FrequencyInfo(clean6)
+        self.diff = abs(self[4].frequency_raw - self[6].frequency_raw)
+        self.r_squared_diff = abs(self[4].r_squared - self[6].r_squared)
 
     @property
     def mean_freq(self):
-        return numpy.mean([self.freq4.frequency_raw, self.freq6.frequency_raw])
-
-    def __getitem__(self, item) -> FrequencyInfo:
-        if item == 4:
-            return self.freq4
-        elif item == 6:
-            return self.freq6
-        else:
-            raise KeyError
+        return numpy.mean([self[4].frequency_raw, self[6].frequency_raw])
