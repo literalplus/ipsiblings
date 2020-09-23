@@ -1,6 +1,8 @@
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
+from typing import Dict
+
 import numpy
 import scipy.stats as scipy_stats
 
@@ -38,3 +40,10 @@ class FrequencyProperty(FamilySpecificSiblingProperty[FrequencyInfo]):
     @property
     def mean_freq(self):
         return numpy.mean([self[4].frequency_raw, self[6].frequency_raw])
+
+    def export(self) -> Dict[str, float]:
+        return {
+            '4': self[4].frequency, '4_R2': self[4].r_squared,
+            '6': self[6].frequency, '6_R2': self[6].r_squared,
+            'diff': self.diff,
+        }

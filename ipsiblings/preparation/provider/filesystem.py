@@ -2,7 +2,7 @@ import csv
 from typing import Dict, Tuple
 
 from ipsiblings import config, liblog
-from ipsiblings.model import Target
+from ipsiblings.model import Target, TcpOptions, const
 from ipsiblings.preparation.serialization import TargetSerialization
 
 log = liblog.get_root_logger()
@@ -20,14 +20,14 @@ class FilesystemProvider:
         with open(
                 TargetSerialization.get_targets_path(self.base_dir), 'r', newline='', encoding='utf-8'
         ) as targets_file:
-            reader = csv.reader(targets_file, delimiter=TargetSerialization.PRIMARY_DELIMITER)
+            reader = csv.reader(targets_file, delimiter=const.PRIMARY_DELIMITER)
             for record in reader:
                 key, rest = Target.key_and_rest_from(record)
                 target = Target(key)
                 domains_data, tcp_options_str, *ts_data = rest
-                for domain in domains_data.split(TargetSerialization.SECONDARY_DELIMITER):
+                for domain in domains_data.split(const.SECONDARY_DELIMITER):
                     target.add_domain(domain)
-                target.tcp_options = TargetSerialization.tcp_options_from_str(tcp_options_str)
+                target.tcp_options = TcpOptions.from_str(tcp_options_str)
                 for even_idx in range(0, len(ts_data) - 1, 2):  # subtract 1 to skip lonely odd indices at the end
                     remote_ts = int(ts_data[even_idx])
                     local_ts = float(ts_data[even_idx + 1])

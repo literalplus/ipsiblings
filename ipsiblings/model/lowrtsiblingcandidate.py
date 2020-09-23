@@ -66,6 +66,7 @@ class LowRTSiblingCandidate(SiblingCandidate):
         return features
 
     def _calc_frequency(self, ipversion=None):
+        # TODO: how is this different from super's impl?
         if ipversion == 4:
             recv_ts = self.ip4_ts['received']
             tcp_ts = self.ip4_ts['remote']
@@ -177,6 +178,7 @@ class LowRTSiblingCandidate(SiblingCandidate):
             return (hz, Xi_arr, Vi_arr, hz_R2, slope_raw)
 
     def calc_frequency(self):
+        # TODO: how is this different from super's impl?
         hz4, Xi4, Vi4, hz4_R2, hz4_raw = self._calc_frequency(ipversion=4)
         hz6, Xi6, Vi6, hz6_R2, hz6_raw = self._calc_frequency(ipversion=6)
 
@@ -215,6 +217,7 @@ class LowRTSiblingCandidate(SiblingCandidate):
         return True
 
     def _calc_outlier_removal(self, ipversion):
+        # TODO: how is this different from super's impl?
         # remove outliers off the confidence level
         if ipversion == 4:
             offsets = self.tcp_ts_offsets4
@@ -244,6 +247,7 @@ class LowRTSiblingCandidate(SiblingCandidate):
         return cleaned_arr
 
     def _calc_dynamic_range(self, ipversion=None):
+        # TODO: how is this different from super's impl?
         # we do not prune the array in low runtime setting
         if ipversion == 4:
             offset_arr = self.cleaned_mean4_sigma
@@ -271,11 +275,13 @@ class LowRTSiblingCandidate(SiblingCandidate):
     #### SPLINE calculations
     ##############################################################################
     def _calc_equal_bin_size(self, offsets, nr_bins):
+        # TODO: how is this different from super's impl?
         start = offsets[0][0]  # list(tuple(x, y))
         stop = offsets[-1][0]
         return round((stop - start) / nr_bins, 1)
 
     def _calc_spline(self, bin_size, packed_arr):
+        # TODO: how is this different from super's impl?
         try:
             x, y = zip(*packed_arr)
         except Exception as e:
@@ -302,6 +308,7 @@ class LowRTSiblingCandidate(SiblingCandidate):
         return (curve, xs)
 
     def calc_spline(self):
+        # TODO: how is this different from super's impl?
         nr_bins = self.number_of_timestamps - 2
         try:
             bin_size4 = self._calc_equal_bin_size(self.cleaned_mean4_sigma, nr_bins)
@@ -332,6 +339,7 @@ class LowRTSiblingCandidate(SiblingCandidate):
     ##############################################################################
 
     def evaluate(self):
+        # TODO: how is this different from super's impl?
         if self.calc_finished:
             log.warning(
                 'Already evaluated SiblingCandidate (result: {0}) {1} / {2} -> {3}'.format(self.is_sibling, self.ip4,

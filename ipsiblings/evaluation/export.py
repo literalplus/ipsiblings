@@ -8,65 +8,30 @@
 #
 
 import csv
+from typing import List, Dict
 
-from ipsiblings import liblog
-
-log = liblog.get_root_logger()
-
-
-def prepare_tcp_opts(tcpopts, delimiter='-'):
-    if tcpopts:
-        out = []
-        for k, v in tcpopts:  # list of tuples (name, value)
-            if k == 'WScale':
-                out.append('WS{0:0>2}'.format(v))
-            elif k == 'Timestamp':
-                out.append('TS')
-            else:
-                out.append(k)
-
-        return delimiter.join(out)
-    else:
-        return ''
+from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
+from ipsiblings.model import const
 
 
-def prepare_domains(domains, delimiter=','):
-    if domains:
-        return delimiter.join(domains)
-    else:
-        return ''
-
-
-def write_results(candidates, resultfile, low_runtime=False, delimiter=';'):
+def write_results(evaluated_siblings: List[EvaluatedSibling], out_path):
     """
     Write available results to resultfile
     """
-    if low_runtime:
-        keys = ['ip4', 'ip6', 'port4', 'port6', 'domains', 'hz4', 'hz6', 'hz4_R2', 'hz6_R2', 'raw_ts_diff',
-                'ip4_tcpopts', 'ip6_tcpopts', 'ssh_keys_match', 'ssh_agents_match', 'geo4', 'geo6', 'geoloc_diff',
-                'status', 'is_sibling']
-    else:
-        keys = ['ip4', 'ip6', 'port4', 'port6', 'domains', 'hz4', 'hz6', 'hz4_R2', 'hz6_R2', 'raw_ts_diff', 'alpha4',
-                'alpha6', 'alphadiff', 'rsqr4', 'rsqr6', 'rsqrdiff', 'theta', 'dynrange4', 'dynrange6', 'dynrange_diff',
-                'dynrange_diff_rel', 'spl_percent_val', 'ip4_tcpopts', 'ip6_tcpopts', 'ssh_keys_match',
-                'ssh_agents_match', 'geo4', 'geo6', 'geoloc_diff', 'status', 'is_sibling']
+    # TODO: LRT keys: 'ip4', 'ip6', 'port4', 'port6', 'domains', 'hz4', 'hz6', 'hz4_R2', 'hz6_R2', 'raw_ts_diff',
+    #             'ip4_tcpopts', 'ip6_tcpopts', 'ssh_keys_match', 'ssh_agents_match', 'geo4', 'geo6', 'geoloc_diff',
+    #             'status', 'is_sibling'
+    # TODO: Missing handling for SSH key/agent match
 
-    linecounter = 0
-    with open(resultfile, mode='w', newline='') as csvfile:
-        csvout = csv.writer(csvfile, delimiter=delimiter)
-        csvout.writerow(keys)  # write header
-        for candidate in candidates:
-            res = candidate.get_results()
-            line = []
-            for key in keys:
-                if key == 'domains':
-                    line.append(prepare_domains(res[key]))
-                elif key == 'ip4_tcpopts' or key == 'ip6_tcpopts':
-                    line.append(prepare_tcp_opts(res[key]))
-                else:
-                    line.append(res[key])
-
-            csvout.writerow(line)
-            linecounter = linecounter + 1
-
-    return linecounter
+    all_keys = set()
+    candidate_exports: List[Dict[str, str]] = []
+    for evaluated_sibling in evaluated_siblings:
+        export = evaluated_sibling.export()
+        all_keys.update(export.keys())
+        candidate_exports.append(export)
+    with open(out_path, mode='w', newline='', encoding='utf-8') as csv_file:
+        dialect = csv.Dialect()
+        dialect.delimiter = const.PRIMARY_DELIMITER
+        writer = csv.DictWriter(csv_file, fieldnames=all_keys, dialect=dialect)
+        writer.writeheader()
+        writer.writerows(candidate_exports)

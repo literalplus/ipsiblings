@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy
 
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
@@ -44,3 +46,11 @@ class DynamicRangeProperty(FamilySpecificSiblingProperty[float]):
         self.diff_absolute = abs(range4 - range6)
         self.average = numpy.mean([range4, range6])
         self.diff_relative = self.diff_absolute / self.average
+
+    def export(self) -> Dict[str, float]:
+        return {
+            '4': self[4], '6': self[6],
+            'diff_abs': self.diff_absolute,
+            'diff_rel': self.diff_relative,
+            'avg': self.average,
+        }

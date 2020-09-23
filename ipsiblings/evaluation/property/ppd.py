@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Dict
 
 import numpy
 
@@ -75,3 +75,6 @@ class PpdProperty(SiblingProperty):
             median_ppd - libconstants.SIB_Z_SCORE_CONFIDENCE_LEVEL_95_5 * stdev_from_median,
             median_ppd + libconstants.SIB_Z_SCORE_CONFIDENCE_LEVEL_95_5 * stdev_from_median
         )
+
+    def export(self) -> Dict[str, float]:
+        return {'offset_rng': self.offset_range}

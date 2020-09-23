@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy
 
 from ipsiblings import liblog, libconstants
@@ -47,3 +49,6 @@ class MeanOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
     def __init__(self, filtered4: OffsetSeries, filtered6: OffsetSeries):
         self.data4 = filtered4
         self.data6 = filtered6
+
+    def export(self) -> Dict[str, int]:
+        return {'len4': len(self[4]), 'len6': len(self[6])}

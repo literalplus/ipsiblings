@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Dict
 
 import numpy
 from scipy.stats import mstats as scipy_mstats
@@ -56,3 +56,12 @@ class SkewProperty(SiblingProperty):
             return self.skew6
         else:
             raise KeyError
+
+    def export(self) -> Dict[str, float]:
+        return {
+            '4': self[4], '6': self[6],
+            '4_R2': self.r_square4, '6_R2': self.r_square6,
+            'diff': self.skew_diff,
+            'R2_diff': self.r_square_diff,
+            'theta': self.skew_diff_angle_rad,
+        }

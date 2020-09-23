@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy
 from numpy.lib import recfunctions
 
@@ -60,3 +62,6 @@ class NormSeriesProperty(FamilySpecificSiblingProperty[NormTimestampSeries]):
     def __init__(self, clean4: NormTimestampSeries, clean6: NormTimestampSeries):
         self.data4 = clean4
         self.data6 = clean6
+
+    def export(self) -> Dict[str, int]:
+        return {'len4': len(self[4]), 'len6': len(self[6])}

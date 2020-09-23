@@ -1,6 +1,8 @@
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
+from typing import Dict
+
 import numpy
 from numpy.lib import recfunctions
 
@@ -34,6 +36,9 @@ class OffsetSeries:
     def offsets(self) -> numpy.ndarray:
         return self.data[self.KEY_OFFSET]
 
+    def __len__(self):
+        return len(self.data)
+
 
 class OffsetsProperty(FamilySpecificSiblingProperty[OffsetSeries]):
     """
@@ -53,3 +58,6 @@ class OffsetsProperty(FamilySpecificSiblingProperty[OffsetSeries]):
     def __init__(self, offsets4: OffsetSeries, offsets6: OffsetSeries):
         self.data4 = offsets4
         self.data6 = offsets6
+
+    def export(self) -> Dict[str, int]:
+        return {'len4': len(self[4]), 'len6': len(self[6])}

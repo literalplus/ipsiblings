@@ -1,12 +1,13 @@
-from typing import List, Tuple, Union, Iterable
+from typing import List, Tuple, Optional
 
+from .tcpopts import TcpOptions
 from .timestamps import Timestamps
 
 
 class Target:
     def __init__(self, key: Tuple[int, str, int]):
         self.ip_version, self.address, self.port = key
-        self.tcp_options: Union[None, List[Tuple[str, Union[Iterable, str]]]] = None
+        self.tcp_options: Optional[TcpOptions] = None
         self.timestamps = Timestamps(self.ip_version, self.address, self.port)
         self.domains = set()
 
@@ -32,4 +33,4 @@ class Target:
     def handle_timestamp(self, remote_ts, received_ts, tcp_options):
         self.timestamps.add_timestamp(remote_ts, received_ts)
         if tcp_options and not self.tcp_options:
-            self.tcp_options = tcp_options
+            self.tcp_options = TcpOptions(tcp_options)

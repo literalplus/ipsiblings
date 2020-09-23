@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy
 
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
@@ -47,3 +49,6 @@ class PpdOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
 
     def _stack_with_indices(self, arr: numpy.ndarray) -> numpy.ndarray:
         return numpy.stack([numpy.arange(len(arr)), arr])
+
+    def export(self) -> Dict[str, float]:
+        return {'ppd_rng': self.new_ppd_range}

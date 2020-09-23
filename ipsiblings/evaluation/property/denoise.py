@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 import numpy
 
@@ -43,3 +43,6 @@ class DenoiseProperty(FamilySpecificSiblingProperty[OffsetSeries]):
     def __init__(self, denoised4: OffsetSeries, denoised6: OffsetSeries):
         self.data4 = denoised4
         self.data6 = denoised6
+
+    def export(self) -> Dict[str, int]:
+        return {'len4': len(self[4]), 'len6': len(self[6])}

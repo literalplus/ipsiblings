@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
 import numpy
 
@@ -45,3 +45,6 @@ class SplineDiffProperty(SiblingProperty):
             (mapped_diffs[OffsetSpline.KEY_OFFSET] - abs(diff_of_means)) - lower_spline.offsets
         )
         return OffsetSeries(mapped_diffs), diff_of_means
+
+    def export(self) -> Dict[str, float]:
+        return {'pct85': self.diff_85_percentile}
