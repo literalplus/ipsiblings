@@ -23,7 +23,7 @@ class OffsetSeries:
         offsets_raw = (tsvals_secs - source.reception_times) * 1000
         rounded_offsets = offsets_raw.round(decimals=6)
         data_unstructured = numpy.column_stack((source.reception_times, rounded_offsets))
-        data = recfunctions.unstructured_to_structured(data_unstructured, dytpe=cls.DTYPE)
+        data = recfunctions.unstructured_to_structured(data_unstructured, dtype=cls.DTYPE)
         return cls(data)
 
     @property

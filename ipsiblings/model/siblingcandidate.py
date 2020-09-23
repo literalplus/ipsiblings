@@ -375,30 +375,30 @@ class SiblingCandidate(object):
                     log.error('Two sigma outlier removal calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_SIGMA_OUTLIER_REMOVAL_ERROR)
 
-                if not self.calc_dynamic_range():
+                if not self.calc_dynamic_range():  # MIGRATED
                     log.error('Dynamic range calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_DYNAMIC_RANGE_ERROR)
 
-                if not self.calc_alpha():  # skew angle
+                if not self.calc_alpha():  # skew angle, MIGRATED
                     log.error('Angle alpha calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_ALPHA_ERROR)
 
-                if not self.calc_theta():
+                if not self.calc_theta():  # MIGRATED
                     # Beverly Section 3.3; the angle between the lines built by drawing alpha4/alpha6
                     # if theta < tau (threshold value = 1.0) then inferred to be siblings
                     log.error('Theta calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_THETA_ERROR)
 
             if const.SIB_FRT_CALC_SPLINE:
-                if not self.calc_spline():
+                if not self.calc_spline():  # MIGRATED
                     log.error('Spline calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_SPLINE_CALC_ERROR)
 
-                if not self.calc_curve_mapping():
+                if not self.calc_curve_mapping():  # MIGRATED
                     log.error('Curve mapping calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_CURVE_MAPPING_ERROR)
 
-                if not self.calc_curve_diff_percent():
+                if not self.calc_curve_diff_percent():  # MIGRATED
                     log.error('Curve percentage mapping calculation error')
                     raise SiblingEvaluationError(sibling_status=const.SIB_STATUS_CURVE_PERCENT_MAPPING_ERROR)
         except SiblingEvaluationError as e:
@@ -1072,11 +1072,9 @@ class SiblingCandidate(object):
                 y_mapped = self.spline_arr6[:max_length] - abs(spl_diff)
 
             if spl_diff >= 0:  # v4 curve is the upper one
-                x_mapped = self.xs4[:max_length]
                 for i in range(max_length):
                     spl_mapped_diff.append(abs(y_mapped[i] - self.spline_arr6[i]))
             else:  # v6 curve is the upper one
-                x_mapped = self.xs6[:max_length]
                 for i in range(max_length):
                     spl_mapped_diff.append(abs(y_mapped[i] - self.spline_arr4[i]))
         except Exception as e:
@@ -1093,10 +1091,6 @@ class SiblingCandidate(object):
         # calc cumulative distribution function array first
         try:
             spl_counter = collections.Counter(self.spl_mapped_diff)
-            keys = list(spl_counter.keys())
-            counts = list(spl_counter.values())
-            total_counts = sum(counts)
-            percents = [100 * (c / total_counts) for c in counts]
             appearances = sorted(spl_counter.items())  # -> returns list of tuples
 
             suml = 0
