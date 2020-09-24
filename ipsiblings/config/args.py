@@ -66,7 +66,8 @@ def _prepare_parser():
     )
     target_grp.add_argument(
         '--skip-v', type=int, action='append', default=[],
-        help='Skip IPvX addresses while acquiring targets (for testing only, may be specified multiple times)'
+        help='Skip IPvX addresses while acquiring targets '
+             '(for testing only, may be specified multiple times, ignored for filesystem provider)'
     )
     target_grp.add_argument(
         '--from', type=int, dest='start_index', help='Index of first target to consider (default 0)'

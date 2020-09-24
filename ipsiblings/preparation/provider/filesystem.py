@@ -11,11 +11,9 @@ log = liblog.get_root_logger()
 class FilesystemProvider:
     def __init__(self):
         self.base_dir = None
-        self.skip_ip_versions = []
 
     def configure(self, conf: config.AppConfig):
         self.base_dir = conf.base_dir
-        self.skip_ip_versions = conf.targetprovider.skip_ip_versions
 
     def provide(self) -> Dict[str, Target]:
         targets: Dict[Tuple, Target] = {}
@@ -26,8 +24,6 @@ class FilesystemProvider:
             for record in reader:
                 key, rest = Target.key_and_rest_from(record)
                 target = Target(key)
-                if target.ip_version in self.skip_ip_versions:
-                    continue
                 domains_data, tcp_options_str, *ts_data = rest
                 for domain in domains_data.split(const.SECONDARY_DELIMITER):
                     target.add_domain(domain)

@@ -11,7 +11,6 @@ import csv
 from typing import List, Dict
 
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
-from ipsiblings.model import const
 
 
 def write_results(evaluated_siblings: List[EvaluatedSibling], out_path):
@@ -30,8 +29,8 @@ def write_results(evaluated_siblings: List[EvaluatedSibling], out_path):
         all_keys.update(export.keys())
         candidate_exports.append(export)
     with open(out_path, mode='w', newline='', encoding='utf-8') as csv_file:
-        dialect = csv.Dialect()
-        dialect.delimiter = const.PRIMARY_DELIMITER
-        writer = csv.DictWriter(csv_file, fieldnames=all_keys, dialect=dialect)
+        keys_sorted = list(all_keys)
+        keys_sorted.sort()
+        writer = csv.DictWriter(csv_file, fieldnames=keys_sorted, dialect=csv.excel_tab)
         writer.writeheader()
         writer.writerows(candidate_exports)

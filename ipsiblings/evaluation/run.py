@@ -42,7 +42,7 @@ def _handle_ssh_keyscan(candidates: Dict[Tuple, SiblingCandidate], conf):
 def _do_export(evaluated: List[EvaluatedSibling], conf):
     out_file = pathlib.Path(conf.paths.candidates_out)
     if not out_file.is_absolute():
-        out_file = conf.base_dir / out_file
+        out_file = pathlib.Path(conf.base_dir) / out_file
     log.info(f'Writing evaluated candidates to {out_file}...')
     export.write_results(evaluated, out_file)
     log.info(f'Wrote {len(evaluated)} result records.')
@@ -59,5 +59,5 @@ def run(candidates: Dict[Tuple, SiblingCandidate], conf: config.AppConfig):
         _do_export(evaluated, conf)
     if conf.flags.export_plots:
         log.info('Starting plot process ...')
-        plot.plot_all(evaluated, conf.base_dir / 'plots.pdf')
+        plot.plot_all(evaluated, pathlib.Path(conf.base_dir) / 'plots.pdf')
         log.info('Finished printing charts')

@@ -52,7 +52,7 @@ class SiblingCandidate(object):
         self.ip4, self.port4 = target4.address, target4.port
         self.ip6, self.port6 = target6.address, target6.port
         self.ip4_tcpopts, self.ip6_tcpopts = target4.tcp_options.data, target6.tcp_options.data
-        self.domains = target4.domains + target6.domains
+        self.domains = target4.domains.union(target6.domains)
 
         dt = numpy.dtype('int64, float64')  # data type for numpy array
         columns = ['remote', 'received']  # column/index name -> e.g. access with ip4_ts['remote']

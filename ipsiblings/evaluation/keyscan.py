@@ -84,18 +84,18 @@ class Keyscan(object):
         self.v6map = {}
 
         for c in candidates.values():
-            if c.has_ssh() and c.keys_match() != None:  # ssh available? keys already loaded? (None if no keys available)
+            if c.has_ssh() and c.keys_match() is not None:  # ssh available? keys already loaded? (None if no keys available)
                 continue
 
             ip4, ip6 = c.ip4, c.ip6
             if ip4 in self.v4map:
                 self.v4map[ip4].add(c)
             else:
-                self.v4map[ip4] = set([c])
+                self.v4map[ip4] = {c}
             if ip6 in self.v6map:
                 self.v6map[ip6].add(c)
             else:
-                self.v6map[ip6] = set([c])
+                self.v6map[ip6] = {c}
 
     def _load_ssh_keys(self):
         filename = pathlib.Path(self.directory, self.keyfile)
@@ -105,19 +105,19 @@ class Keyscan(object):
         keys = {4: {}, 6: {}}
         k = keys[4]
         with open(filename, mode='r') as infile:
-            for l in infile:
-                line = l.strip()
+            for line in infile:
+                line = line.strip()
                 if not line:
                     continue
                 if line.startswith('='):
                     k = keys[6]
                     continue
 
-                ip, type, key = line.split()
+                ip, kind, key = line.split()
                 if ip not in k:
-                    k[ip] = {type: key}
+                    k[ip] = {kind: key}
                 else:
-                    k[ip][type] = key
+                    k[ip][kind] = key
 
         return keys
 
@@ -158,9 +158,11 @@ class Keyscan(object):
             return False
 
         for line in keys:
-            ip, type, key = line.split()
+            if not line:
+                continue
+            ip, kind, key = line.split()
             for cand in ipmap[ip]:
-                cand.addsshkey(type, key, version)
+                cand.addsshkey(kind, key, version)
 
     def _map_agents(self, agents, version=None):
         if version == const.IP4:

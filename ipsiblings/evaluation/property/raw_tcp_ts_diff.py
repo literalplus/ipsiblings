@@ -19,7 +19,8 @@ class FirstTimestampDiffProperty(SiblingProperty):
     @classmethod
     def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'FirstTimestampDiffProperty':
         freq_prop = evaluated_sibling.contribute_property_type(FrequencyProperty)
-        tsval_diff = (evaluated_sibling[4].first_ts_val - evaluated_sibling[6].first_ts_val)
+        # Convert to Python int to prevent overflow. lol
+        tsval_diff = (int(evaluated_sibling[4].first_ts_val) - int(evaluated_sibling[6].first_ts_val))
         tcp_diff_secs = tsval_diff / freq_prop.mean_freq
         recv_time_diff_secs = evaluated_sibling[4].first_reception_time - evaluated_sibling[6].first_reception_time
         return cls(tcp_diff_secs, recv_time_diff_secs)

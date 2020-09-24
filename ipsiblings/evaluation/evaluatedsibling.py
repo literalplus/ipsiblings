@@ -80,7 +80,7 @@ class EvaluatedSibling:
 
     def __str__(self):
         return 'EvaluatedSibling -> ' + \
-               "<>".join([s.key for s in self.series.values()]) + \
+               "<>".join([str(s.key) for s in self.series.values()]) + \
                f' -> {self.classifications}'
 
     def get_property(self, property_type: Type[PT]) -> PT:
@@ -131,16 +131,16 @@ class EvaluatedSibling:
                 if self.tcp_options[ip_version] else const.NONE_MARKER
         for prop in self._properties.values():
             prefix = libtools.camel_to_snake_case(type(prop).__name__.replace('Property', ''))
-            for key, value in prop.export():
+            for key, value in prop.export().items():
                 exported[f'{prefix}_{key}'] = str(value)
-        for key, status in self.classifications:
+        for key, status in self.classifications.items():
             exported[f'status_{key}'] = status.name
         return exported
 
     @property
     def overall_status(self) -> SiblingStatus:
         overall = SiblingStatus.INDECISIVE
-        for key, status in self.classifications:
+        for key, status in self.classifications.items():
             transitions = _STATUS_TRANSITIONS[overall]
             if not transitions:
                 overall = status
