@@ -5,6 +5,7 @@
 
 import ipaddress
 import socket
+from typing import List
 
 import netifaces
 
@@ -16,8 +17,8 @@ from ..model.nicinfo import NicInfo
 log = liblog.get_root_logger()
 
 
-def obtain_nic() -> NicInfo:
-    nic_list = _get_dualstack_nic_names()
+def obtain_nic(skip_ip_versions: List[int]) -> NicInfo:
+    nic_list = _get_dualstack_nic_names(skip_ip_versions)
     if not nic_list:
         raise ConfigurationException('Unable to find any Dual-Stack NIC')
     else:
@@ -29,14 +30,16 @@ def obtain_nic() -> NicInfo:
     return info
 
 
-def _get_dualstack_nic_names():
+def _get_dualstack_nic_names(skip_ip_versions: List[int]):
     """
     Check if Dual Stack is available and return a sorted list of interfaces.
     """
     dual_stack_nics = []
     nic_names = netifaces.interfaces()
     for nic_name in nic_names:
-        if _has_nic_global_ipv4(nic_name) and _has_nic_global_ipv6(nic_name):
+        v4_eligible = 4 in skip_ip_versions or _has_nic_global_ipv4(nic_name)
+        v6_eligible = 6 in skip_ip_versions or _has_nic_global_ipv6(nic_name)
+        if v4_eligible and v6_eligible:
             dual_stack_nics.append(nic_name)
     dual_stack_nics.sort()
     return dual_stack_nics

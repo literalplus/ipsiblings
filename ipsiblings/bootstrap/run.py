@@ -31,7 +31,7 @@ def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfi
         raise DataException('No timestamps available, was only a port scan requested?')
     candidates = construct_candidates.construct_candidates_for(prepared_targets, conf)
     if not candidates:
-        raise DataException('No sibling candidates available')
+        raise DataException('No sibling candidates available - do we have targets for both address families?')
     log.info(f'Constructed {len(candidates)} sibling candidates')
     return candidates
 

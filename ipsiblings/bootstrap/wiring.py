@@ -14,7 +14,7 @@ class Wiring:
 
     def __init__(self, conf: AppConfig):
         self.conf: AppConfig = conf
-        self.nic = libtools.network.obtain_nic()
+        self.nic = libtools.network.obtain_nic(conf.targetprovider.skip_ip_versions)
         self.log = liblog.get_root_logger()
         self.target_provider = preparation.get_provider(conf.targetprovider.provider)
         self.target_provider.configure(conf)
