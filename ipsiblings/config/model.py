@@ -1,4 +1,5 @@
 import os
+from typing import Set
 
 from .args import parser
 from .. import liblog
@@ -23,7 +24,7 @@ class CandidatesConfig:
 class TargetProviderConfig:
     def __init__(self, args):
         self.provider = args.targets_from
-        self.skip_v6 = args.skip_v6
+        self.skip_ip_versions: Set[int] = set(args.skip_v)
 
 
 class FlagsConfig:

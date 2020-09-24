@@ -17,8 +17,7 @@ class BitcoinNodesProvider(TargetProvider):
         self.ip_versions = {4, 6}
 
     def configure(self, conf: config.AppConfig) -> None:
-        if conf.targetprovider.skip_v6:
-            self.ip_versions = {4}
+        self.ip_versions -= conf.targetprovider.skip_ip_versions
 
     def provide(self) -> Dict[str, Target]:
         """Provide targets as a mapping (ip4, ip6) -> CandidatePair"""
@@ -37,13 +36,13 @@ class BitcoinNodesProvider(TargetProvider):
         return filter(lambda n: n.ip_version in self.ip_versions, nodes_all_versions)
 
     def _obtain_nodes_raw(self):
-        print(" ... Looking for snapshots")
+        log.debug("Looking for snapshots of Bitcoin network.")
         snapshots = requests.get(API_SNAPSHOTS).json()
         snapshot = snapshots["results"][0]
-        print(f" Found {snapshot['url']} with {snapshot['total_nodes']} nodes.")
+        log.debug(f" Found {snapshot['url']} with {snapshot['total_nodes']} nodes.")
         snap_data = requests.get(snapshot["url"]).json()
         nodes = snap_data["nodes"]
-        print(f" Received {len(nodes)} nodes")
+        log.info(f" Received {len(nodes)} Bitcoin nodes")
         return nodes
 
     def get_ground_truth_pairs(self):
@@ -62,7 +61,7 @@ class BitcoinNodesProvider(TargetProvider):
             ips = ", ".join(map(lambda n: n.ip_str, raw_nodes))
             print(f" ->  {key} ~ {ips}")
 
-        print(f" *** Found {len(candidates)} duplicates.")
+        log.info(f" *** Found {len(candidates)} Bitcoin node duplicates by hostname.")
         return candidates
 
 
