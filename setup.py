@@ -16,7 +16,7 @@ setuptools.setup(
     install_requires=[
         'scapy~=2.4.4',
         'netifaces~=0.10.9',
-        'numpy~=1.18.5',
+        'numpy~=1.19.2',
         'scipy~=1.4.1',
         'pandas~=1.0.4',
         'matplotlib~=3.2.1',

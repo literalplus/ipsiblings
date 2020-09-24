@@ -11,8 +11,8 @@ from typing import Dict, Optional
 
 import numpy
 
-from . import TcpOptions
 from .target import Target
+from .tcpopts import TcpOptions
 from .timestampseries import TimestampSeries
 from .. import libconstants as const
 from .. import liblog

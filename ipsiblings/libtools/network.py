@@ -10,7 +10,8 @@ import netifaces
 
 from .. import libconstants as const
 from .. import liblog
-from ..model import ConfigurationException, NicInfo
+from ..model.exception import ConfigurationException
+from ..model.nicinfo import NicInfo
 
 log = liblog.get_root_logger()
 
