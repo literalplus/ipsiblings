@@ -33,6 +33,28 @@ class LowRTSiblingCandidate(SiblingCandidate):
 
         self.number_of_timestamps = min(len(self.ip4_ts), len(self.ip6_ts))
 
+        dt = numpy.dtype('int64, float64')  # data type for numpy array
+        columns = ['remote', 'received']  # column/index name -> e.g. access with ip4_ts['remote']
+        dt.names = columns
+
+        self.ip4_ts = numpy.array(target4.timestamps.timestamps, dtype=dt)
+        self.ip6_ts = numpy.array(target4.timestamps.timestamps, dtype=dt)
+        self.recv_offset4 = self.ip4_ts['received'][0]  # timestamp data e.g. 1541886109.485699 (float)
+        self.recv_offset6 = self.ip6_ts['received'][0]
+        self.tcp_offset4 = self.ip4_ts['remote'][0]  # timestamp data e.g. 1541886109 (uint32)
+        self.tcp_offset6 = self.ip6_ts['remote'][0]
+
+        self.tcp_opts_differ = self.calc_tcp_opts_differ()  # if None, no tcp options are available -> ignore
+
+        self.ssh_available = False  # TODO: We need a new concept to determine if we have SSH
+        self.ssh_keys_match = None  # TODO: SSH keys used to be taken as parameters
+        self.ssh4 = {}
+        self.ssh6 = {}
+
+        self.agent4 = ''
+        self.agent6 = ''
+        self.ssh_agents_match = None
+
     def get_features(self, key_list=None, substitute_none=None):
         """
         Return features used for machine learning.
@@ -348,8 +370,8 @@ class LowRTSiblingCandidate(SiblingCandidate):
             return self.is_sibling
 
         # check ssh keys
-        self.ssh_keys_match = self.keys_match()
-        self.ssh_agents_match = self.agents_match()
+        # self.ssh_keys_match = self.keys_match() - replaced by new api
+        # self.ssh_agents_match = self.agents_match() - replaced by new api
 
         try:
 

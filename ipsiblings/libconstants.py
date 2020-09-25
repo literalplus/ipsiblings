@@ -9,7 +9,7 @@ Holds project wide constants.
 """
 ### minimum python version ###
 PYTHON_VERSION_MAJOR = 3
-PYTHON_VERSION_MINOR = 6
+PYTHON_VERSION_MINOR = 7
 
 #### SERVICES AND OPTIMIZATION ####
 OS_SETTINGS_FILE_NAME = 'settings.bak'
@@ -23,8 +23,6 @@ OS_SETTINGS_FILE_NAME = 'settings.bak'
 # NOTE: Actually, a subdirectory with timestamp is created if no directory is given
 #       Also, the value of this variable is overwritten with the actual base directory.
 BASE_DIRECTORY = '/root/thesis/data'
-# silent node direcotry will be combined with the command line base directory
-DIRECTORY_SILENT_NODES = 'silent_nodes'
 
 # harvesting options
 # waits X seconds before sending processes are started for the first time
@@ -68,22 +66,8 @@ HARVESTING_RESULTS_TIMEOUT_FINAL = 120  # seconds - 2 * interval
 # HARVESTING_RESULTS_TIMEOUT = 4          # testing value -> 1
 # HARVESTING_RESULTS_TIMEOUT_FINAL = 8    # testing value -> 2
 
-# CandidatePair constants
-CANDIDATE_PAIRS_FILE_NAME = 'candidatepairs.csv'
-CANDIDATE_PAIRS_DATA_FILE_NAME = 'timestamp_data.txt'
-CANDIDATE_PAIRS_TCP_OPTS_FILE_NAME = 'tcp_options.txt'
-
-# plot file name
-PLOT_FILE_NAME = 'plot.pdf'
-
 # results file name
 RESULT_FILE_NAME = 'results.csv'
-
-# ssh keyscan constatns
-SSH_PORT = 22
-SSH_KEYS_FILENAME = 'ssh-keys.txt'
-SSH_AGENTS_FILENAME = 'ssh-agents.txt'
-SSH_KEYSCAN_COMMAND = 'ssh-keyscan -f -'
 
 # sibling options and constants
 # calc everything beyond raw_timestamp_diff

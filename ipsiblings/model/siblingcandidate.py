@@ -9,8 +9,6 @@
 
 from typing import Dict, Optional
 
-import numpy
-
 from .target import Target
 from .tcpopts import TcpOptions
 from .timestampseries import TimestampSeries
@@ -28,8 +26,6 @@ class SiblingCandidate(object):
     Represents a concrete SiblingCandidate.
     """
 
-    TS_DIFF_THRESHOLD = 0.305211037  # ours; Scheitle at al. use 0.2557
-
     def __init__(
             self, target4: Target, target6: Target
     ):
@@ -42,39 +38,14 @@ class SiblingCandidate(object):
             4: target4.tcp_options,
             6: target6.tcp_options,
         }
+        self.domains = target4.domains.union(target6.domains)
 
         # BELOW: old API
         self.sibling_status = const.SIB_STATUS_UNKNOWN
         self.calc_finished = False  # flag to check if calculations have finished (due to error or valid result)
-        self.is_sibling = False
-        self.calc_error = False  # flag to check if exception occurred -> correct status assignment
 
         self.ip4, self.port4 = target4.address, target4.port
         self.ip6, self.port6 = target6.address, target6.port
-        self.ip4_tcpopts, self.ip6_tcpopts = target4.tcp_options.data, target6.tcp_options.data
-        self.domains = target4.domains.union(target6.domains)
-
-        dt = numpy.dtype('int64, float64')  # data type for numpy array
-        columns = ['remote', 'received']  # column/index name -> e.g. access with ip4_ts['remote']
-        dt.names = columns
-
-        self.ip4_ts = numpy.array(target4.timestamps.timestamps, dtype=dt)
-        self.ip6_ts = numpy.array(target4.timestamps.timestamps, dtype=dt)
-        self.recv_offset4 = self.ip4_ts['received'][0]  # timestamp data e.g. 1541886109.485699 (float)
-        self.recv_offset6 = self.ip6_ts['received'][0]
-        self.tcp_offset4 = self.ip4_ts['remote'][0]  # timestamp data e.g. 1541886109 (uint32)
-        self.tcp_offset6 = self.ip6_ts['remote'][0]
-
-        self.tcp_opts_differ = self.calc_tcp_opts_differ()  # if None, no tcp options are available -> ignore
-
-        self.ssh_available = False  # TODO: We need a new concept to determine if we have SSH
-        self.ssh_keys_match = None  # TODO: SSH keys used to be taken as parameters
-        self.ssh4 = {}
-        self.ssh6 = {}
-
-        self.agent4 = ''
-        self.agent6 = ''
-        self.ssh_agents_match = None
 
     def __hash__(self):
         return hash(self.key)
@@ -92,63 +63,6 @@ class SiblingCandidate(object):
     @property
     def key(self):
         return self.ip4, self.port4, self.ip6, self.port6
-
-    def has_ssh(self):
-        # TODO: Currently defunct, see note in constructor (if it's gone, this comment is probably obsolete)
-        return self.ssh_available
-
-    def addsshkey(self, type, key, version):
-        if version == const.IP4:
-            self.ssh4[type] = key
-        elif version == const.IP6:
-            self.ssh6[type] = key
-
-    def addsshkeys(self, keys, version):
-        if version == const.IP4:
-            self.ssh4 = keys  # { type: key }
-        elif version == const.IP6:
-            self.ssh6 = keys  # { type: key }
-        else:
-            return
-
-        if self.ssh4 and self.ssh6:  # check matching keys if both ssh key values set
-            self.ssh_keys_match = self.keys_match()
-
-    def keys_match(self):
-        if not self.ssh4 or not self.ssh6:
-            return None
-
-        keytypes = set(self.ssh4.keys()).intersection(set(self.ssh6.keys()))
-
-        if not keytypes:
-            return None
-
-        for type in keytypes:
-            if self.ssh4[type] != self.ssh6[type]:
-                return False
-
-        return True
-
-    def addsshagent(self, agent, version):
-        if version == const.IP4:
-            self.agent4 = agent.strip()
-        elif version == const.IP6:
-            self.agent6 = agent.strip()
-        else:
-            return None
-
-        self.ssh_agents_match = self.agents_match()
-
-    def agents_match(self):
-        if not self.agent4 or not self.agent6:
-            return None
-        return self.agent4 == self.agent6
-
-    def get_status(self):
-        """
-        -> (calculations_finished, sibling_status)
-        """
-        return self.calc_finished, self.sibling_status
 
     def get_features(self, key_list=None, substitute_none=None):
         """

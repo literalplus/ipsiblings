@@ -3,10 +3,10 @@ import textwrap
 from datetime import datetime
 
 from .. import libconstants
+from ..model import const
 
 
 def _prepare_parser():
-    # noinspection PyTypeChecker
     created_parser = argparse.ArgumentParser(
         description=textwrap.dedent('IP Siblings Toolset')
     )
@@ -37,6 +37,12 @@ def _prepare_parser():
     eval_grp.add_argument(
         '--export-plots', action='store_true', help='Export plots after evaluation', default=False
     )
+    eval_grp.add_argument(
+        '--evaluator', action='append',
+        help='Select a specific evaluator instead of running all of them. '
+             'May be specified multiple times.',
+        choices=const.EvaluatorChoice.all_keys(), default=const.EvaluatorChoice.all_keys()
+    )
 
     skip_grp = created_parser.add_argument_group(title='SKIP STEPS', description=None)
     skip_grp.add_argument(
@@ -60,14 +66,15 @@ def _prepare_parser():
     logmutualgrp.add_argument('-q', '--quiet', action='count', help='Decrease verbosity once per call', default=0)
 
     target_grp = created_parser.add_argument_group(title='TARGET NODES', description=None)
+    default_target_provider = const.TargetProviderChoice.default()
     target_grp.add_argument(
-        '--targets-from', action='store', help='Where to get target nodes from (default bitcoin)',
-        choices=['bitcoin', 'filesystem'], default='bitcoin'  # choices relate to preparation.provider.all
+        '--targets-from', action='store', help=f'Where to get target nodes from (default {default_target_provider})',
+        choices=const.TargetProviderChoice.all_keys(), default=default_target_provider
     )
     target_grp.add_argument(
         '--skip-v', type=int, action='append', default=[],
         help='Skip IPvX addresses while acquiring targets '
-             '(for testing only, may be specified multiple times, ignored for filesystem provider)'
+             '(for testing, may be specified multiple times, ignored for filesystem provider)'
     )
     target_grp.add_argument(
         '--from', type=int, dest='start_index', help='Index of first target to consider (default 0)'
@@ -75,6 +82,7 @@ def _prepare_parser():
     target_grp.add_argument(
         '--to', type=int, dest='end_index', help='Index of first target to skip (default none)'
     )
+
     harvest_grp = created_parser.add_argument_group(title='TIMESTAMP COLLECTION', description=None)
     harvest_grp.add_argument(
         '--do-harvest', action='store_true', help='Collect (harvest) timestamps if not present', default=False

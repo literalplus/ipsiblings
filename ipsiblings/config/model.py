@@ -1,8 +1,18 @@
 import os
-from typing import Set
+from enum import Enum
+from typing import Set, Type, TypeVar
 
 from .args import parser
 from .. import liblog
+from ..model import const
+
+T = TypeVar('T', bound=Enum)
+
+
+def _convert_enum(kind: Type[T], key: str) -> T:
+    # Validation should be done by choices= passed to argparse
+    clean_key = key.upper().replace('-', '_')
+    return kind[clean_key]
 
 
 class PathsConfig:
@@ -23,7 +33,7 @@ class CandidatesConfig:
 
 class TargetProviderConfig:
     def __init__(self, args):
-        self.provider = args.targets_from
+        self.provider = _convert_enum(const.TargetProviderChoice, args.targets_from)
         self.skip_ip_versions: Set[int] = set(args.skip_v)
 
 
@@ -31,9 +41,14 @@ class FlagsConfig:
     def __init__(self, args):
         self.do_harvest = args.do_harvest
         self.always_harvest = args.really_harvest
-        self.export_plots = args.export_plots
         self.only_init = args.only_init
-        self.skip_evaluation = args.skip_eval
+
+
+class EvalConfig:
+    def __init__(self, args):
+        self.evaluators = [_convert_enum(const.EvaluatorChoice, key) for key in args.evaluator]
+        self.export_plots = args.export_plots
+        self.skip = args.skip_eval
 
 
 class HarvesterConfig:
@@ -67,6 +82,7 @@ class AppConfig:
         self.candidates = CandidatesConfig(self.args)
         self.harvester = HarvesterConfig(self.args)
         self.os_tuner = OsTunerConfig(self.args)
+        self.eval = EvalConfig(self.args)
 
         # start_index, end_index to restrict amount of data to process
         self.start_index = self.args.start_index

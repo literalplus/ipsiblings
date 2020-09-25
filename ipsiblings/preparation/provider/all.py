@@ -1,21 +1,18 @@
+from ipsiblings.model import const
 from ipsiblings.preparation.provider.bitcoin import BitcoinNodesProvider
 from ipsiblings.preparation.provider.filesystem import FilesystemProvider
 
-# NOTE: When adding a new option here, also add it to the allowed providers in config.args
+# NOTE: When adding a new option here, also add it to the allowed providers in model.const
 # We cannot just access the keys from here because we don't want the config module depending
 # on an implementation
 PROVIDERS = {
-    'bitcoin': BitcoinNodesProvider(),
-    'filesystem': FilesystemProvider()
+    const.TargetProviderChoice.BITCOIN: BitcoinNodesProvider(),
+    const.TargetProviderChoice.FILESYSTEM: FilesystemProvider()
 }
 
 
-def get_provider(key):
+def get_provider(key: const.TargetProviderChoice):
     if key in PROVIDERS:
         return PROVIDERS[key.lower()]
     else:
-        raise ValueError('No target provider with name \'{0}\' found!'.format(key))
-
-
-def get_provider_names():
-    return PROVIDERS.keys()
+        raise AssertionError(f'Target provider {key} is not registered!')

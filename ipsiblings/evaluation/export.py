@@ -8,7 +8,7 @@
 #
 
 import csv
-from typing import List, Dict
+from typing import List, Mapping
 
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
 
@@ -23,7 +23,7 @@ def write_results(evaluated_siblings: List[EvaluatedSibling], out_path):
     # TODO: Missing handling for SSH key/agent match
 
     all_keys = set()
-    candidate_exports: List[Dict[str, str]] = []
+    candidate_exports: List[Mapping[str, str]] = []
     for evaluated_sibling in evaluated_siblings:
         export = evaluated_sibling.export()
         all_keys.update(export.keys())

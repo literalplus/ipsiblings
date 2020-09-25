@@ -24,7 +24,7 @@ def _do_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
 
 
 def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig) -> Dict[Tuple, SiblingCandidate]:
-    if conf.flags.skip_evaluation:
+    if conf.eval.skip:
         log.warning('No evaluation requested. Exiting.')
         raise JustExit
     if not prepared_targets.has_timestamps():

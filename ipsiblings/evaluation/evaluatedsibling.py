@@ -1,6 +1,6 @@
 import abc
 from enum import Enum, auto
-from typing import Dict, Type, Optional, TypeVar, Generic, List, Any
+from typing import Dict, Type, Optional, TypeVar, Generic, List, Any, Generator, Tuple
 
 from ipsiblings import libtools
 from ipsiblings.model import SiblingCandidate, TimestampSeries, BusinessException, const
@@ -29,15 +29,21 @@ class FamilySpecificSiblingProperty(SiblingProperty, Generic[RT], metaclass=abc.
     Provides access to these two via self[4] and self[6].
     """
 
+    # noinspection PyUnresolvedReferences
     def __getitem__(self, item) -> RT:
         if item == 4:
-            # noinspection PyUnresolvedReferences
             return self.data4
         elif item == 6:
-            # noinspection PyUnresolvedReferences
             return self.data6
         else:
             raise KeyError
+
+    # noinspection PyUnresolvedReferences
+    def __iter__(self) -> Generator[Tuple[int, RT]]:
+        if self.data4:
+            yield 4, self.data4
+        if self.data6:
+            yield 6, self.data6
 
 
 class SiblingStatus(Enum):
@@ -70,6 +76,7 @@ PT = TypeVar('PT', bound=SiblingProperty)
 
 class EvaluatedSibling:
     def __init__(self, candidate: SiblingCandidate):
+        self.key = candidate.key
         self.series = candidate.series
         self.domains = candidate.domains
         self.tcp_options = candidate.tcp_options
@@ -78,10 +85,30 @@ class EvaluatedSibling:
         self.classifications: Dict[str, SiblingStatus] = {}
         self.property_errors: List[SiblingPropertyException] = []
 
+    def __hash__(self):
+        return hash(self.key)
+
+    def __eq__(self, other):
+        if isinstance(other, EvaluatedSibling):
+            return self.key == other.key
+        return NotImplemented
+
     def __str__(self):
         return 'EvaluatedSibling -> ' + \
                "<>".join([str(s.key) for s in self.series.values()]) + \
                f' -> {self.classifications}'
+
+    def __getitem__(self, item) -> TimestampSeries:
+        if item == 4:
+            return self.series[4]
+        elif item == 6:
+            return self.series[6]
+        else:
+            raise KeyError
+
+    def __iter__(self) -> Generator[Tuple[int, TimestampSeries]]:
+        yield 4, self[4]
+        yield 6, self[6]
 
     def get_property(self, property_type: Type[PT]) -> PT:
         return self._properties[property_type]
@@ -110,14 +137,6 @@ class EvaluatedSibling:
 
     def put_property(self, new_property: SiblingProperty):
         self._properties[type(new_property)] = new_property
-
-    def __getitem__(self, item) -> TimestampSeries:
-        if item == 4:
-            return self.series[4]
-        elif item == 6:
-            return self.series[6]
-        else:
-            raise KeyError
 
     def export(self) -> Dict[str, str]:
         exported = {
