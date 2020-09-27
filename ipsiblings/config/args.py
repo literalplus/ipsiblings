@@ -19,10 +19,10 @@ def _prepare_parser():
         '--ignore-ips-from', help='File of IP addresses to ignore for all operations'
     )
     path_grp.add_argument(
-        '--eval-results-to', help='Write evaluation results to file', nargs='?', const=libconstants.RESULT_FILE_NAME
+        '--eval-results-to', help='Write evaluation results to file', default=libconstants.RESULT_FILE_NAME
     )
     path_grp.add_argument(
-        '--candidates-to', help='Write generated sibling candidates to a file'
+        '--candidates-to', help='Write generated sibling candidates to a file', default='candidates.tsv'
     )
     path_grp.add_argument(
         '--run-id',
@@ -52,12 +52,6 @@ def _prepare_parser():
     skip_grp.add_argument(
         '--only-init', action='store_true',
         help='Exit after loading configuration', default=False
-    )
-    skip_grp.add_argument(
-        '--no-ssh-keyscan', action='store_true', help='Do not scan for SSH host keys', default=False
-    )
-    skip_grp.add_argument(
-        '--only-ssh-keyscan', action='store_true', help='Exit after keyscan', default=False
     )
 
     log_grp = created_parser.add_argument_group(title='LOGGING', description=None)

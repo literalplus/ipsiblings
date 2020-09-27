@@ -26,9 +26,6 @@ class PathsConfig:
 class CandidatesConfig:
     def __init__(self, args):
         self.low_runtime = args.low_runtime
-        self.skip_keyscan = args.no_ssh_keyscan
-        self.only_keyscan = args.only_ssh_keyscan
-        self.skip_evaluation = args.skip_eval
 
 
 class TargetProviderConfig:
