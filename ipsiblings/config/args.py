@@ -43,6 +43,10 @@ def _prepare_parser():
              'May be specified multiple times.',
         choices=const.EvaluatorChoice.all_keys(), default=const.EvaluatorChoice.all_keys()
     )
+    eval_grp.add_argument(
+        '--eval-batch-size', help='Candidates to evaluate per batch (default 10_000)',
+        default=10_000, type=int
+    )
 
     skip_grp = created_parser.add_argument_group(title='SKIP STEPS', description=None)
     skip_grp.add_argument(

@@ -2,7 +2,8 @@ from typing import List, Tuple, Optional
 
 import numpy
 
-from ipsiblings.model import TimestampSeries, DataException
+from ipsiblings.model import DataException
+from .timestampseries import TimestampSeries
 
 
 class Timestamps:
@@ -20,6 +21,13 @@ class Timestamps:
         if self._series:
             raise DataException('Already converted to series, data is immutable.')
         self._timestamps.append((remote_ts, local_ts))
+
+    @property
+    def has_any_timestamp(self):
+        if self._series:
+            return len(self._series) > 0
+        else:
+            return bool(self._timestamps)
 
     @property
     def timestamps(self) -> List[Tuple[int, float]]:

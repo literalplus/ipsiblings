@@ -25,7 +25,7 @@ class Target:
         return self.make_key(self.ip_version, self.address, self.port)
 
     def has_any_timestamp(self):
-        return bool(self.timestamps.timestamps)
+        return self.timestamps.has_any_timestamp
 
     def add_domain(self, domain):
         self.domains.add(domain)

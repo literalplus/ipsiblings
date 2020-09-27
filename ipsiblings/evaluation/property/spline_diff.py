@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Set
 
 import numpy
 
@@ -48,3 +48,7 @@ class SplineDiffProperty(SiblingProperty):
 
     def export(self) -> Dict[str, float]:
         return {'pct85': self.diff_85_percentile}
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return {'pct85'}

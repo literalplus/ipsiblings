@@ -1,12 +1,14 @@
 import abc
+import pathlib
 from typing import List
 
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
+from ipsiblings.model import const
 
 
 class SiblingEvaluator(metaclass=abc.ABCMeta):
-    def __init__(self, key: str):
+    def __init__(self, key: const.EvaluatorChoice):
         self.key = key
 
     @abc.abstractmethod
@@ -15,5 +17,5 @@ class SiblingEvaluator(metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def provide(cls, all_siblings: List[EvaluatedSibling], conf: AppConfig):
+    def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
         raise NotImplementedError

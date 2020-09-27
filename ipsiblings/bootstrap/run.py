@@ -1,10 +1,10 @@
 import gc
-from typing import Dict, Tuple
 
-from . import construct_candidates
+from .candidate_provider import CandidateProvider
 from .wiring import Wiring
-from .. import liblog, preparation, config, evaluation, harvesting
-from ..model import SiblingCandidate, PreparedTargets, JustExit, DataException
+from .. import liblog, preparation, config, harvesting
+from ..evaluation import EvaluationProcessor
+from ..model import PreparedTargets, JustExit, DataException
 from ..preparation.serialization import TargetSerialization
 
 """
@@ -12,6 +12,15 @@ Runs the actual business logic of the application, calling high-level API method
 """
 
 log = liblog.get_root_logger()
+
+
+def run(wiring: Wiring):
+    log.info('Application is running.')
+    prepared_targets = preparation.run(wiring.conf, wiring.target_provider)
+    _do_harvesting(prepared_targets, wiring)
+    gc.collect()
+    _check_evaluation(prepared_targets, wiring.conf)
+    _run_evaluation_batched(prepared_targets, wiring)
 
 
 def _do_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
@@ -25,25 +34,25 @@ def _do_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
             TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir)
 
 
-def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig) -> Dict[Tuple, SiblingCandidate]:
+def _check_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig):
     if conf.eval.skip:
         log.warning('No evaluation requested. Exiting.')
         raise JustExit
     if not prepared_targets.has_timestamps():
         raise DataException('No timestamps available, was only a port scan requested?')
-    log.debug('Constructing candidates...')
-    candidates = construct_candidates.construct_candidates_for(prepared_targets, conf)
-    if not candidates:
-        raise DataException('No sibling candidates available - do we have targets for both address families?')
-    log.info(f'Constructed {len(candidates)} sibling candidates')
-    return candidates
 
 
-def run(wiring: Wiring):
-    log.info('Application is running.')
-    prepared_targets = preparation.run(wiring.conf, wiring.target_provider)
-    _do_harvesting(prepared_targets, wiring)
-    candidates = _prepare_evaluation(prepared_targets, wiring.conf)
-    prepared_targets.clear()
-    gc.collect()
-    evaluation.run(candidates, wiring.conf)
+def _run_evaluation_batched(prepared_targets, wiring):
+    batches = CandidateProvider(prepared_targets, wiring.conf) \
+        .as_batches(wiring.conf.eval.batch_size)
+    evaluator = EvaluationProcessor(wiring.conf)
+    i = 0
+    for batch_iter in batches:
+        # noinspection PyBroadException
+        try:
+            log.debug(f'Evaluating batch #{i}...')
+            evaluator.run(i, batch_iter)
+        except Exception:
+            log.exception(f'Failed to evaluate batch #{i}')
+        finally:
+            i += 1

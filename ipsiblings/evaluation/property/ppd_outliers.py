@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Set
 
 import numpy
 
@@ -52,3 +52,7 @@ class PpdOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
 
     def export(self) -> Dict[str, float]:
         return {'ppd_rng': self.new_ppd_range}
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return {'pdd_rng'}

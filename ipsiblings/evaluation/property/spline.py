@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Set
 
 import numpy
 from numpy.lib import recfunctions
@@ -72,3 +72,7 @@ class SplineProperty(FamilySpecificSiblingProperty[Optional[OffsetSpline]]):
 
     def export(self) -> Dict[str, str]:
         return {}
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return set()

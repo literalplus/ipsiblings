@@ -1,17 +1,19 @@
+import pathlib
 from typing import List
 
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStatus
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
+from ipsiblings.model import const
 
 
 class DomainEvaluator(SiblingEvaluator):
     @classmethod
-    def provide(cls, all_siblings: List[EvaluatedSibling], conf: AppConfig):
+    def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
         return cls()
 
     def __init__(self):
-        super().__init__(f'FQDN')
+        super().__init__(const.EvaluatorChoice.DOMAIN)
 
     def evaluate(self, evaluated_sibling: EvaluatedSibling) -> SiblingStatus:
         # this is a set, we have to IP families, so if we only have one domain, they both have the same

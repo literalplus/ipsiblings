@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Set
 
 import numpy
 
@@ -52,3 +52,7 @@ class MeanOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
 
     def export(self) -> Dict[str, int]:
         return {'len4': len(self[4]), 'len6': len(self[6])}
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return {'len4', 'len6'}

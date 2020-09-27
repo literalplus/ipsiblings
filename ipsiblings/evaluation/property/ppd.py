@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Set
 
 import numpy
 
@@ -78,3 +78,7 @@ class PpdProperty(SiblingProperty):
 
     def export(self) -> Dict[str, float]:
         return {'offset_rng': self.offset_range}
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return {'offset_rng'}

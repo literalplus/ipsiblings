@@ -1,36 +1,20 @@
-# libsiblings/export.py
-#
-# (c) 2018 Marco Starke
-#
-# Most code in this file is based on or taken from the work of Scheitle et al. 2017:
-# "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
-# -> https://github.com/tumi8/siblings (GPLv2)
-#
-
 import csv
-from typing import List, Mapping
+import pathlib
+from typing import List
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
+from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, ExportRegistry
 
 
-def write_results(evaluated_siblings: List[EvaluatedSibling], out_path):
-    """
-    Write available results to resultfile
-    """
+def write_results(evaluated_siblings: List[EvaluatedSibling], out_path: pathlib.Path):
     # TODO: LRT keys: 'ip4', 'ip6', 'port4', 'port6', 'domains', 'hz4', 'hz6', 'hz4_R2', 'hz6_R2', 'raw_ts_diff',
     #             'ip4_tcpopts', 'ip6_tcpopts', 'ssh_keys_match', 'ssh_agents_match', 'geo4', 'geo6', 'geoloc_diff',
     #             'status', 'is_sibling'
-    # TODO: Missing handling for SSH key/agent match
-
-    all_keys = set()
-    candidate_exports: List[Mapping[str, str]] = []
-    for evaluated_sibling in evaluated_siblings:
-        export = evaluated_sibling.export()
-        all_keys.update(export.keys())
-        candidate_exports.append(export)
-    with open(out_path, mode='w', newline='', encoding='utf-8') as csv_file:
-        keys_sorted = list(all_keys)
-        keys_sorted.sort()
+    existed_before = out_path.is_file()
+    with open(out_path, mode='a', newline='', encoding='utf-8') as csv_file:
+        keys_sorted = ExportRegistry.get_header_fields()
         writer = csv.DictWriter(csv_file, fieldnames=keys_sorted, dialect=csv.excel_tab)
-        writer.writeheader()
-        writer.writerows(candidate_exports)
+        if not existed_before:
+            writer.writeheader()
+        for evaluated_sibling in evaluated_siblings:
+            export = evaluated_sibling.export()
+            writer.writerow(export)

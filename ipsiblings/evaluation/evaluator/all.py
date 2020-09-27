@@ -1,3 +1,4 @@
+import pathlib
 from typing import List, Dict, Type
 
 from ipsiblings import liblog
@@ -21,12 +22,14 @@ _PROVIDERS: Dict[const.EvaluatorChoice, Type[SiblingEvaluator]] = {
 }
 
 
-def _provide_all(evaluated_siblings: List[EvaluatedSibling], conf: AppConfig) -> List[SiblingEvaluator]:
+def _provide_all(
+        evaluated_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig
+) -> List[SiblingEvaluator]:
     evaluators = []
     for key, provider in _PROVIDERS.items():
         # noinspection PyBroadException
         try:
-            evaluators.append(provider.provide(evaluated_siblings, conf))
+            evaluators.append(provider.provide(evaluated_siblings, batch_dir, conf))
         except Exception:
             log.exception(f'Failed to init evaluator for {key}, skipping.')
     return evaluators
@@ -43,8 +46,8 @@ def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingE
             log.exception(f'Failed to evaluate {evaluated_sibling} with {evaluator.key}')
 
 
-def evaluate_with_all(evaluated_siblings: List[EvaluatedSibling], conf: AppConfig):
+def evaluate_with_all(evaluated_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
     # TODO: low runtime ?
-    evaluators = _provide_all(evaluated_siblings, conf)
+    evaluators = _provide_all(evaluated_siblings, batch_dir, conf)
     for evaluated_sibling in evaluated_siblings:
         _evaluate_one(evaluated_sibling, evaluators)

@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Set
 
 import numpy
 from scipy.stats import mstats as scipy_mstats
@@ -64,4 +64,11 @@ class SkewProperty(SiblingProperty):
             'diff': self.skew_diff,
             'R2_diff': self.r_square_diff,
             'theta': self.skew_diff_angle_rad,
+        }
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return {
+            '4', '6', '4_R2', '6_R2',
+            'diff', 'R2_diff', 'theta'
         }

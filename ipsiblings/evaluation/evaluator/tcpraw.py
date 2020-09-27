@@ -1,16 +1,18 @@
 import abc
+import pathlib
 from typing import List
 
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStatus
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.property.raw_tcp_ts_diff import FirstTimestampDiffProperty
+from ipsiblings.model import const
 
 
 class TcprawEvaluator(SiblingEvaluator, metaclass=abc.ABCMeta):
 
-    def __init__(self, threshold: float, name: str):
-        super().__init__(f'Δtcp_raw ({name})')
+    def __init__(self, threshold: float, key: const.EvaluatorChoice):
+        super().__init__(key)
         self.threshold_tcpraw = threshold
 
     def evaluate(self, evaluated_sibling: EvaluatedSibling) -> SiblingStatus:
@@ -27,13 +29,13 @@ class ScheitleTcprawEvaluator(TcprawEvaluator):
     THRESHOLD = 0.2557  # Scheitle at al. 2017
 
     @classmethod
-    def provide(cls, all_siblings: List[EvaluatedSibling], conf: AppConfig):
-        return cls(cls.THRESHOLD, 'Scheitle et al.')
+    def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
+        return cls(cls.THRESHOLD, const.EvaluatorChoice.TCPRAW_SCHEITLE)
 
 
 class StarkeTcprawEvaluator(TcprawEvaluator):
     THRESHOLD = 0.305211037  # Starke 2019
 
     @classmethod
-    def provide(cls, all_siblings: List[EvaluatedSibling], conf: AppConfig):
-        return cls(cls.THRESHOLD, 'Starke')
+    def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
+        return cls(cls.THRESHOLD, const.EvaluatorChoice.TCPRAW_STARKE)

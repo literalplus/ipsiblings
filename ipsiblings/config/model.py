@@ -46,6 +46,7 @@ class EvalConfig:
         self.evaluators = [_convert_enum(const.EvaluatorChoice, key) for key in args.evaluator]
         self.export_plots = args.export_plots
         self.skip = args.skip_eval
+        self.batch_size = args.eval_batch_size
 
 
 class HarvesterConfig:

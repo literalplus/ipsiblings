@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Set
 
 import numpy
 
@@ -54,3 +54,7 @@ class DynamicRangeProperty(FamilySpecificSiblingProperty[float]):
             'diff_rel': self.diff_relative,
             'avg': self.average,
         }
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return {'4', '6', 'diff_abs', 'diff_res', 'avg'}

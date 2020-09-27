@@ -1,12 +1,45 @@
 import abc
 from enum import Enum, auto
-from typing import Dict, Type, Optional, TypeVar, Generic, List, Any, Tuple, Iterator
+from typing import Dict, Type, Optional, TypeVar, Generic, List, Any, Tuple, Iterator, Set
 
 from ipsiblings import libtools
 from ipsiblings.model import SiblingCandidate, TimestampSeries, BusinessException, const
 
 
-class SiblingProperty(metaclass=abc.ABCMeta):
+class ExportRegistry:
+    _REGISTERED_KEYS = set()
+
+    @classmethod
+    def register_root_key(cls, key):
+        cls._REGISTERED_KEYS.add(key)
+
+    @classmethod
+    def register_keys(cls, property_type):
+        for key in property_type.get_export_keys():
+            cls.register_root_key(property_type.prefix_key(key))
+
+    @classmethod
+    def get_header_fields(cls) -> List[str]:
+        lst = list(cls._REGISTERED_KEYS)
+        lst.sort()
+        return lst
+
+
+class _PropertyMeta(abc.ABCMeta):
+    def __new__(mcs, clsname, bases, dct):
+        # noinspection PyTypeChecker
+        cls: 'Type[SiblingProperty]' = super(_PropertyMeta, mcs).__new__(clsname, bases, dct)
+        ExportRegistry.register_keys(cls)
+        return cls
+
+
+class SiblingProperty(metaclass=_PropertyMeta):
+    @classmethod
+    @abc.abstractmethod
+    def get_export_keys(cls) -> Set[str]:
+        """Valid keys for the export method."""
+        raise NotImplementedError
+
     @classmethod
     @abc.abstractmethod
     def provide_for(cls, evaluated_sibling: 'EvaluatedSibling') -> Optional['SiblingProperty']:
@@ -15,8 +48,13 @@ class SiblingProperty(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def export(self) -> Dict[str, Any]:
-        """Exports this property's metrics. Values will be str'd. Should return consistent keys."""
+        """Exports this property's metrics. Values will be str'd. Keys must be in get_export_keys."""
         return {}
+
+    @classmethod
+    def prefix_key(cls, key: str) -> str:
+        prefix = libtools.camel_to_snake_case(cls.__name__.replace('Property', ''))
+        return f'{prefix}_{key}'
 
 
 RT = TypeVar('RT')
@@ -82,7 +120,7 @@ class EvaluatedSibling:
         self.tcp_options = candidate.tcp_options
 
         self._properties: Dict[Type[SiblingProperty], SiblingProperty] = {}
-        self.classifications: Dict[str, SiblingStatus] = {}
+        self.classifications: Dict[const.EvaluatorChoice, SiblingStatus] = {}
         self.property_errors: List[SiblingPropertyException] = []
 
     def __hash__(self):
@@ -106,9 +144,9 @@ class EvaluatedSibling:
         else:
             raise KeyError
 
-    def __iter__(self) -> Iterator[Tuple[int, TimestampSeries]]:
-        yield 4, self[4]
-        yield 6, self[6]
+    def __iter__(self) -> Iterator[TimestampSeries]:
+        yield self[4]
+        yield self[6]
 
     def get_property(self, property_type: Type[PT]) -> PT:
         return self._properties[property_type]
@@ -143,17 +181,17 @@ class EvaluatedSibling:
             'domains': const.SECONDARY_DELIMITER.join(self.domains),
             'status': self.overall_status.name,
         }
-        for ip_version in (4, 6):
-            exported[f'ip{ip_version}'] = self.series[ip_version].target_ip
-            exported[f'port{ip_version}'] = str(self.series[ip_version].target_port)
+        for series in self:
+            ip_version = series.ip_version
+            exported[f'ip{ip_version}'] = series.target_ip
+            exported[f'port{ip_version}'] = str(series.target_port)
             exported[f'tcpopts{ip_version}'] = str(self.tcp_options[ip_version]) \
                 if self.tcp_options[ip_version] else const.NONE_MARKER
         for prop in self._properties.values():
-            prefix = libtools.camel_to_snake_case(type(prop).__name__.replace('Property', ''))
             for key, value in prop.export().items():
-                exported[f'{prefix}_{key}'] = str(value)
+                exported[type(prop).prefix_key(key)] = str(value)
         for key, status in self.classifications.items():
-            exported[f'status_{key}'] = status.name
+            exported[f'status_{key.name}'] = status.name
         return exported
 
     @property
@@ -168,3 +206,13 @@ class EvaluatedSibling:
                 if next_overall:
                     overall = next_overall
         return overall
+
+
+ExportRegistry.register_root_key('domains')
+ExportRegistry.register_root_key('status')
+for ipv in (4, 6):
+    ExportRegistry.register_root_key(f'ip{ipv}')
+    ExportRegistry.register_root_key(f'port{ipv}')
+    ExportRegistry.register_root_key(f'tcpopts{ipv}')
+for choice in const.EvaluatorChoice:
+    ExportRegistry.register_root_key(f'status_{choice.name}')
