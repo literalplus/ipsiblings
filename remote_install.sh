@@ -56,6 +56,10 @@ python3 -m venv . || exit 3
 source ./bin/activate || exit 3
 pip3 install wheel || exit 3
 pip3 install --upgrade "$WHEEL_PATH" || exit 3
+if ! ipsiblings --help >/dev/null; then
+  echo -e "\e[36m Test failed, help command exited abnormally.\e[0m"
+  exit 4
+fi
 ENDCMD
 echo -e "\e[36m Prepared setup script.\e[33m"
 echo -en "\e[0m"

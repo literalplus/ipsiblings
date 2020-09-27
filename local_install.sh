@@ -30,4 +30,8 @@ fi
 
 pip3 install --upgrade "$LATEST_WHEEL" || exit 2
 
-echo -e "\e[36m Should now be available as 'ipsiblings'.\e[0m"
+echo -e "\e[36m Should now be available as 'ipsiblings'. Testing.\e[0m"
+
+if ! ipsiblings --help >/dev/null; then
+  echo -e "\e[36m Test failed, help command exited abnormally.\e[0m"
+fi

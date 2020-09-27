@@ -7,7 +7,7 @@ from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.property.raw_tcp_ts_diff import FirstTimestampDiffProperty
 
 
-class TcprawEvaluator(metaclass=abc.ABCMeta, SiblingEvaluator):
+class TcprawEvaluator(SiblingEvaluator, metaclass=abc.ABCMeta):
 
     def __init__(self, threshold: float, name: str):
         super().__init__(f'Δtcp_raw ({name})')

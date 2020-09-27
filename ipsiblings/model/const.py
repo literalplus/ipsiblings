@@ -12,7 +12,7 @@ class TargetProviderChoice(Enum):
 
     @classmethod
     def all_keys(cls):
-        return [it.key for it in cls]
+        return [it.name for it in cls]
 
     @classmethod
     def default(cls):
@@ -27,4 +27,4 @@ class EvaluatorChoice(Enum):
 
     @classmethod
     def all_keys(cls):
-        return [it.key for it in cls]
+        return [it.name for it in cls]

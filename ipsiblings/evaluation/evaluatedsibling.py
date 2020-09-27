@@ -1,6 +1,6 @@
 import abc
 from enum import Enum, auto
-from typing import Dict, Type, Optional, TypeVar, Generic, List, Any, Generator, Tuple
+from typing import Dict, Type, Optional, TypeVar, Generic, List, Any, Tuple, Iterator
 
 from ipsiblings import libtools
 from ipsiblings.model import SiblingCandidate, TimestampSeries, BusinessException, const
@@ -39,7 +39,7 @@ class FamilySpecificSiblingProperty(SiblingProperty, Generic[RT], metaclass=abc.
             raise KeyError
 
     # noinspection PyUnresolvedReferences
-    def __iter__(self) -> Generator[Tuple[int, RT]]:
+    def __iter__(self) -> Iterator[Tuple[int, RT]]:
         if self.data4:
             yield 4, self.data4
         if self.data6:
@@ -106,7 +106,7 @@ class EvaluatedSibling:
         else:
             raise KeyError
 
-    def __iter__(self) -> Generator[Tuple[int, TimestampSeries]]:
+    def __iter__(self) -> Iterator[Tuple[int, TimestampSeries]]:
         yield 4, self[4]
         yield 6, self[6]
 
