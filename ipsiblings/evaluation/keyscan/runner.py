@@ -2,7 +2,8 @@ import pathlib
 import subprocess
 import threading
 from collections import defaultdict
-from typing import Dict, Optional, Set, Tuple
+from itertools import islice
+from typing import Dict, Optional, Set, Tuple, Iterable, List, Iterator
 
 from ipsiblings import liblog
 from ipsiblings.evaluation.keyscan.property import KeyscanResult
@@ -11,7 +12,7 @@ from ipsiblings.model import const
 log = liblog.get_root_logger()
 
 
-class SshKeyscanProcessHandler:
+class KeyscanProcessHandler:
     def __init__(self, cwd: pathlib.Path, ip_version: int, timeout: int):
         self._cwd = cwd
         self.ip_version = ip_version
@@ -21,11 +22,13 @@ class SshKeyscanProcessHandler:
         self.failed = False
 
     def start(self, in_addrs: Set[str]):
+        if not in_addrs:
+            log.info(f'No input addresses for keyscan {self.ip_version}, skipping.')
+            return
         self.thread = threading.Thread(
             target=self._run, args=(in_addrs,), name=f'keyscan-{self.ip_version}'
         )
         self.thread.start()
-        log.debug(f'Started SSH keyscan {self.ip_version}.')
 
     def join(self):
         if not self.thread:
@@ -35,20 +38,33 @@ class SshKeyscanProcessHandler:
         self.thread = None
 
     def _run(self, in_addrs: Set[str]):
+        log.debug(f'Started SSH keyscan {self.ip_version}, input size {len(in_addrs)}.')
         stdin = '\n'.join(in_addrs)
         proc = subprocess.Popen(
-            ['ssh-keyscan', '-f', '-', '-T', '3'],  # T: timeout in seconds
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            ['ssh-keyscan', '-f', '-', '-T', '2'],  # T: timeout in seconds
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True, encoding='utf-8', cwd=self._cwd
         )
         try:
+            natural_timeout = 4 * len(in_addrs) + 5
+            if natural_timeout > self.timeout:
+                self.timeout = natural_timeout
+                log.info(
+                    f'Increasing SSH keyscan {self.ip_version} timeout to {natural_timeout} '
+                    f'due to large input size of {len(in_addrs)}.'
+                )
             stdout, stderr = proc.communicate(input=stdin, timeout=self.timeout)  # seconds
             self._handle_key_info_in_stdout(stdout)
-            self._handle_agent_info_in_stderr(stderr)
+            self._handle_agent_info_in_stderr(stdout)
         except subprocess.TimeoutExpired:
             proc.kill()
+            stdout, stderr = proc.communicate()
+            self._handle_key_info_in_stdout(stdout)
+            self._handle_agent_info_in_stderr(stderr)
+            log.warn(f'SSH keyscan {self.ip_version} timed out.')
+            log.debug(f'OUT -> {stdout} ERR -> {stderr}')
             self.failed = True
-            log.debug(f'SSH keyscan failed for {self.ip_version}')
+        log.debug(f'SSH keyscan {self.ip_version} thread exited.')
 
     def _handle_agent_info_in_stderr(self, stderr: str):
         for line in stderr.strip().split('\n'):
@@ -88,19 +104,24 @@ class KeyscanRunner:
         return self._do_scan_for(target_dict)
 
     def _do_scan_for(self, version_target_ips: Dict[int, Set[str]]) -> Dict[int, Dict[str, KeyscanResult]]:
-        version_process_handlers: Dict[int, SshKeyscanProcessHandler] = {
-            ipv: SshKeyscanProcessHandler(self._cwd, ipv, self.timeout) for ipv, _ in version_target_ips.items()
-        }
-        for ip_version, handler in version_process_handlers.items():
-            handler.start(version_target_ips[ip_version])
+        ipv_handlers: List[Tuple[int, KeyscanProcessHandler]] = []
+        for ip_version, target_ips in version_target_ips.items():
+            for batch in self._as_batches(target_ips, 200):
+                handler = KeyscanProcessHandler(self._cwd, ip_version, self.timeout)
+                handler.start(batch)
+                ipv_handlers.append((ip_version, handler))
+        results: Dict[int, Dict[str, KeyscanResult]] = defaultdict(dict)
         # Only start waiting for results after all processes are started
-        results: Dict[int, Dict[str, KeyscanResult]] = {}
-        for ip_version, handler in version_process_handlers.items():
+        for ip_version, handler in ipv_handlers:
             handler.join()
-            results[ip_version] = handler.results
-            if not handler.failed:
-                requested_targets = version_target_ips[ip_version]
-                for address in requested_targets:
-                    if address not in results[ip_version]:
-                        results[ip_version][address] = KeyscanResult(ip_version, address, const.NONE_MARKER)
+            results[ip_version].update(handler.results)
+        for ip_version, target_ips in version_target_ips.items():
+            for address in target_ips:
+                if address not in results[ip_version]:
+                    results[ip_version][address] = KeyscanResult(ip_version, address, const.NONE_MARKER)
         return results
+
+    def _as_batches(self, inp: Iterable[str], batch_size: int) -> Iterator[Set[str]]:
+        iterator = iter(inp)
+        while batch := set(islice(iterator, batch_size)):
+            yield batch

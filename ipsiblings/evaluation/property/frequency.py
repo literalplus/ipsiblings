@@ -7,10 +7,15 @@ import numpy
 import scipy.stats as scipy_stats
 
 from ipsiblings import liblog
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
+from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty, \
+    SiblingPropertyException
 from ipsiblings.evaluation.property.clean_series import NormTimestampSeries, NormSeriesProperty
 
 log = liblog.get_root_logger()
+
+
+class FrequencyFailedException(SiblingPropertyException):
+    pass
 
 
 class FrequencyInfo:
@@ -20,12 +25,15 @@ class FrequencyInfo:
                 f'TS -> {entry[NormTimestampSeries.KEY_TS_VAL]} @ '
                 f'{entry[NormTimestampSeries.KEY_RECEPTION_TIME]}'
             )
+        log.debug('End TS')
         slope_raw, intercept, rval, pval, stderr = scipy_stats.linregress(
             clean_series.reception_times, clean_series.ts_vals
         )
+        if numpy.isnan(slope_raw):
+            raise FrequencyFailedException('Got NaN as slope from linregress')
         self.r_squared = rval * rval  # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
         self.frequency_raw = slope_raw
-        self.frequency = round(slope_raw)  # Kohno et al. Section 4.3
+        self.frequency = numpy.round(slope_raw, decimals=0)  # Kohno et al. Section 4.3
 
 
 class FrequencyProperty(FamilySpecificSiblingProperty[FrequencyInfo]):
@@ -39,7 +47,10 @@ class FrequencyProperty(FamilySpecificSiblingProperty[FrequencyInfo]):
         clean_prop = evaluated_sibling.contribute_property_type(NormSeriesProperty)
         if not clean_prop:
             return None
-        return cls(clean_prop[4], clean_prop[6])
+        try:
+            return cls(clean_prop[4], clean_prop[6])
+        except FrequencyFailedException as e:
+            log.debug(f'Failed to compute frequency for {evaluated_sibling}', exc_info=e)
 
     def __init__(self, clean4: NormTimestampSeries, clean6: NormTimestampSeries):
         self.data4 = FrequencyInfo(clean4)

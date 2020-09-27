@@ -104,9 +104,10 @@ _STATUS_TRANSITIONS = {
 
 
 class SiblingPropertyException(BusinessException):
-    def __init__(self, message: str, cause: Exception):
+    def __init__(self, message: str, cause: Optional[Exception] = None):
         super(SiblingPropertyException, self).__init__(message)
-        self.__cause__ = cause
+        if cause:
+            self.__cause__ = cause
 
 
 PT = TypeVar('PT', bound=SiblingProperty)

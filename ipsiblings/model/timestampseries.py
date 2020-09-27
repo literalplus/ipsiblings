@@ -25,7 +25,7 @@ class TimestampSeries:
         return self.ip_version, self.target_ip, self.target_port
 
     def has_data(self):
-        return len(self) > 0
+        return len(self) > 2  # Below three timestamps, analysis definitely makes no sense
 
     @property
     def reception_times(self) -> numpy.ndarray:

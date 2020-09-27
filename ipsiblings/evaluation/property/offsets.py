@@ -37,7 +37,7 @@ class OffsetSeries:
         return self.data[self.KEY_OFFSET]
 
     def has_data(self) -> bool:
-        return len(self) >= 0
+        return len(self) > 2  # no meaningful conclusions can be drawn from less than three timestamps
 
     def __len__(self):
         return len(self.data)
