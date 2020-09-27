@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Set
+from typing import Tuple, Dict, Set, Optional
 
 import numpy
 
@@ -22,8 +22,10 @@ class PpdProperty(SiblingProperty):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'PpdProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[PpdProperty]':
         mor_prop = evaluated_sibling.contribute_property_type(MeanOutlierRemovalProperty)
+        if not mor_prop:
+            return None
         return cls(mor_prop[4], mor_prop[6])
 
     def __init__(self, source4: OffsetSeries, source6: OffsetSeries):

@@ -1,7 +1,7 @@
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 import numpy
 from numpy.lib import recfunctions
@@ -36,26 +36,32 @@ class OffsetSeries:
     def offsets(self) -> numpy.ndarray:
         return self.data[self.KEY_OFFSET]
 
+    def has_data(self) -> bool:
+        return len(self) >= 0
+
     def __len__(self):
         return len(self.data)
 
 
-class OffsetsProperty(FamilySpecificSiblingProperty[OffsetSeries]):
+class OffsetsProperty(FamilySpecificSiblingProperty[Optional[OffsetSeries]]):
     """
     Converts TSval timestamps to seconds and provides raw offsets to actual reception timestamps.
     Depends on FrequencyProperty and CleanSeriesProperty.
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'OffsetsProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[OffsetsProperty]':
         freq_prop = evaluated_sibling.contribute_property_type(FrequencyProperty)
         clean_prop = evaluated_sibling.contribute_property_type(NormSeriesProperty)
-        return cls(
-            OffsetSeries.from_norm(clean_prop[4], freq_prop[4].frequency),
-            OffsetSeries.from_norm(clean_prop[6], freq_prop[6].frequency)
-        )
+        if freq_prop and clean_prop:
+            return cls(
+                OffsetSeries.from_norm(clean_prop[4], freq_prop[4].frequency),
+                OffsetSeries.from_norm(clean_prop[6], freq_prop[6].frequency)
+            )
+        else:
+            return None
 
-    def __init__(self, offsets4: OffsetSeries, offsets6: OffsetSeries):
+    def __init__(self, offsets4: Optional[OffsetSeries], offsets6: Optional[OffsetSeries]):
         self.data4 = offsets4
         self.data6 = offsets6
 

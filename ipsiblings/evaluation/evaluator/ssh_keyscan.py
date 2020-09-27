@@ -67,7 +67,7 @@ class SshKeyscanEvaluator(SiblingEvaluator):
         if not self.__init_done:
             raise AssertionError('You probably meant to call init_data_for() first')
         if not evaluated_sibling.has_property(SshProperty):
-            return SiblingStatus.INDECISIVE
+            return SiblingStatus.ERROR
         prop = evaluated_sibling.get_property(SshProperty)
         if not prop.has_data_for_both():
             # Tempting to return NEGATIVE here, but might be different firewall setups

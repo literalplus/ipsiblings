@@ -51,7 +51,7 @@ class OffsetSpline(OffsetSeries):
         return round((last_time - first_time) / cls._BIN_COUNT, 1)
 
 
-class SplineProperty(FamilySpecificSiblingProperty[Optional[OffsetSpline]]):
+class SplineProperty(FamilySpecificSiblingProperty[OffsetSpline]):
     """
     Interpolates a univariate spline with knots of fixed distance over outlier-removed offset series.
     This strips the lower and upper eight values and hence might not always be available.
@@ -59,14 +59,17 @@ class SplineProperty(FamilySpecificSiblingProperty[Optional[OffsetSpline]]):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'SplineProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[SplineProperty]':
         clean_prop = evaluated_sibling.contribute_property_type(PpdOutlierRemovalProperty)
-        return cls(
-            OffsetSpline.from_offsets(clean_prop[4]),
-            OffsetSpline.from_offsets(clean_prop[6]),
-        )
+        if not clean_prop:
+            return None
+        spline4 = OffsetSpline.from_offsets(clean_prop[4])
+        spline6 = OffsetSpline.from_offsets(clean_prop[6])
+        if not spline4.has_data() or not spline6.has_data():
+            return None
+        return cls(spline4, spline6)
 
-    def __init__(self, spline4: Optional[OffsetSpline], spline6: Optional[OffsetSpline]):
+    def __init__(self, spline4: OffsetSpline, spline6: OffsetSpline):
         self.data4 = spline4
         self.data6 = spline6
 

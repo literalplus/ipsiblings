@@ -119,7 +119,7 @@ class EvaluatedSibling:
         self.domains = candidate.domains
         self.tcp_options = candidate.tcp_options
 
-        self._properties: Dict[Type[SiblingProperty], SiblingProperty] = {}
+        self._properties: Dict[Type[SiblingProperty], Optional[SiblingProperty]] = {}
         self.classifications: Dict[const.EvaluatorChoice, SiblingStatus] = {}
         self.property_errors: List[SiblingPropertyException] = []
 
@@ -148,13 +148,13 @@ class EvaluatedSibling:
         yield self[4]
         yield self[6]
 
-    def get_property(self, property_type: Type[PT]) -> PT:
+    def get_property(self, property_type: Type[PT]) -> Optional[PT]:
         return self._properties[property_type]
 
     def has_property(self, property_type: Type[PT]) -> bool:
-        return property_type in self._properties
+        return self._properties.get(property_type) is not None
 
-    def contribute_property_type(self, property_type: Type[PT]) -> PT:
+    def contribute_property_type(self, property_type: Type[PT]) -> Optional[PT]:
         """
         Contributes a property of given type.
         That is, if already present, return the property of given type.
@@ -170,7 +170,10 @@ class EvaluatedSibling:
                 f'Failed to compute property {property_type.__name__}', e
             ))
             raise
-        self.put_property(created)
+        if created is not None:
+            self.put_property(created)
+        else:
+            self._properties[property_type] = None
         return created
 
     def put_property(self, new_property: SiblingProperty):
@@ -188,6 +191,8 @@ class EvaluatedSibling:
             exported[f'tcpopts{ip_version}'] = str(self.tcp_options[ip_version]) \
                 if self.tcp_options[ip_version] else const.NONE_MARKER
         for prop in self._properties.values():
+            if prop is None:
+                continue
             for key, value in prop.export().items():
                 exported[type(prop).prefix_key(key)] = str(value)
         for key, status in self.classifications.items():

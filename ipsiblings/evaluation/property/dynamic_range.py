@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 import numpy
 
@@ -22,12 +22,17 @@ class DynamicRangeProperty(FamilySpecificSiblingProperty[float]):
     CUTOFF_FACTOR_HIGH = 1.0 - CUTOFF_FACTOR_LOW
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'DynamicRangeProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[DynamicRangeProperty]':
         ppd_outliers_prop = evaluated_sibling.contribute_property_type(PpdOutlierRemovalProperty)
-        return cls(
-            cls._calc_dynamic_range(ppd_outliers_prop[4]),
-            cls._calc_dynamic_range(ppd_outliers_prop[6])
-        )
+        if not ppd_outliers_prop:
+            return None
+        try:
+            return cls(
+                cls._calc_dynamic_range(ppd_outliers_prop[4]),
+                cls._calc_dynamic_range(ppd_outliers_prop[6])
+            )
+        except IndexError:
+            return None
 
     @classmethod
     def _calc_dynamic_range(cls, source: OffsetSeries):

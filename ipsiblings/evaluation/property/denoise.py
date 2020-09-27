@@ -1,4 +1,4 @@
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 
 import numpy
 
@@ -20,8 +20,10 @@ class DenoiseProperty(FamilySpecificSiblingProperty[OffsetSeries]):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'DenoiseProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[DenoiseProperty]':
         offset_prop = evaluated_sibling.contribute_property_type(OffsetsProperty)
+        if not offset_prop:
+            return None
         return cls(cls._denoise(offset_prop[4]), cls._denoise(offset_prop[6]))
 
     @classmethod

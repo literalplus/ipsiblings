@@ -18,6 +18,8 @@ class TcprawEvaluator(SiblingEvaluator, metaclass=abc.ABCMeta):
     def evaluate(self, evaluated_sibling: EvaluatedSibling) -> SiblingStatus:
         # This throws if calculation should fail, so we do not need to handle this case by e.g. if delta_tcpraw
         diff_prop = evaluated_sibling.contribute_property_type(FirstTimestampDiffProperty)
+        if not diff_prop:
+            return SiblingStatus.ERROR
         delta_tcpraw = diff_prop.raw_timestamp_diff
         if delta_tcpraw <= self.threshold_tcpraw:
             return SiblingStatus.POSITIVE

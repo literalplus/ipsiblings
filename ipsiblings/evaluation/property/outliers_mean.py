@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 import numpy
 
@@ -22,12 +22,14 @@ class MeanOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'MeanOutlierRemovalProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[MeanOutlierRemovalProperty]':
         denoise_prop = evaluated_sibling.contribute_property_type(DenoiseProperty)
-        return cls(
-            cls._remove_outliers_97(denoise_prop[4]),
-            cls._remove_outliers_97(denoise_prop[6])
-        )
+        if not denoise_prop:
+            return None
+        denoised4, denoised6 = cls._remove_outliers_97(denoise_prop[4]), cls._remove_outliers_97(denoise_prop[6])
+        if len(denoised4) <= 0 or len(denoised6) <= 0:
+            return None
+        return cls(denoised4, denoised6)
 
     @classmethod
     def _remove_outliers_97(cls, source: OffsetSeries):

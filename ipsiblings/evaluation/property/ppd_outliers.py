@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 import numpy
 
@@ -20,15 +20,20 @@ class PpdOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'PpdOutlierRemovalProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[PpdOutlierRemovalProperty]':
         ppd_prop = evaluated_sibling.contribute_property_type(PpdProperty)
         mean_outliers_prop = evaluated_sibling.contribute_property_type(MeanOutlierRemovalProperty)
-        return cls(mean_outliers_prop[4], mean_outliers_prop[6], ppd_prop)
+        if not ppd_prop or not mean_outliers_prop:
+            return None
+        instance = cls(mean_outliers_prop[4], mean_outliers_prop[6], ppd_prop)
+        if not instance[4].has_data() or not instance[6].has_data():
+            return None
+        return instance
 
     def __init__(self, filtered4: OffsetSeries, filtered6: OffsetSeries, ppd_prop: PpdProperty):
         # If this ever becomes public API, convert it to a proper structured array for semantic access
         remaining_ppds_indexed = self.filter_ppds_with_indices(ppd_prop.ppd_median_thresholds, ppd_prop.ppd_by_v4_idx)
-        self.new_ppd_range = max(remaining_ppds_indexed) - min(remaining_ppds_indexed)
+        self.new_ppd_range = remaining_ppds_indexed.max(initial=0) - remaining_ppds_indexed.min(initial=0)
 
         raw_data4 = numpy.zeros(len(remaining_ppds_indexed), dtype=OffsetSeries.DTYPE)
         raw_data6 = numpy.zeros(len(remaining_ppds_indexed), dtype=OffsetSeries.DTYPE)

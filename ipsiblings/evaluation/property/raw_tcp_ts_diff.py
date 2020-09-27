@@ -1,7 +1,7 @@
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 from ipsiblings.evaluation.evaluatedsibling import SiblingProperty, EvaluatedSibling
 from ipsiblings.evaluation.property.frequency import FrequencyProperty
@@ -17,8 +17,10 @@ class FirstTimestampDiffProperty(SiblingProperty):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'FirstTimestampDiffProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[FirstTimestampDiffProperty]':
         freq_prop = evaluated_sibling.contribute_property_type(FrequencyProperty)
+        if not freq_prop:
+            return None
         # Convert to Python int to prevent overflow. lol
         tsval_diff = (int(evaluated_sibling[4].first_ts_val) - int(evaluated_sibling[6].first_ts_val))
         tcp_diff_secs = tsval_diff / freq_prop.mean_freq

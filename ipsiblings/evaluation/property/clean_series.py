@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 import numpy
 from numpy.lib import recfunctions
@@ -31,10 +31,13 @@ class NormSeriesProperty(FamilySpecificSiblingProperty[NormTimestampSeries]):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'NormSeriesProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[NormSeriesProperty]':
         clean4 = cls._clean_data(evaluated_sibling.series[4])
         clean6 = cls._clean_data(evaluated_sibling.series[6])
-        return cls(clean4, clean6)
+        if clean4.has_data() and clean6.has_data():
+            return cls(clean4, clean6)
+        else:
+            return None
 
     @classmethod
     def _clean_data(cls, series: TimestampSeries) -> NormTimestampSeries:

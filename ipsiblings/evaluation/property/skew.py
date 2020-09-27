@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Set
+from typing import Tuple, Dict, Set, Optional
 
 import numpy
 from scipy.stats import mstats as scipy_mstats
@@ -26,8 +26,10 @@ class SkewProperty(SiblingProperty):
     CUTOFF_FACTOR_HIGH = 1.0 - CUTOFF_FACTOR_LOW
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'SkewProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[SkewProperty]':
         ppd_outliers_prop = evaluated_sibling.contribute_property_type(PpdOutlierRemovalProperty)
+        if not ppd_outliers_prop:
+            return None
         return cls(
             cls._calc_skew_angle(ppd_outliers_prop[4]),
             cls._calc_skew_angle(ppd_outliers_prop[6])

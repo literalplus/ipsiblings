@@ -3,12 +3,14 @@ from typing import Optional, Tuple, Dict, Set
 import numpy
 
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingProperty
-# The code in this file is based on the work of Scheitle et al. 2017:
-# "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
-# -> https://github.com/tumi8/siblings (GPLv2)
 from ipsiblings.evaluation.property.dynamic_range import DynamicRangeProperty
 from ipsiblings.evaluation.property.offsets import OffsetSeries
 from ipsiblings.evaluation.property.spline import SplineProperty, OffsetSpline
+
+
+# The code in this file is based on the work of Scheitle et al. 2017:
+# "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
+# -> https://github.com/tumi8/siblings (GPLv2)
 
 
 class SplineDiffProperty(SiblingProperty):
@@ -20,20 +22,19 @@ class SplineDiffProperty(SiblingProperty):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'SplineDiffProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[SplineDiffProperty]':
         spline_prop = evaluated_sibling.contribute_property_type(SplineProperty)
         dynrange_prop = evaluated_sibling.contribute_property_type(DynamicRangeProperty)
+        if not spline_prop or not dynrange_prop:
+            return None
         return cls(spline_prop[4], spline_prop[6], dynrange_prop.diff_absolute)
 
-    def __init__(self, spline4: Optional[OffsetSpline], spline6: Optional[OffsetSpline], dynrange_diff: float):
-        if spline4 and spline6:
-            self.mapped_diff, diff_of_means_raw = self._map_upper_onto_lower(spline4, spline6)
-            self.diff_of_means = abs(diff_of_means_raw)
-            self.diff_scaled = diff_of_means_raw / dynrange_diff
-            # NOTE: midpoint interpolation mimics the previous behaviour - 'linear' might be more meaningful
-            self.diff_85_percentile = numpy.percentile(self.mapped_diff.offsets, q=85, interpolation='midpoint')
-        else:
-            self.mapped_diff, self.diff_of_means, self.diff_scaled = None, None, None
+    def __init__(self, spline4: OffsetSpline, spline6: OffsetSpline, dynrange_diff: float):
+        self.mapped_diff, diff_of_means_raw = self._map_upper_onto_lower(spline4, spline6)
+        self.diff_of_means = abs(diff_of_means_raw)
+        self.diff_scaled = diff_of_means_raw / dynrange_diff
+        # NOTE: midpoint interpolation mimics the previous behaviour - 'linear' might be more meaningful
+        self.diff_85_percentile = numpy.percentile(self.mapped_diff.offsets, q=85, interpolation='midpoint')
 
     def _map_upper_onto_lower(self, spline4: OffsetSpline, spline6: OffsetSpline) -> Tuple[OffsetSeries, float]:
         diff_of_means = spline4.mean - spline6.mean

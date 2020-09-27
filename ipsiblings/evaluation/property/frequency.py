@@ -1,7 +1,7 @@
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
-from typing import Dict, Set
+from typing import Dict, Set, Optional
 
 import numpy
 import scipy.stats as scipy_stats
@@ -27,8 +27,10 @@ class FrequencyProperty(FamilySpecificSiblingProperty[FrequencyInfo]):
     """
 
     @classmethod
-    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'FrequencyProperty':
+    def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[FrequencyProperty]':
         clean_prop = evaluated_sibling.contribute_property_type(NormSeriesProperty)
+        if not clean_prop:
+            return None
         return cls(clean_prop[4], clean_prop[6])
 
     def __init__(self, clean4: NormTimestampSeries, clean6: NormTimestampSeries):
