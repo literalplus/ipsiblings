@@ -26,9 +26,9 @@ class ExportRegistry:
 
 
 class _PropertyMeta(abc.ABCMeta):
-    def __new__(mcs, clsname, bases, dct):
+    def __new__(mcs, name, bases, namespace):
         # noinspection PyTypeChecker
-        cls: 'Type[SiblingProperty]' = super(_PropertyMeta, mcs).__new__(clsname, bases, dct)
+        cls: 'Type[SiblingProperty]' = super(_PropertyMeta, mcs).__new__(mcs, name, bases, namespace)
         ExportRegistry.register_keys(cls)
         return cls
 
@@ -38,7 +38,7 @@ class SiblingProperty(metaclass=_PropertyMeta):
     @abc.abstractmethod
     def get_export_keys(cls) -> Set[str]:
         """Valid keys for the export method."""
-        raise NotImplementedError
+        return set()
 
     @classmethod
     @abc.abstractmethod

@@ -34,18 +34,16 @@ class SshKeyscanProcessHandler:
 
     def _run(self, in_addrs: Set[str]):
         stdin = '\n'.join(in_addrs)
-        log.debug(f'stdin -> {in_addrs}')
         proc = subprocess.Popen(
-            ['ssh-keyscan', '-f', '-'],
+            ['ssh-keyscan', '-f', '-', '-T', '3'],  # T: timeout in seconds
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             universal_newlines=True, encoding='utf-8', cwd=self._cwd
         )
-        stdout, stderr = proc.communicate(input=stdin, timeout=None)
+        stdout, stderr = proc.communicate(input=stdin, timeout=6)  # seconds
         self._handle_agent_info_in_stderr(stderr)
         self._handle_key_info_in_stdout(stdout)
 
     def _handle_agent_info_in_stderr(self, stderr: str):
-        log.debug(f'stderr -> {stderr}')
         for line in stderr.strip().split('\n'):
             # stderr contains comments of form # ip:port;agent_string
             if not line.startswith('#'):
@@ -58,7 +56,6 @@ class SshKeyscanProcessHandler:
             self.results[ip] = KeyscanResult(self.ip_version, ip, agent)
 
     def _handle_key_info_in_stdout(self, stdout: str):
-        log.debug(f'stdout -> {stdout}')
         for line in stdout.strip().split('\n'):
             # stdout contains whitespace-separated data: ip key_kind fingerprint_base64
             line_parts = line.strip().split(maxsplit=2)
