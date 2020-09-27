@@ -19,8 +19,8 @@ class TcprawEvaluator(SiblingEvaluator, metaclass=abc.ABCMeta):
         delta_tcpraw = diff_prop.raw_timestamp_diff
         if delta_tcpraw <= self.threshold_tcpraw:
             return SiblingStatus.POSITIVE
-        else:
-            return SiblingStatus.NEGATIVE
+        else:  # Could still be randomised
+            return SiblingStatus.INDECISIVE
 
 
 class ScheitleTcprawEvaluator(TcprawEvaluator):
