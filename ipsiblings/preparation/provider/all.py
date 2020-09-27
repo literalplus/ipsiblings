@@ -13,6 +13,6 @@ PROVIDERS = {
 
 def get_provider(key: const.TargetProviderChoice):
     if key in PROVIDERS:
-        return PROVIDERS[key.lower()]
+        return PROVIDERS[key]
     else:
         raise AssertionError(f'Target provider {key} is not registered!')

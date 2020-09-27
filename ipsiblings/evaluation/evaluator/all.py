@@ -23,13 +23,13 @@ _PROVIDERS: Dict[const.EvaluatorChoice, Type[SiblingEvaluator]] = {
 
 def _provide_all(evaluated_siblings: List[EvaluatedSibling], conf: AppConfig) -> List[SiblingEvaluator]:
     evaluators = []
-    for key, provider in _PROVIDERS:
+    for key, provider in _PROVIDERS.items():
         # noinspection PyBroadException
         try:
-            evaluators.append(provider.provide(conf, evaluated_siblings))
+            evaluators.append(provider.provide(evaluated_siblings, conf))
         except Exception:
             log.exception(f'Failed to init evaluator for {key}, skipping.')
-        return evaluators
+    return evaluators
 
 
 def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingEvaluator]):

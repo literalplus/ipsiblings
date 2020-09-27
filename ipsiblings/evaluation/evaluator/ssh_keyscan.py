@@ -6,10 +6,13 @@ from collections import ChainMap
 from copy import deepcopy
 from typing import Dict, Any, Optional, List, Iterable, Mapping, Tuple, Set
 
+from ipsiblings import liblog
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStatus, FamilySpecificSiblingProperty
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.model import const
+
+log = liblog.get_root_logger()
 
 
 class SshResult:
@@ -23,10 +26,10 @@ class SshResult:
 
     @classmethod
     def from_raw_export(cls, source: Dict[str, str]) -> Optional['SshResult']:
-        if not source['agent']:
+        if not source.get('agent'):
             return None
         result = SshResult(source['agent'])
-        for key, value in source:
+        for key, value in source.items():
             prefix = 'key_'
             if key.startswith(prefix):
                 result.register_key(key[len(prefix):], value)
@@ -39,7 +42,7 @@ class SshResult:
         result = {
             'agent': self.agent,
         }
-        result.update({f'key_{kind}': fingerprint for kind, fingerprint in self.key_kind_to_fingerprint})
+        result.update({f'key_{kind}': fingerprint for kind, fingerprint in self.key_kind_to_fingerprint.items()})
         return result
 
     def __deepcopy__(self, memo_dict) -> 'SshResult':
@@ -93,13 +96,13 @@ class SshProperty(FamilySpecificSiblingProperty[Optional[SshResult]]):
         }
 
     def export_raw(self) -> Mapping[str, str]:
-        list_of_result_export_dicts = [{f'{ipv}_{k}': v for k, v in res.export_raw()} for ipv, res in self]
+        list_of_result_export_dicts = [{f'{ipv}_{k}': v for k, v in res.export_raw().items()} for ipv, res in self]
         return ChainMap(*list_of_result_export_dicts)
 
     def import_from_raw(self, source: Mapping[str, str]):
         for ip_version in (4, 6):
             prefix = f'{ip_version}_'
-            relevant = {k[len(prefix):]: v for k, v in source if k.startswith(prefix)}
+            relevant = {k[len(prefix):]: v for k, v in source.items() if k.startswith(prefix)}
             self[ip_version] = SshResult.from_raw_export(relevant)
 
 
@@ -113,7 +116,7 @@ class SshResultExporter:
             for s in evaluated_siblings
             if s.has_property(SshProperty)
         ]
-        all_keys = {e.keys() for e in exports}
+        all_keys = {k for sublist in exports for k in sublist}
         with open(self.out_file, 'w', encoding='utf-8', newline='') as fil:
             sorted_keys = list(all_keys)
             sorted_keys.sort()
@@ -165,15 +168,18 @@ class SshKeyscanProcessHandler:
             target=self._run, args=(in_addrs,), name=f'keyscan-{name}'
         )
         self.thread.start()
+        log.debug(f'Started SSH keyscan {name}.')
 
     def join(self):
         if not self.thread:
             return
         self.thread.join()
+        log.info(f'Finished SSH keyscan {self.thread.name}.')
         self.thread = None
 
     def _run(self, in_addrs: Set[str]):
         stdin = '\n'.join(in_addrs)
+        log.debug(f'stdin -> {in_addrs}')
         proc = subprocess.Popen(
             ['ssh-keyscan', '-f', '-'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -184,6 +190,7 @@ class SshKeyscanProcessHandler:
         self._handle_key_info_in_stdout(stdout)
 
     def _handle_agent_info_in_stderr(self, stderr: str):
+        log.debug(f'stderr -> {stderr}')
         for line in stderr.strip().split('\n'):
             # stderr contains comments of form # ip:port;agent_string
             if not line.startswith('#'):
@@ -196,6 +203,7 @@ class SshKeyscanProcessHandler:
             self.results[ip] = SshResult(agent)
 
     def _handle_key_info_in_stdout(self, stdout: str):
+        log.debug(f'stdout -> {stdout}')
         for line in stdout.strip().split('\n'):
             # stdout contains whitespace-separated data: ip key_kind fingerprint_base64
             line_parts = line.strip().split(maxsplit=2)
@@ -232,22 +240,30 @@ class SshKeyscanEvaluator(SiblingEvaluator):
     def init_data_for(self, all_siblings: List[EvaluatedSibling]):
         any_missing = self.importer.import_to_report_missing(all_siblings)
         if any_missing:
+            log.debug('SSH keyscan needed, executing.')
             results, to_scan = self._do_scan_where_missing(all_siblings)
             self._apply_results_to(results, to_scan)
+            self.exporter.export(all_siblings)
+            log.debug('SSH keyscan results saved.')
+        else:
+            log.debug('All siblings already have SSH keyscan info, skipping.')
         self.__init_done = True
 
-    def _do_scan_where_missing(self, all_siblings):
-        to_scan = [it for it in all_siblings if not it.has_property(SshProperty)]
+    def _do_scan_where_missing(self, all_siblings: List[EvaluatedSibling]):
+        to_scan = [
+            it for it in all_siblings
+            if not it.has_property(SshProperty) or not it.get_property(SshProperty).has_data_for_both()
+        ]
         scan_ips: Dict[int, Set[str]] = {4: set(), 6: set()}
         for scan_target in to_scan:
             for ip_version, series in scan_target:
-                scan_ips[ip_version] = series.target_ip
+                scan_ips[ip_version].add(series.target_ip)
         results = self._do_scan_for(scan_ips)
         return results, to_scan
 
     def _do_scan_for(self, version_target_ips: Dict[int, Set[str]]) -> Dict[int, Dict[str, SshResult]]:
         version_process_handlers: Dict[int, SshKeyscanProcessHandler] = {
-            ipv: SshKeyscanProcessHandler(self._cwd) for ipv, _ in version_target_ips
+            ipv: SshKeyscanProcessHandler(self._cwd) for ipv, _ in version_target_ips.items()
         }
         for ip_version, handler in version_process_handlers.items():
             handler.start(str(ip_version), version_target_ips[ip_version])

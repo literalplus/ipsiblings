@@ -63,7 +63,7 @@ def _prepare_parser():
     default_target_provider = const.TargetProviderChoice.default()
     target_grp.add_argument(
         '--targets-from', action='store', help=f'Where to get target nodes from (default {default_target_provider})',
-        choices=const.TargetProviderChoice.all_keys(), default=default_target_provider
+        choices=const.TargetProviderChoice.all_keys(), default=default_target_provider.name
     )
     target_grp.add_argument(
         '--skip-v', type=int, action='append', default=[],
