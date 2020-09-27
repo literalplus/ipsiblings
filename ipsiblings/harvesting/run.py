@@ -10,11 +10,11 @@ def _provide_harvester_for(nic: NicInfo, conf: HarvesterConfig, prepared_targets
     return Harvester(nic, conf, prepared_targets)
 
 
-def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo):
+def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo) -> bool:
     if conf.flags.do_harvest:
         if prepared_targets.has_timestamps() and not conf.flags.always_harvest:
             log.warning(f'Not harvesting, it was already done - {prepared_targets.kind}')
-            return
+            return False
         log.info('Starting harvesting task ...')
         harvester = _provide_harvester_for(nic, conf.harvester, prepared_targets)
         try:
@@ -25,5 +25,7 @@ def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo):
         finally:
             log.info(f'Total records processed: {harvester.total_records_processed()}')
             prepared_targets.notify_timestamps_added()
+        return True
     else:
-        log.info(f'No harvesting requested, exporting targets without timestamps.')
+        log.info(f'No harvesting requested.')
+        return False

@@ -16,11 +16,13 @@ log = liblog.get_root_logger()
 
 def _do_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
     TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir)
+    did_run = False
     try:
-        harvesting.run(prepared_targets, wiring.conf, wiring.nic)
+        did_run = harvesting.run(prepared_targets, wiring.conf, wiring.nic)
     finally:
-        log.info('Exporting targets after harvesting.')
-        TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir)
+        if did_run:
+            log.info('Exporting targets after harvesting.')
+            TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir)
 
 
 def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig) -> Dict[Tuple, SiblingCandidate]:
@@ -29,6 +31,7 @@ def _prepare_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfi
         raise JustExit
     if not prepared_targets.has_timestamps():
         raise DataException('No timestamps available, was only a port scan requested?')
+    log.debug('Constructing candidates...')
     candidates = construct_candidates.construct_candidates_for(prepared_targets, conf)
     if not candidates:
         raise DataException('No sibling candidates available - do we have targets for both address families?')

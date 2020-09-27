@@ -31,8 +31,8 @@ class SiblingCandidate(object):
     ):
         # TODO: Reduce v4/v6 duplication by splitting data into two objects like with Target
         self.series: Dict[int, TimestampSeries] = {
-            4: TimestampSeries.of_ts(target4.timestamps),
-            6: TimestampSeries.of_ts(target6.timestamps),
+            4: target4.timestamps.as_series(),
+            6: target6.timestamps.as_series(),
         }
         self.tcp_options: Dict[int, Optional[TcpOptions]] = {
             4: target4.tcp_options,

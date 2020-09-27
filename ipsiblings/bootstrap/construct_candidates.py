@@ -24,10 +24,6 @@ def _construct_candidates(
     """
     if not targets.targets:
         return {}
-    if not targets.has_timestamps():
-        log.warning('No timestamp data available trying to construct candidates')
-        return {}
-
     candidates = {}
 
     for target4 in targets:

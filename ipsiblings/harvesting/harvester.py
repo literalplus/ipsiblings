@@ -7,6 +7,8 @@ import multiprocessing
 import queue  # only exceptions
 import random
 import threading
+import time
+from datetime import timedelta
 from typing import Tuple, List, Dict
 
 import scapy.all as scapy
@@ -118,6 +120,7 @@ class Harvester(metaclass=abc.ABCMeta):
 
     def _send4(self):
         socket4 = scapy.conf.L2socket(iface=self.nic.name)
+        start_time = time.time()
         # randomisation has significance at least for the fact that time difference between start of v4 and v6
         # series is used as an identifying metric
         for pkt in random.sample(self.v4packets, k=self.v4packets_length):
@@ -125,10 +128,14 @@ class Harvester(metaclass=abc.ABCMeta):
                 log.debug('Stopping IPv4 sending process ...')
                 break
             socket4.send(pkt)
+        if log.isEnabledFor(liblog.DEBUG):
+            diff = start_time - time.time()
+            log.debug(f'Finished IPv4 sending after {timedelta(seconds=diff)}.')
         socket4.close()
 
     def _send6(self):
         socket6 = scapy.conf.L2socket(iface=self.nic.name)
+        start_time = time.time()
         # randomisation has significance at least for the fact that time difference between start of v4 and v6
         # series is used as an identifying metric
         for pkt in random.sample(self.v6packets, k=self.v6packets_length):
@@ -136,6 +143,9 @@ class Harvester(metaclass=abc.ABCMeta):
                 log.debug('Stopping IPv6 sending process ...')
                 break
             socket6.send(pkt)
+        if log.isEnabledFor(liblog.DEBUG):
+            diff = start_time - time.time()
+            log.debug(f'Finished IPv6 sending after {timedelta(seconds=diff)}.')
         socket6.close()
 
     def _run(self):

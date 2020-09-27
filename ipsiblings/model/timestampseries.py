@@ -2,8 +2,6 @@ from typing import Tuple
 
 import numpy
 
-from .timestamps import Timestamps
-
 
 class TimestampSeries:
     """
@@ -13,18 +11,11 @@ class TimestampSeries:
     """
     KEY_TS_VAL = 'ts_val'
     KEY_RECEPTION_TIME = 'reception_time'
-    _DTYPE = numpy.dtype([(KEY_TS_VAL, numpy.int32), (KEY_RECEPTION_TIME, numpy.float64)])
+    DTYPE = numpy.dtype([(KEY_TS_VAL, numpy.int32), (KEY_RECEPTION_TIME, numpy.float64)])
 
     def __init__(self, key: Tuple[int, str, int], data: numpy.ndarray):
         self.ip_version, self.target_ip, self.target_port = key
         self.data = data
-
-    @classmethod
-    def of_ts(cls, source: Timestamps) -> 'TimestampSeries':
-        return TimestampSeries(
-            (source.ip_version, source.target_ip, source.target_port),
-            numpy.array(source.timestamps, dtype=cls._DTYPE)
-        )
 
     def __len__(self):
         return self.data.size

@@ -19,7 +19,7 @@ TS_OVERFLOW_THRESHOLD = 1000
 class NormTimestampSeries(TimestampSeries):
     def __init__(self, source: TimestampSeries, clean_reception_times: numpy.ndarray, clean_ts_vals: numpy.ndarray):
         unstructured_data = numpy.array([clean_reception_times, clean_ts_vals]).T
-        structured_data = recfunctions.unstructured_to_structured(unstructured_data, dtype=self._DTYPE)
+        structured_data = recfunctions.unstructured_to_structured(unstructured_data, dtype=self.DTYPE)
         super(NormTimestampSeries, self).__init__(source.key, structured_data)
 
 
