@@ -6,12 +6,20 @@ from typing import Dict, Set, Optional
 import numpy
 import scipy.stats as scipy_stats
 
+from ipsiblings import liblog
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
 from ipsiblings.evaluation.property.clean_series import NormTimestampSeries, NormSeriesProperty
+
+log = liblog.get_root_logger()
 
 
 class FrequencyInfo:
     def __init__(self, clean_series: NormTimestampSeries):
+        for entry in clean_series.data:
+            log.debug(
+                f'TS -> {entry[NormTimestampSeries.KEY_TS_VAL]} @ '
+                f'{entry[NormTimestampSeries.KEY_RECEPTION_TIME]}'
+            )
         slope_raw, intercept, rval, pval, stderr = scipy_stats.linregress(
             clean_series.reception_times, clean_series.ts_vals
         )

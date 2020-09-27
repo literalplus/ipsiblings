@@ -22,17 +22,17 @@ class SshKeyscanEvaluator(SiblingEvaluator):
     @classmethod
     def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
         # Do not use base_dir from param since we want to share keyscan results between batches
-        instance = cls(pathlib.Path(conf.base_dir))
+        instance = cls(pathlib.Path(conf.base_dir), conf.eval.ssh_timeout)
         instance.init_data_for(all_siblings)
         return instance
 
-    def __init__(self, base_dir: pathlib.Path):
+    def __init__(self, base_dir: pathlib.Path, timeout: int):
         super().__init__(const.EvaluatorChoice.SSH_KEYSCAN)
         self._cwd = base_dir
         data_file = self._cwd / 'ssh.tsv'
         self.exporter = SshResultExporter(data_file)
         self.importer = SshResultImporter(data_file)
-        self.runner = KeyscanRunner(self._cwd)
+        self.runner = KeyscanRunner(self._cwd, timeout)
         self.__init_done = False
 
     def init_data_for(self, all_siblings: List[EvaluatedSibling]):
@@ -43,8 +43,8 @@ class SshKeyscanEvaluator(SiblingEvaluator):
             log.debug(f'SSH keyscan missing for {len(missing_ips)} addresses, executing.')
             version_result_dict = self.runner.scan(missing_ips)
             new_results: Dict[Tuple[int, str], KeyscanResult] = {}
-            for ip_version, result_dict in version_result_dict:
-                for ip_address, result in result_dict:
+            for ip_version, result_dict in version_result_dict.items():
+                for ip_address, result in result_dict.items():
                     new_results[ip_version, ip_address] = result
             self.exporter.export_append(new_results.values())
             log.debug('SSH keyscan results saved.')

@@ -47,6 +47,14 @@ def _prepare_parser():
         '--eval-batch-size', help='Candidates to evaluate per batch (default 10_000)',
         default=10_000, type=int
     )
+    eval_grp.add_argument(
+        '--eval-fail-fast', help='Exit immediately upon the first evaluation exception.',
+        action='store_true', default=False
+    )
+    eval_grp.add_argument(
+        '--eval-ssh-timeout', help='Timeout in seconds per batch for SSH keyscan, default 60.',
+        default=60, type=int
+    )
 
     skip_grp = created_parser.add_argument_group(title='SKIP STEPS', description=None)
     skip_grp.add_argument(

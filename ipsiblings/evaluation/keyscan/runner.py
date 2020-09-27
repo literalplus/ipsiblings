@@ -12,11 +12,13 @@ log = liblog.get_root_logger()
 
 
 class SshKeyscanProcessHandler:
-    def __init__(self, cwd: pathlib.Path, ip_version: int):
+    def __init__(self, cwd: pathlib.Path, ip_version: int, timeout: int):
         self._cwd = cwd
         self.ip_version = ip_version
+        self.timeout = timeout
         self.results: Dict[str, KeyscanResult] = {}
         self.thread: Optional[threading.Thread] = None
+        self.failed = False
 
     def start(self, in_addrs: Set[str]):
         self.thread = threading.Thread(
@@ -39,9 +41,14 @@ class SshKeyscanProcessHandler:
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             universal_newlines=True, encoding='utf-8', cwd=self._cwd
         )
-        stdout, stderr = proc.communicate(input=stdin, timeout=6)  # seconds
-        self._handle_agent_info_in_stderr(stderr)
-        self._handle_key_info_in_stdout(stdout)
+        try:
+            stdout, stderr = proc.communicate(input=stdin, timeout=self.timeout)  # seconds
+            self._handle_key_info_in_stdout(stdout)
+            self._handle_agent_info_in_stderr(stderr)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            self.failed = True
+            log.debug(f'SSH keyscan failed for {self.ip_version}')
 
     def _handle_agent_info_in_stderr(self, stderr: str):
         for line in stderr.strip().split('\n'):
@@ -70,8 +77,9 @@ class SshKeyscanProcessHandler:
 
 
 class KeyscanRunner:
-    def __init__(self, cwd: pathlib.Path):
+    def __init__(self, cwd: pathlib.Path, timeout: int):
         self._cwd = cwd
+        self.timeout = timeout
 
     def scan(self, version_ips: Set[Tuple[int, str]]) -> Dict[int, Dict[str, KeyscanResult]]:
         target_dict = defaultdict(set)
@@ -81,7 +89,7 @@ class KeyscanRunner:
 
     def _do_scan_for(self, version_target_ips: Dict[int, Set[str]]) -> Dict[int, Dict[str, KeyscanResult]]:
         version_process_handlers: Dict[int, SshKeyscanProcessHandler] = {
-            ipv: SshKeyscanProcessHandler(self._cwd, ipv) for ipv, _ in version_target_ips.items()
+            ipv: SshKeyscanProcessHandler(self._cwd, ipv, self.timeout) for ipv, _ in version_target_ips.items()
         }
         for ip_version, handler in version_process_handlers.items():
             handler.start(version_target_ips[ip_version])
@@ -90,4 +98,9 @@ class KeyscanRunner:
         for ip_version, handler in version_process_handlers.items():
             handler.join()
             results[ip_version] = handler.results
+            if not handler.failed:
+                requested_targets = version_target_ips[ip_version]
+                for address in requested_targets:
+                    if address not in results[ip_version]:
+                        results[ip_version][address] = KeyscanResult(ip_version, address, const.NONE_MARKER)
         return results

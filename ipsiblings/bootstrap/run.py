@@ -54,5 +54,7 @@ def _run_evaluation_batched(prepared_targets, wiring):
             evaluator.run(i, batch_iter)
         except Exception:
             log.exception(f'Failed to evaluate batch #{i}')
+            if wiring.conf.eval.fail_fast:
+                raise
         finally:
             i += 1

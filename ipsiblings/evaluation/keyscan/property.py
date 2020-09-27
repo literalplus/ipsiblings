@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Iterable
+from typing import Dict, Any, Optional, Iterable, Set
 
 from ipsiblings import liblog
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
@@ -71,3 +71,7 @@ class SshProperty(FamilySpecificSiblingProperty[Optional[KeyscanResult]]):
             'agents_match': self.do_agents_match(),
             'keys_match': self.do_keys_match()
         }
+
+    @classmethod
+    def get_export_keys(cls) -> Set[str]:
+        return {'both_present', 'agents_match', 'keys_match'}

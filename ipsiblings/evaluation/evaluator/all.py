@@ -35,7 +35,7 @@ def _provide_all(
     return evaluators
 
 
-def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingEvaluator]):
+def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingEvaluator], fail_fast: bool):
     for evaluator in evaluators:
         # noinspection PyBroadException
         try:
@@ -44,10 +44,12 @@ def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingE
         except Exception:
             evaluated_sibling.classifications[evaluator.key] = SiblingStatus.ERROR
             log.exception(f'Failed to evaluate {evaluated_sibling} with {evaluator.key}')
+            if fail_fast:
+                raise
 
 
 def evaluate_with_all(evaluated_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
     # TODO: low runtime ?
     evaluators = _provide_all(evaluated_siblings, batch_dir, conf)
     for evaluated_sibling in evaluated_siblings:
-        _evaluate_one(evaluated_sibling, evaluators)
+        _evaluate_one(evaluated_sibling, evaluators, conf.eval.fail_fast)
