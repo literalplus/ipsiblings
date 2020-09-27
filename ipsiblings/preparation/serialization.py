@@ -21,7 +21,7 @@ class TargetSerialization:
             writer = csv.writer(targets_file, delimiter=const.PRIMARY_DELIMITER)
             for target in prepared_targets:
                 writer.writerow(list(target.key) + [
-                    ",".join(target.domains),
+                    ",".join(target.domains) if target.domains else const.NONE_MARKER,
                     str(target.tcp_options) if target.tcp_options else const.NONE_MARKER
                 ] + [value for tup in target.timestamps.timestamps for value in tup])
 

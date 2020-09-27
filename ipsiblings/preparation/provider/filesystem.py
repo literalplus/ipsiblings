@@ -25,8 +25,9 @@ class FilesystemProvider:
                 key, rest = Target.key_and_rest_from(record)
                 target = Target(key)
                 domains_data, tcp_options_str, *ts_data = rest
-                for domain in domains_data.split(const.SECONDARY_DELIMITER):
-                    target.add_domain(domain)
+                if domains_data != const.NONE_MARKER:
+                    for domain in domains_data.split(const.SECONDARY_DELIMITER):
+                        target.add_domain(domain)
                 target.tcp_options = TcpOptions.from_str(tcp_options_str)
                 for even_idx in range(0, len(ts_data) - 1, 2):  # subtract 1 to skip lonely odd indices at the end
                     remote_ts = int(ts_data[even_idx])

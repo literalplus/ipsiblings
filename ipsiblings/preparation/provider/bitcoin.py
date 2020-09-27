@@ -25,7 +25,8 @@ class BitcoinNodesProvider(TargetProvider):
         targets: Dict[str, Target] = {}
         for node in nodes:
             target = Target(Target.make_key(node.ip_version, node.ip_str, node.port))
-            target.add_domain(node.hostname)
+            if node.hostname is not None:
+                target.add_domain(node.hostname)
             targets[node.ip_str] = target
         return targets
 
