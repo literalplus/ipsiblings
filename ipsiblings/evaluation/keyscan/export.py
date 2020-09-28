@@ -44,26 +44,28 @@ class SshResultImporter:
     def __init__(self, in_file: pathlib.Path):
         self.in_file = in_file
 
-    def read_relevant(self, version_ips: Set[Tuple[int, str]]) -> Dict[Tuple[int, str], KeyscanResult]:
+    def read_relevant(self, version_ips: Set[Tuple[int, str]]) -> Dict[Tuple[int, str], Optional[KeyscanResult]]:
         """
         Read relevant results as specified by version_ips and removes found entries from the set.
         Return a mapping (ip_version, ip_address) -> result
         """
         if not self.in_file.is_file():
             return {}
-        imported: Dict[Tuple[int, str], KeyscanResult] = {}
+        imported: Dict[Tuple[int, str], Optional[KeyscanResult]] = {}
         with open(self.in_file, 'r', encoding='utf-8', newline='') as fil:
             reader = csv.DictReader(fil, fieldnames=_CSV_FIELD_NAMES, dialect=csv.excel_tab)
             for row in reader:
                 ip_version = row.get(_KEY_IP_VERSION)
                 ip_address = row.get(_KEY_IP_ADDRESS)
-                if ip_version and ip_address and \
-                        (ip_version, ip_address) in version_ips:
-                    key = int(ip_version), ip_address
-                    instance = self._row_to_instance(key, row)
-                    if instance:
-                        imported[key] = instance
-                        version_ips.remove(key)
+                if not ip_version or not ip_address:
+                    continue
+                key = int(ip_version), ip_address
+                if key not in version_ips:
+                    continue
+                instance = self._row_to_instance(key, row)
+                if instance or key not in imported or imported[key] is None:
+                    imported[key] = instance
+                version_ips.remove(key)
         return imported
 
     def _row_to_instance(self, key: Tuple[int, str], source: Dict[str, str]) -> Optional['KeyscanResult']:

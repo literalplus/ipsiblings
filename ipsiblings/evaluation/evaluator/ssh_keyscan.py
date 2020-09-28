@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from ipsiblings import liblog
 from ipsiblings.config import AppConfig
@@ -38,6 +38,7 @@ class SshKeyscanEvaluator(SiblingEvaluator):
     def init_data_for(self, all_siblings: List[EvaluatedSibling]):
         relevant_ips = {(ser.ip_version, ser.target_ip) for sibling_series in all_siblings for ser in sibling_series}
         results = self.importer.read_relevant(relevant_ips)
+        log.debug(f'Read {len(results)} relevant keyscan results from filesystem.')
         missing_ips = relevant_ips  # read_relevant removes found ips
         if missing_ips:
             log.debug(f'SSH keyscan missing for {len(missing_ips)} addresses, executing.')
@@ -54,7 +55,9 @@ class SshKeyscanEvaluator(SiblingEvaluator):
         self._apply_results_to(results, all_siblings)
         self.__init_done = True
 
-    def _apply_results_to(self, results: Dict[Tuple[int, str], KeyscanResult], targets: List[EvaluatedSibling]):
+    def _apply_results_to(
+            self, results: Dict[Tuple[int, str], Optional[KeyscanResult]], targets: List[EvaluatedSibling]
+    ):
         for scan_target in targets:
             prop = scan_target.contribute_property_type(SshProperty)
             for series in scan_target:
