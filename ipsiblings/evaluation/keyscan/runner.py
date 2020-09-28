@@ -42,7 +42,7 @@ class KeyscanProcessHandler:
         stdin = '\n'.join(in_addrs)
         proc = subprocess.Popen(
             ['ssh-keyscan', '-f', '-', '-T', '2'],  # T: timeout in seconds
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             universal_newlines=True, encoding='utf-8', cwd=self._cwd
         )
         try:
@@ -54,13 +54,13 @@ class KeyscanProcessHandler:
                     f'due to large input size of {len(in_addrs)}.'
                 )
             stdout, stderr = proc.communicate(input=stdin, timeout=self.timeout)  # seconds
+            self._handle_agent_info_in_stderr(stderr)
             self._handle_key_info_in_stdout(stdout)
-            self._handle_agent_info_in_stderr(stdout)
         except subprocess.TimeoutExpired:
             proc.kill()
             stdout, stderr = proc.communicate()
-            self._handle_key_info_in_stdout(stdout)
             self._handle_agent_info_in_stderr(stderr)
+            self._handle_key_info_in_stdout(stdout)
             log.warn(f'SSH keyscan {self.ip_version} timed out.')
             log.debug(f'OUT -> {stdout} ERR -> {stderr}')
             self.failed = True
