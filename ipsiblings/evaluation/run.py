@@ -16,6 +16,7 @@ class EvaluationProcessor:
 
     def run(self, batch_id: int, candidate_iter: Iterator[SiblingCandidate]):
         batch_dir = pathlib.Path(self.conf.base_dir) / f'batch_{batch_id:06}'
+        batch_dir.mkdir(parents=True, exist_ok=True)
         evaluated = [EvaluatedSibling(c) for c in candidate_iter]
         evaluate_with_all(evaluated, batch_dir, self.conf)
         if self.conf.paths.candidates_out:
