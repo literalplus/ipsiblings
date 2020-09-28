@@ -53,7 +53,7 @@ class SshResultImporter:
             return {}
         imported: Dict[Tuple[int, str], Optional[KeyscanResult]] = {}
         with open(self.in_file, 'r', encoding='utf-8', newline='') as fil:
-            reader = csv.DictReader(fil, fieldnames=_CSV_FIELD_NAMES, dialect=csv.excel_tab)
+            reader = csv.DictReader(fil, dialect=csv.excel_tab)
             for row in reader:
                 ip_version = row.get(_KEY_IP_VERSION)
                 ip_address = row.get(_KEY_IP_ADDRESS)

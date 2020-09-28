@@ -44,8 +44,8 @@ def _prepare_parser():
         choices=const.EvaluatorChoice.all_keys(), default=const.EvaluatorChoice.all_keys()
     )
     eval_grp.add_argument(
-        '--eval-batch-size', help='Candidates to evaluate per batch (default 10_000)',
-        default=10_000, type=int
+        '--eval-batch-size', help='Candidates to evaluate per batch (default 30_000)',
+        default=30_000, type=int
     )
     eval_grp.add_argument(
         '--eval-fail-fast', help='Exit immediately upon the first evaluation exception.',
