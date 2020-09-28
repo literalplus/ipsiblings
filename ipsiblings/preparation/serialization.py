@@ -9,18 +9,22 @@ import os
 import pathlib
 
 from .. import liblog
-from ..model import PreparedTargets, const, ConfigurationException
+from ..model import PreparedTargets, const
 
 log = liblog.get_root_logger()
 
 
 class TargetSerialization:
     @classmethod
+    def target_file_exists(cls, directory: str) -> bool:
+        return pathlib.Path(cls.get_targets_path(directory)).is_file()
+
+    @classmethod
     def export_targets(cls, prepared_targets: PreparedTargets, directory: str, force: bool):
         os.makedirs(directory, exist_ok=True)
         targets_path = pathlib.Path(cls.get_targets_path(directory))
         if targets_path.is_file() and not force:
-            raise ConfigurationException(
+            raise log.info(
                 f'Not exporting to {targets_path}, it already exists. Pass --really-harvest to overwrite.'
             )
         with open(targets_path, 'w', newline='', encoding='utf-8') as targets_file:

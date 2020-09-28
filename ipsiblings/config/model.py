@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-from typing import Set, Type, TypeVar
+from typing import Set, Type, TypeVar, List
 
 from .args import parser
 from .. import liblog
@@ -43,7 +43,11 @@ class FlagsConfig:
 
 class EvalConfig:
     def __init__(self, args):
-        self.evaluators = [_convert_enum(const.EvaluatorChoice, key) for key in args.evaluator]
+        self.evaluators: List[const.EvaluatorChoice] = [
+            _convert_enum(const.EvaluatorChoice, key)
+            for key in args.evaluator
+            if key not in args.skip_evaluator
+        ]
         self.export_plots = args.export_plots
         self.skip = args.skip_eval
         self.batch_size = args.eval_batch_size

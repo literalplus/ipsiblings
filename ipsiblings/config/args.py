@@ -44,7 +44,13 @@ def _prepare_parser():
         choices=const.EvaluatorChoice.all_keys(), default=const.EvaluatorChoice.all_keys()
     )
     eval_grp.add_argument(
-        '--eval-batch-size', help='Candidates to evaluate per batch (default 30_000)',
+        '--skip-evaluator', action='append',
+        help='Skip a specific evaluator. '
+             'May be specified multiple times.',
+        choices=const.EvaluatorChoice.all_keys(), default=[]
+    )
+    eval_grp.add_argument(
+        '--eval-batch-size', help='Candidates to evaluate per batch (default 10_000)',
         default=30_000, type=int
     )
     eval_grp.add_argument(

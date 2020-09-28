@@ -27,6 +27,8 @@ def _provide_all(
 ) -> List[SiblingEvaluator]:
     evaluators = []
     for key, provider in _PROVIDERS.items():
+        if key not in conf.eval.evaluators:
+            continue
         # noinspection PyBroadException
         try:
             evaluators.append(provider.provide(evaluated_siblings, batch_dir, conf))

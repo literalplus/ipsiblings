@@ -24,6 +24,9 @@ def run(wiring: Wiring):
 
 
 def _do_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
+    if TargetSerialization.target_file_exists(wiring.conf.base_dir) and not wiring.conf.flags.do_harvest:
+        log.info('Not harvesting or exporting targets.')
+        return
     TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir, wiring.conf.flags.always_harvest)
     did_run = False
     try:
