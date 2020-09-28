@@ -129,7 +129,7 @@ class Harvester(metaclass=abc.ABCMeta):
                 break
             socket4.send(pkt)
         if log.isEnabledFor(liblog.DEBUG):
-            diff = start_time - time.time()
+            diff = time.time() - start_time
             log.debug(f'Finished IPv4 sending after {timedelta(seconds=diff)}.')
         socket4.close()
 
@@ -144,7 +144,7 @@ class Harvester(metaclass=abc.ABCMeta):
                 break
             socket6.send(pkt)
         if log.isEnabledFor(liblog.DEBUG):
-            diff = start_time - time.time()
+            diff = time.time() - start_time
             log.debug(f'Finished IPv6 sending after {timedelta(seconds=diff)}.')
         socket6.close()
 
