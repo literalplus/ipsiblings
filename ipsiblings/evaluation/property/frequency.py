@@ -20,12 +20,6 @@ class FrequencyFailedException(SiblingPropertyException):
 
 class FrequencyInfo:
     def __init__(self, clean_series: NormTimestampSeries):
-        for entry in clean_series.data:
-            log.debug(
-                f'TS -> {entry[NormTimestampSeries.KEY_TS_VAL]} @ '
-                f'{entry[NormTimestampSeries.KEY_RECEPTION_TIME]}'
-            )
-        log.debug('End TS')
         slope_raw, intercept, rval, pval, stderr = scipy_stats.linregress(
             clean_series.reception_times, clean_series.ts_vals
         )
