@@ -24,14 +24,14 @@ def run(wiring: Wiring):
 
 
 def _do_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
-    TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir)
+    TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir, wiring.conf.flags.always_harvest)
     did_run = False
     try:
         did_run = harvesting.run(prepared_targets, wiring.conf, wiring.nic)
     finally:
         if did_run:
             log.info('Exporting targets after harvesting.')
-            TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir)
+            TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir, wiring.conf.flags.always_harvest)
 
 
 def _check_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig):
