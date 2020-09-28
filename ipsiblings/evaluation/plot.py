@@ -53,9 +53,14 @@ def _plot_evaluated(
     """
     Plot data to a matplotlib.pyplot figure.
     """
-    if not evaluated_sibling.has_property(MeanOutlierRemovalProperty):
-        log.warning(f'Unable to plot {evaluated_sibling}, outlier removal failed/missing.')
+    if evaluated_sibling.property_failed(MeanOutlierRemovalProperty):
+        log.debug(f'Unable to plot {evaluated_sibling}, outlier removal failed before.')
         return False
+    prop = evaluated_sibling.contribute_property_type(MeanOutlierRemovalProperty)
+    if not prop:
+        log.debug(f'Unable to plot {evaluated_sibling}, outlier removal failed now.')
+        return False
+    evaluated_sibling.contribute_property_type(SplineProperty)
     fig = pyplot.figure()
     axes = _plot_axes(evaluated_sibling, fig)
     _configure_plot_appearance(axes, evaluated_sibling)
@@ -76,8 +81,11 @@ def plot_all(evaluated_siblings: List[EvaluatedSibling], out_path):
 
         drawn_plots = 0
         for evaluated_sibling in evaluated_siblings:
-            if _plot_evaluated(evaluated_sibling, plotfunc, pdf=pdf_pages):
-                drawn_plots = drawn_plots + 1
+            try:
+                if _plot_evaluated(evaluated_sibling, plotfunc, pdf=pdf_pages):
+                    drawn_plots = drawn_plots + 1
+            except Exception:
+                log.exception()
 
         if pdf_pages:
             pdf_pages.close()

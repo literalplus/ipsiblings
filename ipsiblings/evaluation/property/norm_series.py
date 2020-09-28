@@ -13,12 +13,13 @@ from ipsiblings.model import TimestampSeries
 
 # used to check if overflow of timestamp counter occurred
 # ~1000 timestamp ticks -> 1 to 10 seconds (frequencies of 1Hz to 1000Hz according to RFC)
-TS_OVERFLOW_THRESHOLD = 1000
+TS_OVERFLOW_RANGE = 1000
+TS_OVERFLOW_THRESHOLD = 2 ** 32 - 100_000
 
 
 class NormTimestampSeries(TimestampSeries):
     def __init__(self, source: TimestampSeries, clean_reception_times: numpy.ndarray, clean_ts_vals: numpy.ndarray):
-        unstructured_data = numpy.array([clean_reception_times, clean_ts_vals]).T
+        unstructured_data = numpy.array([clean_ts_vals, clean_reception_times]).T
         structured_data = recfunctions.unstructured_to_structured(unstructured_data, dtype=self.DTYPE)
         super(NormTimestampSeries, self).__init__(source.key, structured_data)
 
@@ -49,10 +50,10 @@ class NormSeriesProperty(FamilySpecificSiblingProperty[NormTimestampSeries]):
         first_reception_time = series.first_reception_time
 
         overflow_adjustment = 0
-        for i in range(1, len(series)):
+        for i in range(1, len(series)):  # start at 1 because we look at the previous for sequence_wrapped
             # NOTE: previous implementation also wrapped the reception timestamps.
             # These however are Unix timestamps, which we do not expect to wrap
-            sequence_wrapped = ts_vals[i] + TS_OVERFLOW_THRESHOLD < ts_vals[i - 1]
+            sequence_wrapped = ts_vals[i] + TS_OVERFLOW_RANGE < ts_vals[i - 1]
             previous_close_to_overflow = ts_vals[i - 1] > 2 ** 31
             if sequence_wrapped and previous_close_to_overflow:
                 # TSval is an int32; Python can deal with much larger numbers, so multiple overflows are okay

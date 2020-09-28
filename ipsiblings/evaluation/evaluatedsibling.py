@@ -152,6 +152,9 @@ class EvaluatedSibling:
     def get_property(self, property_type: Type[PT]) -> Optional[PT]:
         return self._properties[property_type]
 
+    def property_failed(self, property_type: Type[PT]) -> bool:
+        return self.has_property(property_type) and self.get_property(property_type) is None
+
     def has_property(self, property_type: Type[PT]) -> bool:
         return self._properties.get(property_type) is not None
 

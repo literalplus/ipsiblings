@@ -6,9 +6,12 @@ from typing import Dict, Set, Optional
 import numpy
 from numpy.lib import recfunctions
 
+from ipsiblings import liblog
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
-from ipsiblings.evaluation.property.clean_series import NormTimestampSeries, NormSeriesProperty
 from ipsiblings.evaluation.property.frequency import FrequencyProperty
+from ipsiblings.evaluation.property.norm_series import NormTimestampSeries, NormSeriesProperty
+
+log = liblog.get_root_logger()
 
 
 class OffsetSeries:
@@ -53,6 +56,9 @@ class OffsetsProperty(FamilySpecificSiblingProperty[Optional[OffsetSeries]]):
     def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[OffsetsProperty]':
         freq_prop = evaluated_sibling.contribute_property_type(FrequencyProperty)
         clean_prop = evaluated_sibling.contribute_property_type(NormSeriesProperty)
+        if freq_prop and freq_prop[4].frequency == 0 or freq_prop[6] == 0:
+            log.debug(f'Frequency is zero for {evaluated_sibling}')
+            return None
         if freq_prop and clean_prop:
             return cls(
                 OffsetSeries.from_norm(clean_prop[4], freq_prop[4].frequency),

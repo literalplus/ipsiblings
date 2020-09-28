@@ -9,7 +9,7 @@ import scipy.stats as scipy_stats
 from ipsiblings import liblog
 from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty, \
     SiblingPropertyException
-from ipsiblings.evaluation.property.clean_series import NormTimestampSeries, NormSeriesProperty
+from ipsiblings.evaluation.property.norm_series import NormTimestampSeries, NormSeriesProperty
 
 log = liblog.get_root_logger()
 
@@ -27,7 +27,8 @@ class FrequencyInfo:
             raise FrequencyFailedException('Got NaN as slope from linregress')
         self.r_squared = rval * rval  # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
         self.frequency_raw = slope_raw
-        self.frequency = numpy.round(slope_raw, decimals=0)  # Kohno et al. Section 4.3
+        # Kohno et al., p. 6, top right
+        self.frequency = numpy.round(slope_raw, decimals=0)
 
 
 class FrequencyProperty(FamilySpecificSiblingProperty[FrequencyInfo]):
