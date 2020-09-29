@@ -23,9 +23,10 @@ log = liblog.get_root_logger()
 
 def _configure_plot_appearance(axis1, evaluated_sibling):
     pyplot.legend(loc='lower right')
-    first_domain = sorted(list(evaluated_sibling.domains))[0] if evaluated_sibling.domains else 'no domain'
-    titlestr = f'{first_domain}\n' \
-               f'{evaluated_sibling.series[4].target_ip} / {evaluated_sibling.series[6].target_ip}'
+    domains = " vs. ".join(evaluated_sibling.domains)
+    titlestr = f'{domains}\n' \
+               f'{evaluated_sibling.series[4].target_ip} / {evaluated_sibling.series[6].target_ip}\n' \
+               f'{evaluated_sibling.overall_status.name}'
     pyplot.title(titlestr, fontsize=10)
     pyplot.xlabel('reception time (h)')
     pyplot.ylabel('offset (ms)')
@@ -36,10 +37,10 @@ def _configure_plot_appearance(axis1, evaluated_sibling):
 
 def _plot_axes(evaluated_sibling, fig):
     cleaned_prop = evaluated_sibling.get_property(MeanOutlierRemovalProperty)
-    axes = fig.add_subplot(nrows=1, ncols=1, index=1)  # full page
+    axes = fig.add_subplot(1, 1, 1)  # full page
     # 'bo' -> blue circles -> fmt parameter https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html
-    axes.plot(cleaned_prop[4].KEY_RECEPTION_TIME, cleaned_prop[4].offsets, 'bo', color='blue', alpha=0.4, label='IPv4')
-    axes.plot(cleaned_prop[6].KEY_RECEPTION_TIME, cleaned_prop[6].offsets, 'bo', color='red', alpha=0.4, label='IPv6')
+    axes.plot(cleaned_prop[4].reception_times, cleaned_prop[4].offsets, 'bo', color='blue', alpha=0.4, label='IPv4')
+    axes.plot(cleaned_prop[6].reception_times, cleaned_prop[6].offsets, 'bo', color='red', alpha=0.4, label='IPv6')
     if evaluated_sibling.has_property(SplineProperty):
         spline_prop = evaluated_sibling.get_property(SplineProperty)
         axes.plot(spline_prop[4].reception_times, spline_prop[4].offsets, linewidth=4, color='blue', alpha=0.4)
@@ -85,7 +86,7 @@ def plot_all(evaluated_siblings: List[EvaluatedSibling], out_path):
                 if _plot_evaluated(evaluated_sibling, plotfunc, pdf=pdf_pages):
                     drawn_plots = drawn_plots + 1
             except Exception:
-                log.exception()
+                log.exception(f'Unable to plot {evaluated_sibling}')
 
         if pdf_pages:
             pdf_pages.close()

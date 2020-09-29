@@ -23,10 +23,6 @@ class TargetSerialization:
     def export_targets(cls, prepared_targets: PreparedTargets, directory: str, force: bool):
         os.makedirs(directory, exist_ok=True)
         targets_path = pathlib.Path(cls.get_targets_path(directory))
-        if targets_path.is_file() and not force:
-            raise log.info(
-                f'Not exporting to {targets_path}, it already exists. Pass --really-harvest to overwrite.'
-            )
         with open(targets_path, 'w', newline='', encoding='utf-8') as targets_file:
             i = 0
             writer = csv.writer(targets_file, delimiter=const.PRIMARY_DELIMITER)

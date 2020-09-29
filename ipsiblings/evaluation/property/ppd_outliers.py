@@ -37,7 +37,8 @@ class PpdOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
 
         raw_data4 = numpy.zeros(len(remaining_ppds_indexed), dtype=OffsetSeries.DTYPE)
         raw_data6 = numpy.zeros(len(remaining_ppds_indexed), dtype=OffsetSeries.DTYPE)
-        for result_idx, (v4index, ppd) in enumerate(remaining_ppds_indexed):
+        for result_idx, (v4idx_float, ppd) in enumerate(remaining_ppds_indexed):
+            v4index = int(v4idx_float)  # Stack needs consistent datatypes, PPDs are floats
             raw_data4[result_idx] = filtered4.data[v4index]
             raw_data6[result_idx] = filtered6.data[ppd_prop.corresponding_v6_idxs[v4index]]
 

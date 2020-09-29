@@ -33,8 +33,10 @@ class OffsetSpline(OffsetSeries):
     @classmethod
     def from_offsets(cls, source: OffsetSeries) -> Optional['OffsetSpline']:
         try:
-            bin_width = cls._calc_equidistant_bin_width(source)
             relevant_data = source.data[cls._VALUE_CUTOFF_BOTH_SIDES:-cls._VALUE_CUTOFF_BOTH_SIDES]
+            if len(relevant_data) <= cls._BIN_COUNT:
+                return None
+            bin_width = cls._calc_equidistant_bin_width(relevant_data)
             first_time = relevant_data[cls.KEY_RECEPTION_TIME][0]
             last_time = relevant_data[cls.KEY_RECEPTION_TIME][-1]
             x_values = numpy.arange(first_time, last_time, cls._X_SPACING)
@@ -45,10 +47,10 @@ class OffsetSpline(OffsetSeries):
         return cls(relevant_data, internal_knots, x_values)
 
     @classmethod
-    def _calc_equidistant_bin_width(cls, source: OffsetSeries):
-        first_time = source.reception_times[0]
-        last_time = source.reception_times[-1]
-        return round((last_time - first_time) / cls._BIN_COUNT, 1)
+    def _calc_equidistant_bin_width(cls, source: numpy.ndarray):
+        first_time = source[cls.KEY_RECEPTION_TIME][0]
+        last_time = source[cls.KEY_RECEPTION_TIME][-1]
+        return round((last_time - first_time) / cls._BIN_COUNT, 6)
 
 
 class SplineProperty(FamilySpecificSiblingProperty[OffsetSpline]):
@@ -65,7 +67,7 @@ class SplineProperty(FamilySpecificSiblingProperty[OffsetSpline]):
             return None
         spline4 = OffsetSpline.from_offsets(clean_prop[4])
         spline6 = OffsetSpline.from_offsets(clean_prop[6])
-        if not spline4.has_data() or not spline6.has_data():
+        if not spline4 or not spline6 or not spline4.has_data() or not spline6.has_data():
             return None
         return cls(spline4, spline6)
 

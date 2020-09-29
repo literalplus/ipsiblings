@@ -32,7 +32,7 @@ class MeanOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
         return cls(cleaned4, cleaned6)
 
     @classmethod
-    def _remove_outliers_97(cls, source: OffsetSeries):
+    def _remove_outliers_97(cls, source: OffsetSeries) -> OffsetSeries:
         with numpy.errstate(invalid='raise'):
             try:
                 mean = numpy.mean(source.offsets)
@@ -44,9 +44,10 @@ class MeanOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
             mean - libconstants.SIB_Z_SCORE_CONFIDENCE_LEVEL_97 * stddev,
             mean + libconstants.SIB_Z_SCORE_CONFIDENCE_LEVEL_97 * stddev
         )
-        return source.data[numpy.where(numpy.logical_and(
+        raw_data = source.data[numpy.where(numpy.logical_and(
             thresh_low <= source.offsets, source.offsets <= thresh_high
         ))]
+        return OffsetSeries(raw_data)
 
     def __init__(self, filtered4: OffsetSeries, filtered6: OffsetSeries):
         self.data4 = filtered4

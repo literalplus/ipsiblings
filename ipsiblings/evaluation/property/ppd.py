@@ -39,8 +39,8 @@ class PpdProperty(SiblingProperty):
 
     def _calc_closest_v6_ts_for_all_v4(self, source4: OffsetSeries, source6: OffsetSeries) -> numpy.ndarray:
         smaller_input_len = min(len(source4.data), len(source6.data))
-        closest_v6_idxs = numpy.zeros(smaller_input_len)
-        for i in range(stop=smaller_input_len):
+        closest_v6_idxs = numpy.zeros(smaller_input_len, dtype=numpy.uint64)
+        for i in range(0, smaller_input_len):
             current_v4_reception_ts = source4.reception_times[i]
             # This apparently might ValueError under mysterious circumstances - might want to handle that if possible
             closest_v6_idx = numpy.abs(source6.reception_times - current_v4_reception_ts).argmin()
@@ -52,8 +52,8 @@ class PpdProperty(SiblingProperty):
     ) -> numpy.ndarray:
         # Length is relevant for if one of the IPs stops responding
         smaller_input_len = min(len(source4.data), len(source6.data))
-        ppds_by_v4 = numpy.zeros(smaller_input_len)
-        for i4 in range(stop=smaller_input_len):
+        ppds_by_v4 = numpy.zeros(smaller_input_len, dtype=numpy.float64)
+        for i4 in range(0, smaller_input_len):
             offset4 = source4.offsets[i4]
             closest_offset6 = source6.offsets[corresponding_v6_idxs[i4]]
             ppds_by_v4[i4] = abs(offset4 - closest_offset6)

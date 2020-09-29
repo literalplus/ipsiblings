@@ -43,9 +43,9 @@ class NormSeriesProperty(FamilySpecificSiblingProperty[NormTimestampSeries]):
     @classmethod
     def _clean_data(cls, series: TimestampSeries) -> NormTimestampSeries:
         reception_times = series.reception_times
-        clean_reception_times = numpy.zeros(len(reception_times) - 1)
+        clean_reception_times = numpy.zeros(len(reception_times) - 1, dtype=numpy.float64)
         ts_vals = series.ts_vals
-        clean_ts_vals = numpy.zeros(len(ts_vals) - 1)
+        clean_ts_vals = numpy.zeros(len(ts_vals) - 1, dtype=numpy.uint64)
         first_ts_val = series.first_ts_val
         first_reception_time = series.first_reception_time
 
