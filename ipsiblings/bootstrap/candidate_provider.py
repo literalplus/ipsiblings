@@ -34,5 +34,8 @@ class CandidateProvider:
 
     def as_batches(self, batch_size: int) -> Iterator[Iterator[SiblingCandidate]]:
         iterator = iter(self)
-        while batch := islice(iterator, batch_size):
+        while True:  # gotta love Debian only shipping Python 3.7, so cannot use Walrus operator :(
+            batch = islice(iterator, batch_size)
+            if not batch:
+                break
             yield batch
