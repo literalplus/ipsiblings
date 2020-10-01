@@ -11,6 +11,9 @@ class TcpOptions:
     def __iter__(self):
         yield from self.data
 
+    def __len__(self):
+        return len(self.data)
+
     @classmethod
     def from_str(cls, inp: str):
         if inp == const.NONE_MARKER:

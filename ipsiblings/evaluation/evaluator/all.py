@@ -7,6 +7,7 @@ from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStat
 from ipsiblings.evaluation.evaluator.domain import DomainEvaluator
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.evaluator.ssh_keyscan import SshKeyscanEvaluator
+from ipsiblings.evaluation.evaluator.tcp_options import TcpOptionsEvaluator
 from ipsiblings.evaluation.evaluator.tcpraw import ScheitleTcprawEvaluator, StarkeTcprawEvaluator
 from ipsiblings.model import const
 
@@ -17,7 +18,7 @@ _PROVIDERS: Dict[const.EvaluatorChoice, Type[SiblingEvaluator]] = {
     const.EvaluatorChoice.TCPRAW_STARKE: StarkeTcprawEvaluator,
     const.EvaluatorChoice.DOMAIN: DomainEvaluator,
     const.EvaluatorChoice.SSH_KEYSCAN: SshKeyscanEvaluator,
-    # TODO: TCPopts difference
+    const.EvaluatorChoice.TCP_OPTIONS: TcpOptionsEvaluator,
     # TODO: ML models
 }
 

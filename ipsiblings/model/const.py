@@ -24,6 +24,7 @@ class EvaluatorChoice(Enum):
     TCPRAW_STARKE = 'tcpraw-starke'
     DOMAIN = 'validate-domain'
     SSH_KEYSCAN = 'validate-ssh-keyscan'
+    TCP_OPTIONS = 'tcp-options'
 
     @classmethod
     def all_keys(cls):
