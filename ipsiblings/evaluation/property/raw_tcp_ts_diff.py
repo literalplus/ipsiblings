@@ -3,7 +3,8 @@
 # -> https://github.com/tumi8/siblings (GPLv2)
 from typing import Dict, Set, Optional
 
-from ipsiblings.evaluation.evaluatedsibling import SiblingProperty, EvaluatedSibling
+from ipsiblings.evaluation.model.property import SiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.frequency import FrequencyProperty
 
 

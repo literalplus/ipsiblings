@@ -25,6 +25,7 @@ class EvaluatorChoice(Enum):
     DOMAIN = 'validate-domain'
     SSH_KEYSCAN = 'validate-ssh-keyscan'
     TCP_OPTIONS = 'tcp-options'
+    ML_STARKE = 'machine-learning-starke'
 
     @classmethod
     def all_keys(cls):

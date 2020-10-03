@@ -1,8 +1,8 @@
 import pathlib
 from typing import List, Iterator
 
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from . import plot, export
-from .evaluatedsibling import EvaluatedSibling
 from .evaluator.all import evaluate_with_all
 from .. import config, liblog
 from ..model import SiblingCandidate

@@ -3,11 +3,12 @@ from typing import List, Dict, Tuple, Optional
 
 from ipsiblings import liblog
 from ipsiblings.config import AppConfig
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStatus
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.keyscan.export import SshResultImporter, SshResultExporter
 from ipsiblings.evaluation.keyscan.property import KeyscanResult, SshProperty
 from ipsiblings.evaluation.keyscan.runner import KeyscanRunner
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
+from ipsiblings.evaluation.model.status import SiblingStatus
 from ipsiblings.model import const
 
 log = liblog.get_root_logger()

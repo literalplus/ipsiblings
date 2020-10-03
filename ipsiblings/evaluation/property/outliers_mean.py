@@ -3,7 +3,8 @@ from typing import Dict, Set, Optional
 import numpy
 
 from ipsiblings import liblog, libconstants
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.denoise import DenoiseProperty
 from ipsiblings.evaluation.property.offsets import OffsetSeries
 

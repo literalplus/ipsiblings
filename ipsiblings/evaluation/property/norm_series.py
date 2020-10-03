@@ -3,7 +3,8 @@ from typing import Dict, Set, Optional
 import numpy
 from numpy.lib import recfunctions
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.model import TimestampSeries
 
 # The code in this file is based on the work of Scheitle et al. 2017:

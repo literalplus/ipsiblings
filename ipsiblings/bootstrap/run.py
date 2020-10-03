@@ -50,9 +50,14 @@ def _run_evaluation_batched(prepared_targets, wiring):
         .as_batches(wiring.conf.eval.batch_size)
     evaluator = EvaluationProcessor(wiring.conf)
     i = 0
+    batches_processed = 0
     for batch_iter in batches:
+        if i < wiring.conf.eval.first_batch_idx:
+            i += 1
+            continue
         # noinspection PyBroadException
         try:
+            batches_processed += 1
             log.debug(f'Evaluating batch #{i}...')
             evaluator.run(i, batch_iter)
         except Exception:
@@ -61,3 +66,6 @@ def _run_evaluation_batched(prepared_targets, wiring):
                 raise
         finally:
             i += 1
+        if 0 <= wiring.conf.eval.batch_count <= batches_processed:
+            log.info(f'Stopping evaluation after {batches_processed} batches as requested.')
+            break

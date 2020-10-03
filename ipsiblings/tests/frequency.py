@@ -2,7 +2,7 @@ import pathlib
 from unittest import TestCase
 
 from ipsiblings.config import AppConfig
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.frequency import FrequencyProperty
 from ipsiblings.evaluation.property.norm_series import NormSeriesProperty
 from ipsiblings.model import SiblingCandidate, Target

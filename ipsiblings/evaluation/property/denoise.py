@@ -2,7 +2,8 @@ from typing import List, Dict, Set, Optional
 
 import numpy
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.offsets import OffsetSeries, OffsetsProperty
 
 # The code in this file is based on the work of Scheitle et al. 2017:

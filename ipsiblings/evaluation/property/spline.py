@@ -4,7 +4,8 @@ import numpy
 from numpy.lib import recfunctions
 from scipy import interpolate as scipy_interpolate
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)

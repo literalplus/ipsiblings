@@ -87,7 +87,7 @@ class Harvester(metaclass=abc.ABCMeta):
 
     def process_record(self, record):
         tcp_seq, ip, port, remote_ts, received_ts, tcp_options, ip_version = record
-        target = self.ipaddr_to_target[ip]
+        target = self.ipaddr_to_target.get(ip)
         if target:
             target.handle_timestamp(remote_ts, received_ts, tcp_options)
         else:

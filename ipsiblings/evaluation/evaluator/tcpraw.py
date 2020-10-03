@@ -3,8 +3,9 @@ import pathlib
 from typing import List
 
 from ipsiblings.config import AppConfig
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStatus
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
+from ipsiblings.evaluation.model.status import SiblingStatus
 from ipsiblings.evaluation.property.raw_tcp_ts_diff import FirstTimestampDiffProperty
 from ipsiblings.model import const
 

@@ -18,27 +18,14 @@
 
 Everything works with versions published within 2018.
 
-## Important Notes
 
-~~Recent versions of scipy's `LSQUnivariateSpline` allow **strictly increasing** x
-values only.
-Due to internal design decisions we require **increasing** sequences.
-This means the file `scipy/interpolate/fitpack2.py` must be patched.
-To do so change `if not np.all(diff(x) > 0.0):` to `if not np.all(diff(x) >= 0.0):` in the initialization of the `LSQUnivariateSpline` class.
-You may also simply comment the dependency check in the `main.py` file.~~
-
-No longer necessary as of scipy 1.4.0. Compare
-https://github.com/scipy/scipy/issues/8535
-and
-https://github.com/scipy/scipy/blob/d6fdfc742323e013e0af3fdd41029dfe36087ab3/scipy/interpolate/fitpack2.py#L753
-.
-
-
-## Usage Message main.py
+## Usage Message
 
 ```
-usage: ipsiblings [-h] [-d BASE_DIR] [--ignore-ips-from IGNORE_IPS_FROM] [--eval-results-to [EVAL_RESULTS_TO]] [--candidates-to CANDIDATES_TO] [--run-id RUN_ID] [--low-runtime] [--export-plots]
-                  [--skip-eval] [--only-init] [--no-ssh-keyscan] [--only-ssh-keyscan] [-v | -q] [--targets-from {bitcoin,filesystem}] [--from START_INDEX] [--to END_INDEX] [--do-harvest]
+usage: ipsiblings [-h] [-d BASE_DIR] [--ignore-ips-from IGNORE_IPS_FROM] [--eval-results-to EVAL_RESULTS_TO] [--candidates-to CANDIDATES_TO] [--run-id RUN_ID] [--low-runtime] [--export-plots]
+                  [--evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}] [--skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}]
+                  [--eval-batch-size EVAL_BATCH_SIZE] [--eval-fail-fast] [--eval-ssh-timeout EVAL_SSH_TIMEOUT] [--eval-first-batch EVAL_FIRST_BATCH] [--eval-batch-count EVAL_BATCH_COUNT]
+                  [--skip-eval] [--only-init] [-v | -q] [--targets-from {BITCOIN,FILESYSTEM}] [--skip-v SKIP_V] [--from START_INDEX] [--to END_INDEX] [--do-harvest] [--really-harvest]
                   [-ht HARVEST_TIME] [-hi HARVEST_INTERVAL] [-htr HARVEST_TIMEOUT] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
 
 IP Siblings Toolset
@@ -51,7 +38,7 @@ PATHS:
                         Base directory for application data (default ./target)
   --ignore-ips-from IGNORE_IPS_FROM
                         File of IP addresses to ignore for all operations
-  --eval-results-to [EVAL_RESULTS_TO]
+  --eval-results-to EVAL_RESULTS_TO
                         Write evaluation results to file
   --candidates-to CANDIDATES_TO
                         Write generated sibling candidates to a file
@@ -60,25 +47,38 @@ PATHS:
 EVALUATION:
   --low-runtime         Use low-runtime evaluation methods
   --export-plots        Export plots after evaluation
+  --evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}
+                        Select a specific evaluator instead of running all of them. May be specified multiple times.
+  --skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}
+                        Skip a specific evaluator. May be specified multiple times.
+  --eval-batch-size EVAL_BATCH_SIZE
+                        Candidates to evaluate per batch (default 10_000)
+  --eval-fail-fast      Exit immediately upon the first evaluation exception.
+  --eval-ssh-timeout EVAL_SSH_TIMEOUT
+                        Timeout in seconds per batch for SSH keyscan, default 60.
+  --eval-first-batch EVAL_FIRST_BATCH
+                        Start counting eval batches at this number, default 0.
+  --eval-batch-count EVAL_BATCH_COUNT
+                        How many batches to evaluate, default all.
 
 SKIP STEPS:
   --skip-eval           Skip any interpretation of collected data
   --only-init           Exit after loading configuration
-  --no-ssh-keyscan      Do not scan for SSH host keys
-  --only-ssh-keyscan    Exit after keyscan
 
 LOGGING:
   -v, --verbose         Increase verbosity once per call
   -q, --quiet           Decrease verbosity once per call
 
 TARGET NODES:
-  --targets-from {bitcoin,filesystem}
-                        Where to get target nodes from (default bitcoin)
+  --targets-from {BITCOIN,FILESYSTEM}
+                        Where to get target nodes from (default TargetProviderChoice.BITCOIN)
+  --skip-v SKIP_V       Skip IPvX addresses while acquiring targets (for testing, may be specified multiple times, ignored for filesystem provider)
   --from START_INDEX    Index of first target to consider (default 0)
   --to END_INDEX        Index of first target to skip (default none)
 
 TIMESTAMP COLLECTION:
   --do-harvest          Collect (harvest) timestamps if not present
+  --really-harvest      Harvest even if we already have timestamps
   -ht HARVEST_TIME, --harvest-time HARVEST_TIME
                         Collection duration, seconds (default 36000)
   -hi HARVEST_INTERVAL, --harvest-interval HARVEST_INTERVAL
@@ -101,6 +101,7 @@ OPERATING SYSTEM SETTINGS:
 description TBD, but trust me there is one
 
 ## Files `scripts/`
+Old scripts related to Starke's work.
 
 `gt_api_scripts/`: API interaction scripts to compile ground truth host list  
 `run/`: Bash scripts to handle batches of data  
@@ -110,36 +111,21 @@ description TBD, but trust me there is one
 `resolve_toplist_domains.py`: Resolution of domain Top List files  
 `xgb_print_features.py`: Script to reproduce plots in the thesis (contains used data)
 
+## Execution
+For measurement, you need a dual-stack server with sufficient bandwidth
+and at least 1 GB of RAM. It is advised to enable at least 2 GB of swap (file-based is fine)
+to handle spikes due to other applications -- you don't want a ten-hour run to be OOM-killed
+at the ninth hour.
 
-## Execution Notes
-
-It is necessary to implement the proposed model evaluation in the `SiblingCandidate.evaluate()` function for the `--resultfile` switch to work properly. Due to lack of time we extended our initial investigational approach in the `evaluate.py` script for the final results discussed in our thesis but we still did not move the decision logic to the intended function. All required materials for this are available within the repository (models*.pickle, code in `evaluate.py`, etc.).
-
-#### Workflow
-1. Domain resolution with `scripts/resolve_toplist_domains.py` (and some text processing)
-
-
-2. Executing toolset to traceroute and port scan resolved targets
-3. Timestamp acquisition
-
-
-4. Evaluation
-  * With `ipsiblings/evaluation.py` and respective functions
-  * Or by updating the `evaluate()` function in `SiblingCandidate` classes in `ipsiblings/libsiblings.py` and implementing the usage of the proposed model (as in `evaluation.py`)
-
-Step 1 is handled by the script.  
-Step 2 and 3 are performed by calling `main.py` with appropriate parameters.  
-Step 4 is carried out by applying functions contained in the evaluation script or updating the respective classes.
-
-#### Execution Examples
-
-* Initially execute low-runtime tracerouting for given targets and port scanning for active nodes  
-  `./main.py -t -sf targets_resolved.csv -d /root/datadir -i ignore.txt -vv --low-runtime --router-ports --cdn-file cdn_nets.txt`
-* Load previously saved trace sets and run harvesting without ssh-keyscan  
-  `./main.py -ld /root/datadir -i ignore.txt -vv -r --low-runtime --no-ssh-keyscan`
-* Perform port scan and full-runtime harvesting on given candidates and print charts and write results to file  
-  `./main.py -c candidates.csv -i ignore.txt -vv -r --print --resultfile`  
-  (`--print` is only available with full-runtime data; `--resultfile` needs implementation of `evaluate()` function)
+For evaluation, more resources are necessary. It is technically possible to evaluate on a
+low-end host such as the one suggested for measurement above, but you need to specify
+a very low batch size (10k or less) and it will take a long time, producing many
+batches that need to be merged. Note that, at the time of writing, the Bitcoin
+network consists of around 6k v4 nodes and 1.5k v6 nodes, which results in
+around 6 million (!!) candidates for evaluation. For this work,
+a Linux server with 16 GB of RAM was used. Note that evaluation is single-threaded and
+performance may be improved by having multiple processes responsible for different
+batch numbers.
 
 
 ## File Formats
@@ -161,32 +147,6 @@ tuples of the following format:
 | ...Reception Timestamp | 34132453.567                             | Reception timestamp populated by our TCP stack, in seconds since the Unix epoch, with fractional values.                                                                                                                               |   |   |
 | ...                    |                                          | The last two fields (marked with `...`) are repeated for every received timestamp.  
 
-##### Hostlists: `domain,ip4,ip6`
-
-##### SSH-Agents: `ip;identification_string`
-IPv4 and IPv6 separated by `<LF><LF> = <LF><LF>`  
-Exapmle:
-```
-192.168.0.42;SSH-2.0-OpenSSH_7.2p2 Ubuntu-4ubuntu2.8
-
-=
-
-2001:db8:42::4;SSH-2.0-OpenSSH_7.2p2 Ubuntu-4ubuntu2.8
-```
-
-SSH-Keys: `ip key-type key`  
-Example: `192.168.4.2 ssh-ed25519 AAAAPT4gV0UgTE9WRSBBTklNQUxTIDw9IHwgPT4gV0UgTE9WRSBBTklNQUxTIDw9Cg==`
-
-
-##### IP Ignore File:
-IPv4 and IPv6 separated by `<LF> = <LF>`  
-```
-# comment
-192.168.0.42
-=
-# here starts v6 section
-2001:db8::42
-```
 
 ## Execution
 via pip/setuptools:

@@ -126,5 +126,5 @@ class KeyscanRunner:
         while True:  # gotta love Debian only shipping Python 3.7, so cannot use Walrus operator :(
             batch = set(islice(iterator, batch_size))
             if not batch:
-                break
+                return
             yield batch

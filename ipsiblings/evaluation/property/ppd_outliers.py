@@ -2,7 +2,8 @@ from typing import Dict, Set, Optional
 
 import numpy
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.offsets import OffsetSeries
 from ipsiblings.evaluation.property.outliers_mean import MeanOutlierRemovalProperty
 from ipsiblings.evaluation.property.ppd import PpdProperty

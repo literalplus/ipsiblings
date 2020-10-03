@@ -14,7 +14,7 @@ import matplotlib.backends.backend_pdf
 from matplotlib import pyplot
 
 from ipsiblings import liblog
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.outliers_mean import MeanOutlierRemovalProperty
 from ipsiblings.evaluation.property.spline import SplineProperty
 

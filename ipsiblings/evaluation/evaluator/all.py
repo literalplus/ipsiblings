@@ -3,12 +3,14 @@ from typing import List, Dict, Type
 
 from ipsiblings import liblog
 from ipsiblings.config import AppConfig
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStatus
 from ipsiblings.evaluation.evaluator.domain import DomainEvaluator
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
+from ipsiblings.evaluation.evaluator.ml import MachineLearningEvaluator
 from ipsiblings.evaluation.evaluator.ssh_keyscan import SshKeyscanEvaluator
 from ipsiblings.evaluation.evaluator.tcp_options import TcpOptionsEvaluator
 from ipsiblings.evaluation.evaluator.tcpraw import ScheitleTcprawEvaluator, StarkeTcprawEvaluator
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
+from ipsiblings.evaluation.model.status import SiblingStatus
 from ipsiblings.model import const
 
 log = liblog.get_root_logger()
@@ -19,7 +21,7 @@ _PROVIDERS: Dict[const.EvaluatorChoice, Type[SiblingEvaluator]] = {
     const.EvaluatorChoice.DOMAIN: DomainEvaluator,
     const.EvaluatorChoice.SSH_KEYSCAN: SshKeyscanEvaluator,
     const.EvaluatorChoice.TCP_OPTIONS: TcpOptionsEvaluator,
-    # TODO: ML models
+    const.EvaluatorChoice.ML_STARKE: MachineLearningEvaluator,
 }
 
 

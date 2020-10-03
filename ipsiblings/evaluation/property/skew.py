@@ -4,7 +4,8 @@ import numpy
 from scipy.stats import mstats as scipy_mstats
 from scipy.stats import stats as scipy_stats
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingProperty
+from ipsiblings.evaluation.model.property import SiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.offsets import OffsetSeries
 from ipsiblings.evaluation.property.ppd_outliers import PpdOutlierRemovalProperty
 

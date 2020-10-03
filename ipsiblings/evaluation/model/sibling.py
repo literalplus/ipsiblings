@@ -1,114 +1,9 @@
-import abc
-from enum import Enum, auto
-from typing import Dict, Type, Optional, TypeVar, Generic, List, Any, Tuple, Iterator, Set
+from typing import Dict, Type, Optional, TypeVar, List, Iterator
 
-from ipsiblings import libtools
-from ipsiblings.model import SiblingCandidate, TimestampSeries, BusinessException, const
-
-
-class ExportRegistry:
-    _REGISTERED_KEYS = set()
-
-    @classmethod
-    def register_root_key(cls, key):
-        cls._REGISTERED_KEYS.add(key)
-
-    @classmethod
-    def register_keys(cls, property_type):
-        for key in property_type.get_export_keys():
-            cls.register_root_key(property_type.prefix_key(key))
-
-    @classmethod
-    def get_header_fields(cls) -> List[str]:
-        lst = list(cls._REGISTERED_KEYS)
-        lst.sort()
-        return lst
-
-
-class _PropertyMeta(abc.ABCMeta):
-    def __new__(mcs, name, bases, namespace):
-        # noinspection PyTypeChecker
-        cls: 'Type[SiblingProperty]' = super(_PropertyMeta, mcs).__new__(mcs, name, bases, namespace)
-        ExportRegistry.register_keys(cls)
-        return cls
-
-
-class SiblingProperty(metaclass=_PropertyMeta):
-    @classmethod
-    @abc.abstractmethod
-    def get_export_keys(cls) -> Set[str]:
-        """Valid keys for the export method."""
-        return set()
-
-    @classmethod
-    @abc.abstractmethod
-    def provide_for(cls, evaluated_sibling: 'EvaluatedSibling') -> Optional['SiblingProperty']:
-        """Returns a new instance for given EvaluatedSibling. Raises if dynamic provision is not supported."""
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def export(self) -> Dict[str, Any]:
-        """Exports this property's metrics. Values will be str'd. Keys must be in get_export_keys."""
-        return {}
-
-    @classmethod
-    def prefix_key(cls, key: str) -> str:
-        prefix = libtools.camel_to_snake_case(cls.__name__.replace('Property', ''))
-        return f'{prefix}_{key}'
-
-
-RT = TypeVar('RT')
-
-
-class FamilySpecificSiblingProperty(SiblingProperty, Generic[RT], metaclass=abc.ABCMeta):
-    """
-    Abstract base class for address-family-specific properties.
-    Must set properties data4 and data6 of type RT in the constructor.
-    Provides access to these two via self[4] and self[6].
-    """
-
-    # noinspection PyUnresolvedReferences
-    def __getitem__(self, item) -> RT:
-        if item == 4:
-            return self.data4
-        elif item == 6:
-            return self.data6
-        else:
-            raise KeyError
-
-    # noinspection PyUnresolvedReferences
-    def __iter__(self) -> Iterator[Tuple[int, RT]]:
-        if self.data4:
-            yield 4, self.data4
-        if self.data6:
-            yield 6, self.data6
-
-
-class SiblingStatus(Enum):
-    POSITIVE = auto()
-    NEGATIVE = auto()
-    INDECISIVE = auto()
-    CONFLICT = auto()
-    ERROR = auto()
-
-
-# State machine, nodes represent current overall status, edges represent a classification with that status.
-# No edge means no change, None value means always override the current status
-_STATUS_TRANSITIONS = {
-    SiblingStatus.POSITIVE: {SiblingStatus.NEGATIVE: SiblingStatus.CONFLICT},
-    SiblingStatus.NEGATIVE: {SiblingStatus.POSITIVE: SiblingStatus.CONFLICT},
-    SiblingStatus.INDECISIVE: None,
-    SiblingStatus.ERROR: {SiblingStatus.POSITIVE: SiblingStatus.POSITIVE,
-                          SiblingStatus.NEGATIVE: SiblingStatus.NEGATIVE},
-}
-
-
-class SiblingPropertyException(BusinessException):
-    def __init__(self, message: str, cause: Optional[Exception] = None):
-        super(SiblingPropertyException, self).__init__(message)
-        if cause:
-            self.__cause__ = cause
-
+from ipsiblings.evaluation.model.exportregistry import ExportRegistry
+from ipsiblings.evaluation.model.property import SiblingProperty, SiblingPropertyException
+from ipsiblings.evaluation.model.status import SiblingStatus
+from ipsiblings.model import SiblingCandidate, TimestampSeries, const
 
 PT = TypeVar('PT', bound=SiblingProperty)
 
@@ -205,16 +100,7 @@ class EvaluatedSibling:
 
     @property
     def overall_status(self) -> SiblingStatus:
-        overall = SiblingStatus.INDECISIVE
-        for key, status in self.classifications.items():
-            transitions = _STATUS_TRANSITIONS[overall]
-            if not transitions:
-                overall = status
-            else:
-                next_overall = transitions.get(status)
-                if next_overall:
-                    overall = next_overall
-        return overall
+        return SiblingStatus.combine(self.classifications.values())
 
 
 ExportRegistry.register_root_key('domains')

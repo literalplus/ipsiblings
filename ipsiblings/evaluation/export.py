@@ -2,7 +2,8 @@ import csv
 import pathlib
 from typing import List
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, ExportRegistry
+from ipsiblings.evaluation.model.exportregistry import ExportRegistry
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 
 
 def write_results(evaluated_siblings: List[EvaluatedSibling], out_path: pathlib.Path):

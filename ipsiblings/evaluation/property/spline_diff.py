@@ -2,7 +2,8 @@ from typing import Optional, Tuple, Dict, Set
 
 import numpy
 
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingProperty
+from ipsiblings.evaluation.model.property import SiblingProperty
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.dynamic_range import DynamicRangeProperty
 from ipsiblings.evaluation.property.offsets import OffsetSeries
 from ipsiblings.evaluation.property.spline import SplineProperty, OffsetSpline

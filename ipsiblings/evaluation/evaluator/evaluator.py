@@ -3,7 +3,7 @@ import pathlib
 from typing import List
 
 from ipsiblings.config import AppConfig
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.model import const
 
 

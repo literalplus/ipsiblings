@@ -48,4 +48,7 @@ setuptools.setup(
             'ipsiblings=ipsiblings.run:main'
         ]
     },
+    package_data={
+        'ipsiblings': ['assets/*'],
+    },
 )

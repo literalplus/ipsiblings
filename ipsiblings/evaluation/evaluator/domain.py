@@ -2,8 +2,9 @@ import pathlib
 from typing import List
 
 from ipsiblings.config import AppConfig
-from ipsiblings.evaluation.evaluatedsibling import EvaluatedSibling, SiblingStatus
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
+from ipsiblings.evaluation.model.sibling import EvaluatedSibling
+from ipsiblings.evaluation.model.status import SiblingStatus
 from ipsiblings.model import const
 
 
