@@ -165,6 +165,8 @@ You can deploy this to a Linux server using the `remote_install.sh` script.
 Note that you need to have `python3 python3-venv cmake` installed
 on the remote server if it is running Debian.
 
+Further, for Python-Bitcoinlib, we need the `libssl-dev` package.
+
 ## Why we need root access
 It is desirable for the measuring platform not to run as root user.
 

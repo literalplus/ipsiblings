@@ -27,6 +27,7 @@ setuptools.setup(
         'requests~=2.24.0',
         'prettytable~=0.7.2',
         'retrie~=0.1.2',
+        'python-bitcoinlib~=0.11.0',
     ],
     classifiers=[
         "Environment :: Console",
