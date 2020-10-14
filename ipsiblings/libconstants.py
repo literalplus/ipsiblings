@@ -25,9 +25,6 @@ OS_SETTINGS_FILE_NAME = 'settings.bak'
 BASE_DIRECTORY = '/root/thesis/data'
 
 # harvesting options
-# waits X seconds before sending processes are started for the first time
-START_SNIFF_PROCESS_DELAY = 2
-
 # DEFAULT RUNTIME 10h - 10k batch Alexa
 HARVESTING_RUNTIME = 60 * 60 * 10  # seconds
 HARVESTING_INTERVAL = 60  # seconds

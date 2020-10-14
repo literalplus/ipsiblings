@@ -1,10 +1,18 @@
+import hashlib
 import socket
+import time
 
-from bitcoin import *
+from bitcoin import SelectParams
+from bitcoin.core import Hash, b2lx
 from bitcoin.messages import *
+from bitcoin.net import CInv
 
-PORT = 18333
-SelectParams('testnet')
+USE_TESTNET = True
+PORT = 18333 if USE_TESTNET else 8333
+if USE_TESTNET:
+    SelectParams('testnet')
+FAKE_TX_HASH = Hash("not your usual tx".encode('utf-8'))
+INV_SEND_TS = -1
 
 
 def version_pkt(client_ip, server_ip, nonce):
@@ -21,25 +29,36 @@ def version_pkt(client_ip, server_ip, nonce):
 
 def recv_pkt(fake_fil):
     pkt = MsgSerializable.stream_deserialize(fake_fil)
-    print(f' -> {pkt}')
+    if pkt.command == b'addr':
+        print(f' ADDR * {pkt}')
+        print(f'HASH OF ADDR -> {hashlib.sha256(str(pkt).encode("utf-8")).hexdigest()}')
+    elif pkt.command == b'getdata':
+        ts_diff = time.time() - INV_SEND_TS
+        print(f' GETDATA * {pkt}')
+        print(f'GOT GETDATA AFTER {ts_diff} seconds')
+    else:
+        print(f' <- {pkt}')
     return pkt
 
 
 def send_pkt(fake_fil, pkt: MsgSerializable):
     pkt.stream_serialize(fake_fil)
     fake_fil.flush()
+    print(f' -> {pkt}')
 
 
 def main():
-    server_addr = '3.17.246.73'
+    if USE_TESTNET:
+        server_addr = '3.17.246.73'  # testnet
+    else:
+        server_addr = '37.59.47.27'  # mainnet
     client_addr = '10.87.21.23'
     nce = do_connect(client_addr, server_addr, None)
     print(f'ok lol {nce}')
-    do_connect(client_addr, server_addr, nce)
-    print('ok done')
 
 
 def do_connect(client_addr, server_addr, nonce):
+    global INV_SEND_TS
     with socket.socket() as sock:
         sock.connect((server_addr, PORT))
         with sock.makefile(mode='rwb') as fake_fil:
@@ -47,11 +66,23 @@ def do_connect(client_addr, server_addr, nonce):
             remote_ver = recv_pkt(fake_fil)
             print(f'nonce: {remote_ver.nNonce}')
             send_pkt(fake_fil, msg_verack())
-            remote_verack = recv_pkt(fake_fil)
-            send_pkt(fake_fil, msg_getaddr())
+            i = 0
             try:
                 while True:
+                    if i == 5:
+                        print("sending getaddr!")
+                        send_pkt(fake_fil, msg_getaddr())
+                    elif i == 7:
+                        print(f"sending inv for {b2lx(FAKE_TX_HASH)}!")
+                        pkt = msg_inv()
+                        inv = CInv()
+                        inv.type = 1  # TX
+                        inv.hash = FAKE_TX_HASH
+                        pkt.inv.append(inv)
+                        INV_SEND_TS = time.time()
+                        send_pkt(fake_fil, pkt)
                     recv_pkt(fake_fil)
+                    i += 1
             except KeyboardInterrupt:
                 pass
     return remote_ver.nNonce

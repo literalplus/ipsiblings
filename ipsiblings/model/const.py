@@ -30,3 +30,11 @@ class EvaluatorChoice(Enum):
     @classmethod
     def all_keys(cls):
         return [it.name for it in cls]
+
+
+class HarvesterChoice(Enum):
+    TCP_TS = 'tcp-ts'
+
+    @classmethod
+    def all_keys(cls):
+        return [it.name for it in cls]

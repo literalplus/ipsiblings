@@ -59,12 +59,14 @@ class EvalConfig:
 
 class HarvesterConfig:
     def __init__(self, args):
-        self.runtime = args.harvest_time
-        self.interval = args.harvest_interval
-        # timeout during the run
-        self.running_timeout = args.harvest_timeout
-        # timeout in the final collection stage
+        self.runtime = args.harvest_duration
+        self.ts_interval = args.ts_interval
+        self.ts_running_timeout = args.ts_timeout
         self.final_timeout = args.harvest_timeout_final
+        self.harvesters: List[const.HarvesterChoice] = [
+            _convert_enum(const.HarvesterChoice, key)
+            for key in args.harvester
+        ]
 
 
 class OsTunerConfig:

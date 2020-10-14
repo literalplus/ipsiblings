@@ -1,5 +1,6 @@
 import random
 import select
+import threading
 from typing import List, Union, Tuple
 
 import scapy.all as scapy
@@ -12,21 +13,21 @@ log = liblog.get_root_logger()
 class HarvestReceiver:
     """Handles reception of response packets for a Harvester."""
 
-    def __init__(self, stop_port: int, payload_ports: List[int], mp_manager, stop_all):
+    def __init__(self, stop_port: int, payload_ports: List[int], mp_manager, stop_event: threading.Event):
         self.stop_port = stop_port
         self.stop_payload = f'STOP_{random.getrandbits(64)}'
         all_ports = payload_ports + [stop_port]
         ports_filter = " or ".join([f'(dst port {port})' for port in all_ports])
         self.packet_filter = f'((tcp) and ({ports_filter}))'
         self.response_queue = mp_manager.Queue()
-        self.stop_all = stop_all  # stop flag
+        self.stop_event = stop_event
 
     def run(self):
         # https://github.com/secdev/scapy/issues/989 - own sniff implementation
         # from that issue, might be interesting to change to AsyncSniffer: https://github.com/secdev/scapy/pull/1999
 
         with scapy.conf.L2listen(filter=self.packet_filter) as sock:
-            while self.stop_all.value != 1:
+            while not self.stop_event.is_set():
                 try:  # prevent sniff process to terminate on error (excludes KeyboardInterrupt and SystemExit)
                     rlist = select.select([sock], [], [])
                     if not rlist:

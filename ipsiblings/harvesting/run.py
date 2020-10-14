@@ -1,13 +1,12 @@
-from .harvester import Harvester
+from typing import List
+
+from ipsiblings.harvesting.tcpts.tcptsharvester import TcpTsHarvester
+from .model import HarvestProvider
 from .. import liblog
 from ..config import HarvesterConfig, AppConfig
-from ..model import PreparedTargets, NicInfo
+from ..model import PreparedTargets, NicInfo, const
 
 log = liblog.get_root_logger()
-
-
-def _provide_harvester_for(nic: NicInfo, conf: HarvesterConfig, prepared_targets: PreparedTargets) -> Harvester:
-    return Harvester(nic, conf, prepared_targets)
 
 
 def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo) -> bool:
@@ -15,17 +14,39 @@ def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo) -> boo
         if prepared_targets.has_timestamps() and not conf.flags.always_harvest:
             log.warning(f'Not harvesting, it was already done - {prepared_targets.kind}')
             return False
-        log.info('Starting harvesting task ...')
-        harvester = _provide_harvester_for(nic, conf.harvester, prepared_targets)
+        log.info('Starting harvesting dispatcher ...')
         try:
-            harvester.start()
-            while not harvester.finished():
-                harvester.process_results_running()
-            harvester.process_results_final()
+            providers = _make_providers(conf.harvester, nic, prepared_targets)
+            _dispatch_harvesting(providers)
         finally:
-            log.info(f'Total records processed: {harvester.total_records_processed()}')
             prepared_targets.notify_timestamps_added()
         return True
     else:
         log.info(f'No harvesting requested.')
         return False
+
+
+def _make_providers(conf: HarvesterConfig, nic: NicInfo, prepared_targets: PreparedTargets):
+    providers: List[HarvestProvider] = []
+    if const.HarvesterChoice.TCP_TS in conf.harvesters:
+        providers.append(TcpTsHarvester(nic, conf, prepared_targets))
+    return providers
+
+
+def _dispatch_harvesting(providers: List[HarvestProvider]):
+    for provider in providers:
+        log.info(f'Starting harvest provider {type(provider).__name__}...')
+        provider.start_async()
+    log.info(f'Started all harvest providers.')
+    any_still_running = True
+    while any_still_running:
+        any_still_running = False
+        for provider in providers:
+            if provider.is_finished():
+                continue
+            any_still_running = True
+            provider.process_queued_results()
+    log.info('All harvest providers have finished.')
+    for provider in providers:
+        provider.terminate_processing()
+        log.info(f'Terminated harvest provider {type(provider).__name__}.')
