@@ -34,6 +34,7 @@ class EvaluatorChoice(Enum):
 
 class HarvesterChoice(Enum):
     TCP_TS = 'tcp-ts'
+    BTC = 'btc'
 
     @classmethod
     def all_keys(cls):

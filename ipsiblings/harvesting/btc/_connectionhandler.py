@@ -10,9 +10,14 @@ from typing import Dict, Optional, Tuple, List, Union
 from bitcoin import messages, net
 from bitcoin.messages import MsgSerializable
 
+from ipsiblings import liblog
+
+log = liblog.get_root_logger()
+
 
 class Connection:
-    def __init__(self, ip: str, port: int):
+    def __init__(self, ip_version: int, ip: str, port: int):
+        self.ip_version = ip_version
         self.ip = ip
         self.port = port
         self.sock = socket.socket()
@@ -74,7 +79,7 @@ class Connection:
         else:
             verinfo = None
         return (
-            (self.ip, self.port),
+            (self.ip_version, self.ip, self.port),
             (self.first_seen, self.last_seen),
             verinfo,
             self.addr_data,
@@ -94,24 +99,30 @@ class ConnectionHandler:
 
     def run(self):
         while not self._stop_event.is_set():
-            self._handle_connection_creation()
-            self._handle_sock_reading()
-            self._handle_connection_expiry()
+            try:
+                self._handle_connection_creation()
+                self._handle_sock_reading()
+                self._handle_connection_expiry()
+            except Exception:
+                log.exception(f'Error handling connections')
         for conn in self.connections.values():
             self._close_conn(conn)
 
     def _handle_connection_creation(self):
-        if self.all_connections_created.is_set():
+        if self.all_connections_created.is_set() or len(self.connections) > 10:
             return
+        (ipv, ip, port) = None, None, None
         try:
-            (ip, port) = self.connect_q.get(block=False)
-            self._connect_to(ip, port)
+            (ipv, ip, port) = self.connect_q.get(block=False)
+            self._connect_to(ipv, ip, port)
         except queue.Empty:
             if self._closing_event.is_set():
                 self.all_connections_created.set()
+        except Exception:
+            log.exception(f'Failed to connect to {ip}/{port}')
 
-    def _connect_to(self, ip: str, port: int):
-        conn = Connection(ip, port)
+    def _connect_to(self, ip_version: int, ip: str, port: int):
+        conn = Connection(ip_version, ip, port)
         if conn.fileno in self.connections:
             self._close_conn(self.connections[conn.fileno])
         self.connections[conn.fileno] = conn

@@ -1,9 +1,10 @@
 from typing import List
 
 from ipsiblings.harvesting.tcpts.tcptsharvester import TcpTsHarvester
+from .btc.btcharvester import BtcHarvester
 from .model import HarvestProvider
 from .. import liblog
-from ..config import HarvesterConfig, AppConfig
+from ..config import AppConfig
 from ..model import PreparedTargets, NicInfo, const
 
 log = liblog.get_root_logger()
@@ -16,7 +17,7 @@ def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo) -> boo
             return False
         log.info('Starting harvesting dispatcher ...')
         try:
-            providers = _make_providers(conf.harvester, nic, prepared_targets)
+            providers = _make_providers(conf, nic, prepared_targets)
             _dispatch_harvesting(providers)
         finally:
             prepared_targets.notify_timestamps_added()
@@ -26,10 +27,12 @@ def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo) -> boo
         return False
 
 
-def _make_providers(conf: HarvesterConfig, nic: NicInfo, prepared_targets: PreparedTargets):
+def _make_providers(conf: AppConfig, nic: NicInfo, prepared_targets: PreparedTargets):
     providers: List[HarvestProvider] = []
-    if const.HarvesterChoice.TCP_TS in conf.harvesters:
-        providers.append(TcpTsHarvester(nic, conf, prepared_targets))
+    if const.HarvesterChoice.TCP_TS in conf.harvester.harvesters:
+        providers.append(TcpTsHarvester(nic, conf.harvester, prepared_targets))
+    if const.HarvesterChoice.BTC in conf.harvester.harvesters:
+        providers.append(BtcHarvester(conf, prepared_targets))
     return providers
 
 
