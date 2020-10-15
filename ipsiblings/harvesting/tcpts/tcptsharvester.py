@@ -29,7 +29,7 @@ class TcpTsHarvester(HarvestProvider):
     """
 
     def __init__(self, nic: NicInfo, conf: HarvesterConfig, targets: PreparedTargets):
-        requested_run_count = int(self.conf.runtime / self.conf.ts_interval)
+        requested_run_count = int(conf.runtime / conf.ts_interval)
         super(TcpTsHarvester, self).__init__(conf.ts_interval, requested_run_count)
 
         self.conf = conf
@@ -150,6 +150,7 @@ class TcpTsHarvester(HarvestProvider):
         p6 = scapy.Ether() / scapy.IPv6(dst='::1') / self.receiver.provide_stop_tcp_packet()
         scapy.sendp(p4, verbose=0)
         scapy.sendp(p6, verbose=0)
+        self.stop_event.set()
 
     def process_queued_results(self):
         self._process_results(self.conf.ts_running_timeout)

@@ -127,6 +127,11 @@ def _prepare_parser():
         default=libconstants.HARVESTING_INTERVAL
     )
     harvest_grp.add_argument(
+        '-bi', '--btc-interval', type=int,
+        help=f'Collection interval for Bitcoin protocol per target, seconds (default 1800 / 30min)',
+        default=1800
+    )
+    harvest_grp.add_argument(
         '-ttr', '--ts-timeout', type=int,
         help='Wait at least this many seconds for timestamp replies per iteration '
              '(Should not be longer than -thi) '
