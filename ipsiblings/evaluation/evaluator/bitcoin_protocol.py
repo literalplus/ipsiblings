@@ -65,6 +65,13 @@ class BitcoinProperty(FamilySpecificSiblingProperty[Optional[BitcoinConnections]
     def can_conclude(self):
         return not self.has_response_for_both() or not self.data4.is_consistent() or not self.data6.is_consistent()
 
+    def all_signs_point_to_no(self):
+        return self.can_conclude() and (
+                self[4].proto_ver != self[6].proto_ver or
+                self[4].sub_ver != self[6].sub_ver or
+                self[4].services != self[6].services
+        )
+
     def accept(self, conn: BitcoinConnection):
         conns = self[conn.ip_ver]
         if not conns:
@@ -125,11 +132,7 @@ class BitcoinEvaluator(SiblingEvaluator):
         prop = evaluated_sibling.get_property(BitcoinProperty)
         if not prop.can_conclude():
             return SiblingStatus.ERROR
-        if prop[4].proto_ver != prop[6].proto_ver:
-            return SiblingStatus.NEGATIVE
-        elif prop[4].sub_ver != prop[6].sub_ver:
-            return SiblingStatus.NEGATIVE
-        elif prop[4].services != prop[6].services:
+        if prop.all_signs_point_to_no():
             return SiblingStatus.NEGATIVE
         else:
             return SiblingStatus.INDECISIVE
