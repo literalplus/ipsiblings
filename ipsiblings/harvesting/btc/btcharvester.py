@@ -24,13 +24,14 @@ class BtcHarvester(HarvestProvider):
 
     def start_async(self):
         self.handler_proc = multiprocessing.Process(
-            target=self.connection_handler.run(),
+            target=self.connection_handler.run,
             name='BTC Connection Handler',
         )
         self.handler_proc.start()
         super(BtcHarvester, self).start_async()
 
     def _do_single_run(self, run_number: int):
+        log.debug(f'Starting BTC measurement {run_number} of {len(self.target_tuples)} nodes.')
         for version_ip_and_port in self.target_tuples:
             self.connection_handler.connect_q.put(version_ip_and_port)
 

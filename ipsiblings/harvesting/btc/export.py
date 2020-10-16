@@ -8,8 +8,8 @@ from ipsiblings.model import const
 
 
 class BtcExporter:
-    def __init__(self, outdir: pathlib.Path):
-        self.outfile = outdir / 'bitcoin.tsv'
+    def __init__(self, outdir: str):
+        self.outfile = pathlib.Path(outdir) / 'bitcoin.tsv'
 
     def export_record(self, record):
         ((ipv, ip, port), (first_seen, last_seen), verinfo, addr_data) = record
@@ -26,8 +26,8 @@ class BtcExporter:
 
 
 class BtcImporter:
-    def __init__(self, indir: pathlib.Path):
-        self.infile = indir / 'bitcoin.tsv'
+    def __init__(self, indir: str):
+        self.infile = pathlib.Path(indir) / 'bitcoin.tsv'
 
     def read_relevant(self, version_ips: Set[Tuple[int, str]]) -> Dict[Tuple[int, str], List[BitcoinConnection]]:
         results: Dict[Tuple[int, str], List[BitcoinConnection]] = defaultdict(list)

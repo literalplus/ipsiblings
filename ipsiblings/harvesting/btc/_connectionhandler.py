@@ -21,6 +21,7 @@ class Connection:
         self.ip = ip
         self.port = port
         self.sock = socket.socket()
+        log.debug(f'connecting to {(ip, port)}')
         self.sock.connect((ip, port))
         self.fileno = self.sock.fileno()
         self._file = self.sock.makefile(mode='rwb')
@@ -49,7 +50,7 @@ class Connection:
         self._file.close()
         self.sock.close()
 
-    def handle_pkt(self) -> Union[MsgSerializable, None, False]:
+    def handle_pkt(self) -> Union[MsgSerializable, None, bool]:
         protocol_version = self.ver_pkt.protover if self.ver_pkt else net.PROTO_VERSION
         pkt = MsgSerializable.stream_deserialize(self._file, protocol_version)
         self.last_seen = time.time()
@@ -133,7 +134,7 @@ class ConnectionHandler:
             self.sock_filenos, [], [], 0.1  # timeout in seconds
         )
         for readable_sock in ready_to_read:
-            fileno = readable_sock.fileno()
+            fileno = readable_sock
             conn = self.connections[fileno]
             response = conn.handle_pkt()
             if response is False:
@@ -146,8 +147,10 @@ class ConnectionHandler:
         self.sock_filenos.remove(conn.fileno)
         self.connections.pop(conn.fileno)
         self.result_q.put(conn.to_tuple())
-        if not self.connections and self.all_connections_created.is_set():
-            self.all_connections_closed.set()
+        if not self.connections:
+            if self.all_connections_created.is_set():
+                self.all_connections_closed.set()
+            log.debug('All connections closed (for now).')
 
     def _handle_connection_expiry(self):
         if random.uniform(0, 100) > 80:

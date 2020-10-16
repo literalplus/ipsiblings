@@ -64,6 +64,8 @@ class HarvesterConfig:
         self.btc_interval = args.btc_interval
         self.ts_running_timeout = args.ts_timeout
         self.final_timeout = args.harvest_timeout_final
+        if not args.harvester:
+            args.harvester = const.HarvesterChoice.all_keys()
         self.harvesters: List[const.HarvesterChoice] = [
             _convert_enum(const.HarvesterChoice, key)
             for key in args.harvester

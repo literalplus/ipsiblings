@@ -114,7 +114,7 @@ def _prepare_parser():
         '--harvester', action='append',
         help='Select a specific harvester instead of running all of them. '
              'May be specified multiple times.',
-        choices=const.HarvesterChoice.all_keys(), default=const.HarvesterChoice.all_keys()
+        choices=const.HarvesterChoice.all_keys(), default=[]
     )
     harvest_grp.add_argument(
         '-hd', '--harvest-duration', type=int,

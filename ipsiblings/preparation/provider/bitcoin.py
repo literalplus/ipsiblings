@@ -69,6 +69,7 @@ class BitcoinNodesProvider(TargetProvider):
 class Node:
     def __init__(self, addr, raw):
         (self.ip_str, _, self.port) = addr.rpartition(':')
+        self.port = int(self.port)
         self.ip_str: str = self.ip_str.replace("[", "").replace("]", "")
         self.is_onion: bool = self.ip_str.endswith(".onion")
         self.ip_model: Union[ipaddress.IPv4Address, ipaddress.IPv6Address, None] = \
