@@ -26,6 +26,7 @@ class EvaluatorChoice(Enum):
     SSH_KEYSCAN = 'validate-ssh-keyscan'
     TCP_OPTIONS = 'tcp-options'
     ML_STARKE = 'machine-learning-starke'
+    BITCOIN = 'bitcoin'
 
     @classmethod
     def all_keys(cls):
