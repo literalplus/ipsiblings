@@ -61,9 +61,12 @@ class OffsetsProperty(FamilySpecificSiblingProperty[Optional[OffsetSeries]]):
             log.debug(f'Frequency is zero for {evaluated_sibling}')
             return None
         if freq_prop and clean_prop:
+            def provider(ip_version: int):
+                return OffsetSeries.from_norm(clean_prop[ip_version], freq_prop[ip_version].frequency)
+
             return cls(
-                OffsetSeries.from_norm(clean_prop[4], freq_prop[4].frequency),
-                OffsetSeries.from_norm(clean_prop[6], freq_prop[6].frequency)
+                cls._cache_get_or(evaluated_sibling[4], provider),
+                cls._cache_get_or(evaluated_sibling[6], provider),
             )
         else:
             return None

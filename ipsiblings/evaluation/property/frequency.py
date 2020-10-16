@@ -43,13 +43,18 @@ class FrequencyProperty(FamilySpecificSiblingProperty[FrequencyInfo]):
         if not clean_prop:
             return None
         try:
-            return cls(clean_prop[4], clean_prop[6])
+            def provider(ip_version: int):
+                return FrequencyInfo(clean_prop[ip_version])
+
+            return cls(
+                cls._cache_get_or(evaluated_sibling[4], provider),
+                cls._cache_get_or(evaluated_sibling[6], provider)
+            )
         except FrequencyFailedException as e:
             log.debug(f'Failed to compute frequency for {evaluated_sibling}', exc_info=e)
 
-    def __init__(self, clean4: NormTimestampSeries, clean6: NormTimestampSeries):
-        self.data4 = FrequencyInfo(clean4)
-        self.data6 = FrequencyInfo(clean6)
+    def __init__(self, data4: FrequencyInfo, data6: FrequencyInfo):
+        self.data4, self.data6 = data4, data6
         self.diff = abs(self[4].frequency_raw - self[6].frequency_raw)
         self.r_squared_diff = abs(self[4].r_squared - self[6].r_squared)
 

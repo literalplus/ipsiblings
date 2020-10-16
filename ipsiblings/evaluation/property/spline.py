@@ -66,6 +66,8 @@ class SplineProperty(FamilySpecificSiblingProperty[OffsetSpline]):
         clean_prop = evaluated_sibling.contribute_property_type(PpdOutlierRemovalProperty)
         if not clean_prop:
             return None
+        # Cannot cache because we depend on PpdOutlierRemovalProperty,
+        # which uses both series
         spline4 = OffsetSpline.from_offsets(clean_prop[4])
         spline6 = OffsetSpline.from_offsets(clean_prop[6])
         if not spline4 or not spline6 or not spline4.has_data() or not spline6.has_data():

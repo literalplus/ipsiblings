@@ -34,8 +34,11 @@ class NormSeriesProperty(FamilySpecificSiblingProperty[NormTimestampSeries]):
 
     @classmethod
     def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[NormSeriesProperty]':
-        clean4 = cls._clean_data(evaluated_sibling.series[4])
-        clean6 = cls._clean_data(evaluated_sibling.series[6])
+        def provider(ip_version: int):
+            return cls._clean_data(evaluated_sibling[ip_version])
+
+        clean4 = cls._cache_get_or(evaluated_sibling[4], provider)
+        clean6 = cls._cache_get_or(evaluated_sibling[6], provider)
         if clean4.has_data() and clean6.has_data():
             return cls(clean4, clean6)
         else:

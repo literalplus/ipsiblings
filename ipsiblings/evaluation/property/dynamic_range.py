@@ -28,10 +28,12 @@ class DynamicRangeProperty(FamilySpecificSiblingProperty[float]):
         if not ppd_outliers_prop:
             return None
         try:
-            return cls(
-                cls._calc_dynamic_range(ppd_outliers_prop[4]),
-                cls._calc_dynamic_range(ppd_outliers_prop[6])
-            )
+            def provider(ip_version: int):
+                return cls._calc_dynamic_range(ppd_outliers_prop[ip_version])
+
+            # Cannot cache because we depend on PpdOutlierRemovalProperty,
+            # which uses both series
+            return cls(provider(4), provider(6))
         except IndexError:
             return None
 

@@ -28,6 +28,8 @@ class SplineDiffProperty(SiblingProperty):
         dynrange_prop = evaluated_sibling.contribute_property_type(DynamicRangeProperty)
         if not spline_prop or not dynrange_prop:
             return None
+        # Cannot cache because we depend on SplineProperty, which depends on
+        # PpdOutlierRemovalProperty, which uses both series. Also DynamicRangeProperty.
         return cls(spline_prop[4], spline_prop[6], dynrange_prop.diff_absolute)
 
     def __init__(self, spline4: OffsetSpline, spline6: OffsetSpline, dynrange_diff: float):

@@ -1,4 +1,7 @@
-from typing import Dict, Tuple, List, TYPE_CHECKING, TypeVar, Type, Optional
+from collections import defaultdict
+from typing import Dict, Tuple, TYPE_CHECKING, TypeVar, Type, Optional, Any
+
+from ipsiblings.model import TimestampSeries
 
 if TYPE_CHECKING:
     from ipsiblings.evaluation.model import SiblingProperty
@@ -12,19 +15,24 @@ class TargetPropertyCache:
     (i.e. such that are independent of the opposite IP version's data)
     do not need to be repeated.
     """
-    data: Dict[Tuple[int, str], 'List[SiblingProperty]'] = {}
+    data: Dict[Tuple[int, str], Dict[Type['SiblingProperty'], Any]] = defaultdict(dict)
 
     @classmethod
-    def put(cls, ip_version: int, ip_address: str, properties: 'List[SiblingProperty]'):
-        key = ip_version, ip_address
-        if key in cls.data:
-            return
-        result = [prop for prop in properties if prop.is_cacheable()]
-        if result:
-            cls.data[key] = result
+    def put_if_absent(cls, key: TimestampSeries, property_type: Type[PT], value: Any):
+        target_dict = cls.data[(key.ip_version, key.target_ip)]
+        if property_type not in target_dict:
+            target_dict[property_type] = value
 
     @classmethod
-    def get(cls, ip_version: int, ip_address: str, property_type: Type[PT]) -> Optional[PT]:
-        all_properties = cls.data.get((ip_version, ip_address), [])
-        typed_properties = [prop for prop in all_properties if isinstance(prop, property_type)]
-        return typed_properties[0] if typed_properties else None
+    def get(cls, key: TimestampSeries, property_type: Type[PT]) -> Optional[Any]:
+        all_properties = cls.data[(key.ip_version, key.target_ip)]
+        return all_properties.get(property_type)
+
+    @classmethod
+    def has(cls, key: TimestampSeries, property_type: Type[PT]) -> bool:
+        all_properties = cls.data[(key.ip_version, key.target_ip)]
+        return property_type in all_properties
+
+    @classmethod
+    def clear(cls):
+        cls.data.clear()

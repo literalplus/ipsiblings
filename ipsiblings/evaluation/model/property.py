@@ -1,9 +1,13 @@
 import abc
-from typing import Set, Optional, Dict, Any, Generic, Iterator, Tuple, TypeVar, Type
+from typing import Set, Optional, Dict, Any, Generic, Iterator, Tuple, TypeVar, Type, TYPE_CHECKING, Callable
 
 from .exportregistry import ExportRegistry
+from .targetpropertycache import TargetPropertyCache
 from ... import libtools
-from ...model import BusinessException
+from ...model import BusinessException, TimestampSeries
+
+if TYPE_CHECKING:
+    from .sibling import EvaluatedSibling
 
 
 class _PropertyMeta(abc.ABCMeta):
@@ -14,6 +18,9 @@ class _PropertyMeta(abc.ABCMeta):
         return cls
 
 
+CT = TypeVar('CT')
+
+
 class SiblingProperty(metaclass=_PropertyMeta):
     @classmethod
     @abc.abstractmethod
@@ -21,7 +28,6 @@ class SiblingProperty(metaclass=_PropertyMeta):
         """Valid keys for the export method."""
         return set()
 
-    # noinspection PyUnresolvedReferences
     @classmethod
     @abc.abstractmethod
     def provide_for(cls, evaluated_sibling: 'EvaluatedSibling') -> Optional['SiblingProperty']:
@@ -34,14 +40,17 @@ class SiblingProperty(metaclass=_PropertyMeta):
         return {}
 
     @classmethod
-    @abc.abstractmethod
-    def is_cacheable(cls):
-        raise NotImplementedError
-
-    @classmethod
     def prefix_key(cls, key: str) -> str:
         prefix = libtools.camel_to_snake_case(cls.__name__.replace('Property', ''))
         return f'{prefix}_{key}'
+
+    @classmethod
+    def _cache_get_or(cls, target: TimestampSeries, provider: Callable[[int], CT]) -> CT:
+        if TargetPropertyCache.has(target, cls):
+            return TargetPropertyCache.get(target, cls)
+        provided = provider(target.ip_version)
+        TargetPropertyCache.put_if_absent(target, cls, provided)
+        return provided
 
 
 RT = TypeVar('RT')

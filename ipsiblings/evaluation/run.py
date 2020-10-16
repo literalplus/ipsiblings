@@ -4,6 +4,7 @@ from typing import List, Iterator
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from . import plot, export
 from .evaluator.all import evaluate_with_all
+from .model.targetpropertycache import TargetPropertyCache
 from .. import config, liblog
 from ..model import SiblingCandidate
 
@@ -23,6 +24,7 @@ class EvaluationProcessor:
             self._do_export(evaluated, batch_dir / self.conf.paths.candidates_out)
         if self.conf.eval.export_plots:
             plot.plot_all(evaluated, batch_dir / 'plots.pdf')
+        TargetPropertyCache.clear()
 
     def _do_export(self, evaluated: List[EvaluatedSibling], out_file: pathlib.Path):
         export.write_results(evaluated, out_file)

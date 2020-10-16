@@ -31,6 +31,8 @@ class SkewProperty(SiblingProperty):
         ppd_outliers_prop = evaluated_sibling.contribute_property_type(PpdOutlierRemovalProperty)
         if not ppd_outliers_prop:
             return None
+        # Cannot cache because we depend on PpdOutlierRemovalProperty,
+        # which uses both series
         return cls(
             cls._calc_skew_angle(ppd_outliers_prop[4]),
             cls._calc_skew_angle(ppd_outliers_prop[6])

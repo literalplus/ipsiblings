@@ -25,7 +25,14 @@ class DenoiseProperty(FamilySpecificSiblingProperty[OffsetSeries]):
         offset_prop = evaluated_sibling.contribute_property_type(OffsetsProperty)
         if not offset_prop:
             return None
-        return cls(cls._denoise(offset_prop[4]), cls._denoise(offset_prop[6]))
+
+        def provider(ip_version: int):
+            return cls._denoise(offset_prop[ip_version])
+
+        data4 = cls._cache_get_or(evaluated_sibling[4], provider)
+        data6 = cls._cache_get_or(evaluated_sibling[6], provider)
+
+        return cls(data4, data6)
 
     @classmethod
     def _denoise(cls, source: OffsetSeries):

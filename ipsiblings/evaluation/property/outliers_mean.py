@@ -27,8 +27,14 @@ class MeanOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
         denoise_prop = evaluated_sibling.contribute_property_type(DenoiseProperty)
         if not denoise_prop:
             return None
-        cleaned4, cleaned6 = cls._remove_outliers_97(denoise_prop[4]), cls._remove_outliers_97(denoise_prop[6])
-        if not cleaned4.has_data() or not cleaned6.has_data():
+
+        def provider(ip_version: int):
+            cleaned = cls._remove_outliers_97(denoise_prop[ip_version])
+            return cleaned if cleaned.has_data() else None
+
+        cleaned4 = cls._cache_get_or(evaluated_sibling[4], provider)
+        cleaned6 = cls._cache_get_or(evaluated_sibling[6], provider)
+        if not cleaned4 or not cleaned6:
             return None
         return cls(cleaned4, cleaned6)
 
