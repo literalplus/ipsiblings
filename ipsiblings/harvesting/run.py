@@ -5,7 +5,7 @@ from .btc.btcharvester import BtcHarvester
 from .model import HarvestProvider
 from .. import liblog
 from ..config import AppConfig
-from ..model import PreparedTargets, NicInfo, const
+from ..model import PreparedTargets, NicInfo, const, JustExit
 
 log = liblog.get_root_logger()
 
@@ -42,14 +42,21 @@ def _dispatch_harvesting(providers: List[HarvestProvider]):
         provider.start_async()
     log.info(f'Started all harvest providers.')
     any_still_running = True
-    while any_still_running:
-        any_still_running = False
-        for provider in providers:
-            if provider.is_finished():
-                continue
-            any_still_running = True
-            provider.process_queued_results()
-    log.info('All harvest providers have finished.')
+    try:
+        while any_still_running:
+            any_still_running = False
+            for provider in providers:
+                if provider.is_finished():
+                    continue
+                any_still_running = True
+                provider.process_queued_results()
+        log.info('All harvest providers have finished.')
+    except KeyboardInterrupt:
+        log.info('Harvesting interrupted via keyboard.')
     for provider in providers:
-        provider.terminate_processing()
-        log.info(f'Terminated harvest provider {type(provider).__name__}.')
+        try:
+            provider.terminate_processing()
+            log.info(f'Terminated harvest provider {type(provider).__name__}.')
+        except KeyboardInterrupt:
+            log.info(f'Termination interrupted via keyboard.')
+            raise JustExit

@@ -24,7 +24,7 @@ class HarvestProvider(metaclass=abc.ABCMeta):
     def start_async(self):
         """Start a Thread running the _start method to do harvesting"""
         self.dispatch_thread = threading.Thread(
-            target=self._dispatch_all_runs(), name=type(self).__name__ + ' Dispatch',
+            target=self._dispatch_all_runs, name=type(self).__name__ + ' Dispatch',
         )
         self.dispatch_thread.start()
 
@@ -49,8 +49,12 @@ class HarvestProvider(metaclass=abc.ABCMeta):
             # Python sadly does not seem to have an equivalent to AtomicLong.
             self._run_counter.set(self._run_counter.value + 1)
             # Wait until the interval has passed or the stop event is set
-            if self.stop_event.wait(timeout=self.interval):
-                break
+            try:
+                if self.stop_event.wait(timeout=self.interval):
+                    break
+            except KeyboardInterrupt:
+                log.info('Aborted dispatching runs due to KeyboardInterrupt')
+                return
 
     @abc.abstractmethod
     def _do_single_run(self, run_number: int):

@@ -1,90 +1,15 @@
 import queue
 import random
 import select
-import socket
 import threading
 import time
 from multiprocessing.managers import SyncManager
-from typing import Dict, Optional, Tuple, List, Union
-
-from bitcoin import messages, net
-from bitcoin.messages import MsgSerializable
+from typing import Dict, Tuple, List
 
 from ipsiblings import liblog
+from ipsiblings.harvesting.btc._connection import Connection
 
 log = liblog.get_root_logger()
-
-
-class Connection:
-    def __init__(self, ip_version: int, ip: str, port: int):
-        self.ip_version = ip_version
-        self.ip = ip
-        self.port = port
-        self.sock = socket.socket()
-        log.debug(f'connecting to {(ip, port)}')
-        self.sock.connect((ip, port))
-        self.fileno = self.sock.fileno()
-        self._file = self.sock.makefile(mode='rwb')
-        self.first_seen = time.time()
-        self.last_seen = time.time()
-        self.ver_pkt: Optional[messages.msg_version] = None
-        self.addr_data: List[Tuple[int, int, str, int]] = []  # time, svc, ip, port
-
-    def send_pkt(self, pkt: MsgSerializable):
-        pkt.stream_serialize(self._file)
-
-    def _make_version(self):
-        msg = messages.msg_version()
-        msg.nVersion = 70002
-        msg.addrTo.ip = self.ip
-        msg.addrTo.port = self.port
-        # Satoshi client does not fill addrFrom either ->
-        # https://github.com/bitcoin/bitcoin/blob/c2c4dbaebd955ad2829364f7fa5b8169ca1ba6b9/src/net_processing.cpp#L494
-        return msg
-
-    def should_expire(self):
-        secs_since_last_seen = time.time() - self.last_seen
-        return secs_since_last_seen > 60
-
-    def close(self):
-        self._file.close()
-        self.sock.close()
-
-    def handle_pkt(self) -> Union[MsgSerializable, None, bool]:
-        protocol_version = self.ver_pkt.protover if self.ver_pkt else net.PROTO_VERSION
-        pkt = MsgSerializable.stream_deserialize(self._file, protocol_version)
-        self.last_seen = time.time()
-        if isinstance(pkt, messages.msg_version):
-            self.ver_pkt = pkt
-        elif isinstance(pkt, messages.msg_verack):
-            # TODO: can we send this here? in tests, we needed to wait for more packets
-            return messages.msg_getaddr()
-        elif isinstance(pkt, messages.msg_addr) and len(pkt.addrs) > 10:
-            # we do not want to process forwarded addresses (mostly meaningless, messes up invariants)
-            # also, the peer will advertise the address we connected which (also meaningless)
-            # responses to GETADDR will usually have a sufficient amount
-            for addrx in pkt.addrs:
-                addr: messages.CAddress = addrx
-                self.addr_data.append((addr.nTime, addr.nServices, addr.ip, addr.port))
-            return False
-        return None
-
-    def to_tuple(self):
-        # who, when, version, addresses
-        if self.ver_pkt:
-            verinfo = (
-                self.ver_pkt.protover, self.ver_pkt.strSubVer,
-                self.ver_pkt.nServices, self.ver_pkt.nTime,
-                self.ver_pkt.nStartingHeight,
-            )
-        else:
-            verinfo = None
-        return (
-            (self.ip_version, self.ip, self.port),
-            (self.first_seen, self.last_seen),
-            verinfo,
-            self.addr_data,
-        )
 
 
 class ConnectionHandler:
@@ -95,8 +20,10 @@ class ConnectionHandler:
         self._closing_event = closing_event
         self.all_connections_created = mp_manager.Event()
         self.all_connections_closed = mp_manager.Event()
+        self.last_all_closed = time.time()
         self.connections: Dict[int, Connection] = {}
         self.sock_filenos: List[int] = []  # cache this, select() takes a list
+        self.connected_targets: Dict[Tuple[int, str, int], Connection] = {}
 
     def run(self):
         while not self._stop_event.is_set():
@@ -106,54 +33,73 @@ class ConnectionHandler:
                 self._handle_connection_expiry()
             except Exception:
                 log.exception(f'Error handling connections')
-        for conn in self.connections.values():
+            except KeyboardInterrupt:
+                log.info('Received keyboard interrupt, closing connections.')
+                break
+        for conn in list(self.connections.values()):
             self._close_conn(conn)
 
     def _handle_connection_creation(self):
         if self.all_connections_created.is_set() or len(self.connections) > 10:
             return
-        (ipv, ip, port) = None, None, None
+        key = None
         try:
-            (ipv, ip, port) = self.connect_q.get(block=False)
-            self._connect_to(ipv, ip, port)
+            key = self.connect_q.get(block=False)
+            self._connect_to(key)
         except queue.Empty:
             if self._closing_event.is_set():
                 self.all_connections_created.set()
+        except ConnectionRefusedError:
+            log.debug(f'Connection to {key} refused')
         except Exception:
-            log.exception(f'Failed to connect to {ip}/{port}')
+            log.exception(f'Failed to connect to {key}')
 
-    def _connect_to(self, ip_version: int, ip: str, port: int):
-        conn = Connection(ip_version, ip, port)
+    def _connect_to(self, key: Tuple[int, str, int]):
+        if key in self.connected_targets:
+            log.debug(f'Still connected to {key}, disconnecting first.')
+            self._close_conn(self.connected_targets[key])
+        conn = Connection(key[0], key[1], key[2])
         if conn.fileno in self.connections:
             self._close_conn(self.connections[conn.fileno])
         self.connections[conn.fileno] = conn
         self.sock_filenos.append(conn.fileno)
+        self.connected_targets[key] = conn
 
     def _handle_sock_reading(self):
-        ready_to_read, _, _ = select.select(
-            self.sock_filenos, [], [], 0.1  # timeout in seconds
+        ready_to_read, _, exceptional = select.select(
+            self.sock_filenos, [], self.sock_filenos, 0.1  # timeout in seconds
         )
-        for readable_sock in ready_to_read:
-            fileno = readable_sock
-            conn = self.connections[fileno]
+        for readable_fileno in ready_to_read:
+            conn = self.connections[readable_fileno]
             response = conn.handle_pkt()
             if response is False:
                 self._close_conn(conn)
             elif response is not None:
                 conn.send_pkt(response)
+        for exceptional_fileno in exceptional:
+            log.warn(f'Socket marked exceptional by select(), dropping connection.')
+            conn = self.connections[exceptional_fileno]
+            self._close_conn(conn)
 
     def _close_conn(self, conn: Connection):
+        log.debug(f'Disconnecting from {conn.ip}.')
         conn.close()
         self.sock_filenos.remove(conn.fileno)
         self.connections.pop(conn.fileno)
         self.result_q.put(conn.to_tuple())
+        self.connected_targets.pop((conn.ip_version, conn.ip, conn.port))
         if not self.connections:
             if self.all_connections_created.is_set():
                 self.all_connections_closed.set()
-            log.debug('All connections closed (for now).')
+            secs_since_last_all_closed = time.time() - self.last_all_closed
+            log.debug(f'All connections closed for now, {secs_since_last_all_closed:.2f}s since this last happened.')
 
     def _handle_connection_expiry(self):
         if random.uniform(0, 100) > 80:
-            for conn in self.connections.values():
-                if conn.should_expire():
-                    self._close_conn(conn)
+            expired_connections = [
+                (fileno, conn) for (fileno, conn) in self.connections.items() if conn.should_expire()
+            ]
+            for fileno, conn in expired_connections:
+                log.debug(f'Expiring connection to {conn.ip}')
+                self._close_conn(conn)
+                self.connections.pop(fileno)
