@@ -40,7 +40,7 @@ class ConnectionHandler:
             self._close_conn(conn)
 
     def _handle_connection_creation(self):
-        if self.all_connections_created.is_set() or len(self.connections) > 10:
+        if self.all_connections_created.is_set() or len(self.connections) > 50:
             return
         key = None
         try:
@@ -50,7 +50,7 @@ class ConnectionHandler:
             if self._closing_event.is_set():
                 self.all_connections_created.set()
         except ConnectionRefusedError:
-            log.debug(f'Connection to {key} refused')
+            pass  # nothing too interesting for 10k nodes
         except Exception:
             log.exception(f'Failed to connect to {key}')
 

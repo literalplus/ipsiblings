@@ -21,6 +21,10 @@ class MsgReadException(Exception):
     pass
 
 
+class MsgDisconnectedException(Exception):
+    pass
+
+
 class MsgReceiver:
     HEADER_LEN = 4 + 12 + 4 + 4
 
@@ -38,7 +42,10 @@ class MsgReceiver:
         # Inspired by messages.stream_deserialize, adapted for non-blocking / huge messages
         checksum, command, msglen = self._recv_or_restore_header(sock)
         try:
-            msgbuf = self._unfinished_msgbuf + sock.recv(msglen)
+            recvbuf = sock.recv(msglen)
+            if len(recvbuf) == 0:
+                raise MsgDisconnectedException(b'peer disconnected (recv 0) - body')
+            msgbuf = self._unfinished_msgbuf + recvbuf
         except BlockingIOError as e:
             if e.errno == socket.EAGAIN:
                 # no data yet; pretend we got empty response to try again later
@@ -67,9 +74,11 @@ class MsgReceiver:
             header = self._parse_header(headerbuf)
         return header
 
-    def _recv_header(self, sock: socket.socket) -> bytes:
+    def _recv_header(self, sock: socket.socket) -> Optional[bytes]:
         recvbuf = sock.recv(self.HEADER_LEN)
-        if len(recvbuf) != self.HEADER_LEN:
+        if len(recvbuf) == 0:
+            raise MsgDisconnectedException(f'peer disconnected (recv 0) - header')
+        elif len(recvbuf) != self.HEADER_LEN:
             raise MsgReadException(f'packet header, expected {self.HEADER_LEN} bytes, got {len(recvbuf)}')
         return recvbuf
 
@@ -145,7 +154,7 @@ class Connection:
 
     def should_expire(self):
         secs_since_last_useful_message = time.time() - self.last_useful
-        return secs_since_last_useful_message > 60
+        return secs_since_last_useful_message > 40
 
     def close(self):
         self.sock.close()
@@ -176,10 +185,13 @@ class Connection:
             log.debug(f'Unexpected byte count from {self.ip}', exc_info=e)
             return True, None
         except ConnectionResetError:
-            log.debug(f'Connection to {self.ip} reset, dropping.')
+            # connection reset is nothing too unusual, but mucho spam if we connect to 10k peers
             return True, None
         except IOError as e:
             log.debug(f'IO error trying to read from {self.ip}', exc_info=e)
+            return True, None
+        except MsgDisconnectedException:
+            # peer disconnected us, accept that, nothing special per se
             return True, None
         except MsgReadException as e:
             log.debug(f'Protocol error from {self.ip} - {repr(e)}')
