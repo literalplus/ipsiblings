@@ -121,7 +121,6 @@ class Connection:
         self.receiver = MsgReceiver()
         self.sock = socket.socket(socket.AF_INET6 if ip_version == 6 else socket.AF_INET)
 
-        log.debug(f'connecting to {(ip, port)}')
         self.sock.settimeout(1)  # second
         self.sock.connect((ip, port))
         self.sock.settimeout(None)

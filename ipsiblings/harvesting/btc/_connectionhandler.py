@@ -1,6 +1,7 @@
 import queue
 import random
 import select
+import socket
 import threading
 import time
 from multiprocessing.managers import SyncManager
@@ -49,7 +50,7 @@ class ConnectionHandler:
         except queue.Empty:
             if self._closing_event.is_set():
                 self.all_connections_created.set()
-        except ConnectionRefusedError:
+        except (ConnectionRefusedError, socket.timeout):
             pass  # nothing too interesting for 10k nodes
         except Exception:
             log.exception(f'Failed to connect to {key}')
@@ -82,7 +83,6 @@ class ConnectionHandler:
             self._close_conn(conn)
 
     def _close_conn(self, conn: Connection):
-        log.debug(f'Disconnecting from {conn.ip}.')
         conn.close()
         self.sock_filenos.remove(conn.fileno)
         self.connections.pop(conn.fileno)
@@ -102,4 +102,3 @@ class ConnectionHandler:
             for fileno, conn in expired_connections:
                 log.debug(f'Expiring connection to {conn.ip}')
                 self._close_conn(conn)
-                self.connections.pop(fileno)
