@@ -18,7 +18,6 @@ def _convert_enum(kind: Type[T], key: str) -> T:
 class PathsConfig:
     def __init__(self, args):
         self.base_dir = os.path.join(args.base_dir, args.run_id)
-        self.ip_ignores = args.ignore_ips_from
         self.candidates_out = 'candidates.tsv'
 
 
