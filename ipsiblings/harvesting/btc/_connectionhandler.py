@@ -14,9 +14,12 @@ log = liblog.get_root_logger()
 
 
 class ConnectionHandler:
-    def __init__(self, mp_manager: SyncManager, stop_event: threading.Event, closing_event: threading.Event):
-        self.connect_q = mp_manager.Queue()
-        self.result_q = mp_manager.Queue()
+    def __init__(
+            self, mp_manager: SyncManager, stop_event: threading.Event, closing_event: threading.Event,
+            connect_q: queue.Queue, result_q: queue.Queue
+    ):
+        self.connect_q = connect_q
+        self.result_q = result_q
         self._stop_event = stop_event
         self._closing_event = closing_event
         self.all_connections_created = mp_manager.Event()

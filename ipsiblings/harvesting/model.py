@@ -42,8 +42,8 @@ class HarvestProvider(metaclass=abc.ABCMeta):
             self.run_thread.start()
             if run_number >= self.requested_run_count:
                 self.run_thread.join(timeout=1)  # second
-                self._runs_finished.set()
                 self._handle_runs_finished()
+                self._runs_finished.set()
                 break
             # Note that this is *NOT* thread-safe, but we are the only writing thread anyways.
             # Python sadly does not seem to have an equivalent to AtomicLong.
