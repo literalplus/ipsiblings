@@ -58,7 +58,7 @@ class ConnectionHandler:
             pass  # nothing too interesting for 10k nodes
         except OSError as e:
             if e.errno == errno.EHOSTUNREACH:
-                pass  # no route to host; happens
+                return  # no route to host; happens
             log.warn(f'Failed to connect to {key}: {repr(e)}')
         except Exception:
             log.exception(f'Failed to connect to {key}')
