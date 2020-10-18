@@ -1,5 +1,3 @@
-import hashlib
-import logging
 import socket
 import time
 from typing import Optional, List, Tuple, Union
@@ -114,7 +112,7 @@ class Connection:
                 return False  # disconnect, we got what we wanted
             else:
                 return None  # usually either forwarded or self-announcement, neither is useful
-        elif isinstance(pkt, (messages.msg_getheaders, messages.msg_inv, messages.msg_alert)):
+        elif isinstance(pkt, (messages.msg_getheaders, messages.msg_inv, messages.msg_alert, messages.msg_getblocks)):
             pass  # irrelevant but common, don't want to spam log
         else:
             log.debug(f'other pkt from -> {self.ip}: {pkt}')
@@ -128,21 +126,9 @@ class Connection:
         return None
 
     def _handle_addr(self, pkt: messages.msg_addr):
-        debug_addrs: List[bytes] = []
-        if log.isEnabledFor(logging.DEBUG):
-            debug_addrs.append(b'text so that it doesnt evaluate to false')
         for addrx in pkt.addrs:
             addr: messages.CAddress = addrx
             self.addr_data.append((addr.nTime, addr.nServices, addr.ip, addr.port))
-            if debug_addrs:
-                debug_addrs.append(f'{addr.ip}-{addr.port}-{addr.nTime}-{addr.nServices};'.encode('utf-8'))
-        hexdigest = '(none)'
-        if debug_addrs:
-            digest = hashlib.sha256(b'')
-            for addrdata in sorted(debug_addrs):
-                digest.update(addrdata)
-            hexdigest = digest.hexdigest()[:8]
-        log.debug(f'Actual addr from {self.ip} - {len(pkt.addrs)} entries, hash {hexdigest}')
         self.last_useful = time.time()
 
     def to_tuple(self):
