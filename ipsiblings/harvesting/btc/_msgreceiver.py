@@ -63,6 +63,7 @@ class MsgReceiver:
     def __init__(self):
         self._unfinished_header: Optional[Tuple[bytes, bytes, int]] = None
         self._unfinished_msgbuf: bytes = b''
+        self._empty_bodies_in_a_row: int = 0
 
     def recv_message(self, sock: socket.socket, proto_ver: int) -> Tuple[bool, Optional[MsgSerializable]]:
         """
@@ -76,7 +77,9 @@ class MsgReceiver:
         try:
             recvbuf = sock.recv(msglen)
             if len(recvbuf) == 0:
-                raise MsgDisconnectedException(b'peer disconnected (recv 0) - body')
+                self._empty_bodies_in_a_row += 1
+                if self._empty_bodies_in_a_row > 5:
+                    raise MsgDisconnectedException(b'peer disconnected (recv 0) - body')
             msgbuf = self._unfinished_msgbuf + recvbuf
         except BlockingIOError as e:
             if e.errno == socket.EAGAIN:
