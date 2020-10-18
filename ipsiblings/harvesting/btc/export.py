@@ -1,7 +1,9 @@
 import csv
 import pathlib
 from collections import defaultdict
-from typing import Set, Tuple, Dict, List
+from typing import Set, Tuple, Dict, List, Optional
+
+from typing.io import IO
 
 from ipsiblings.harvesting.btc.model import BitcoinConnection, BitcoinVersionInfo
 from ipsiblings.model import const
@@ -10,19 +12,34 @@ from ipsiblings.model import const
 class BtcExporter:
     def __init__(self, outdir: str):
         self.outfile = pathlib.Path(outdir) / 'bitcoin.tsv'
+        self.cache_file = False
+        self._cached_fp: Optional[IO] = None
 
     def export_record(self, record):
         ((ipv, ip, port), (first_seen, last_seen), verinfo, addr_data) = record
         if verinfo is None:
             return  # Nothing to analyse in this case
-        with open(self.outfile, 'a', encoding='utf-8', newline='') as fil:
-            writer = csv.writer(fil, dialect=csv.excel_tab)
-            ver_str = const.SECONDARY_DELIMITER.join([str(x) for x in verinfo])
-            addr_strs = [const.TERTIARY_DELIMITER.join([str(x) for x in data]) for data in addr_data]
-            addr_str = const.SECONDARY_DELIMITER.join(addr_strs)
-            writer.writerow((
-                ipv, ip, port, first_seen, last_seen, ver_str, addr_str,
-            ))
+        ver_str = const.SECONDARY_DELIMITER.join([str(x) for x in verinfo])
+        addr_strs = [const.TERTIARY_DELIMITER.join([str(x) for x in data]) for data in addr_data]
+        addr_str = const.SECONDARY_DELIMITER.join(addr_strs)
+        tup = (ipv, ip, port, first_seen, last_seen, ver_str, addr_str)
+        if self.cache_file and not self._cached_fp:
+            self._cached_fp = self._create_fp()
+        if self._cached_fp:
+            self._write_to_fp(self._cached_fp, tup)
+        else:
+            with self._create_fp() as fil:
+                self._write_to_fp(fil, tup)
+
+    def _create_fp(self):
+        return open(self.outfile, 'a', encoding='utf-8', newline='')
+
+    def _write_to_fp(self, fil, tup):
+        csv.writer(fil, dialect=csv.excel_tab).writerow(tup)
+
+    def close(self):
+        if self._cached_fp:
+            self._cached_fp.close()
 
 
 class BtcImporter:

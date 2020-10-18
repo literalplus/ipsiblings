@@ -53,10 +53,11 @@ def _dispatch_harvesting(providers: List[HarvestProvider]):
         log.info('All harvest providers have finished.')
     except KeyboardInterrupt:
         log.info('Harvesting interrupted via keyboard.')
-    for provider in providers:
-        try:
-            provider.terminate_processing()
-            log.info(f'Terminated harvest provider {type(provider).__name__}.')
-        except KeyboardInterrupt:
-            log.info(f'Termination interrupted via keyboard.')
-            raise JustExit
+    finally:
+        for provider in providers:
+            try:
+                provider.terminate_processing()
+                log.info(f'Terminated harvest provider {type(provider).__name__}.')
+            except KeyboardInterrupt:
+                log.info(f'Termination for {type(provider).__name__} interrupted via keyboard.')
+                raise JustExit

@@ -26,6 +26,7 @@ class BtcHarvester(HarvestProvider):
             )
         self.final_timeout = conf.harvester.final_timeout
         self.exporter = BtcExporter(conf.base_dir)
+        self.exporter.cache_file = True
 
     def start_async(self):
         for i, handler in enumerate(self.connection_handlers):
@@ -68,3 +69,4 @@ class BtcHarvester(HarvestProvider):
                 log.warning(f'Not all BTC connections closed naturally after final timeout! - {i}')
         self.stop_event.set()
         self.process_queued_results()
+        self.exporter.close()
