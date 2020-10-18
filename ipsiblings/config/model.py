@@ -55,7 +55,6 @@ class HarvesterConfig:
         self.runtime = args.harvest_duration
         self.ts_interval = args.ts_interval
         self.btc_interval = args.btc_interval
-        self.ts_running_timeout = args.ts_timeout
         self.final_timeout = args.harvest_timeout_final
         if not args.harvester:
             args.harvester = const.HarvesterChoice.all_keys()

@@ -1,23 +1,6 @@
-# IP Sibling Detection on Public Network Devices
+# IP Sibling Detection on Bitcoin Nodes
 
 *IP Sibling Detection Toolset*
-
-## Python Dependencies
-
-* [scapy](https://scapy.readthedocs.io/en/latest/)
-* [netifaces](https://github.com/al45tair/netifaces)
-* [ipaddress](https://docs.python.org/3/library/ipaddress.html)
-* [numpy](https://docs.scipy.org/doc/numpy/)
-* [scipy](https://docs.scipy.org/doc/scipy/reference/)
-* [pandas](https://pandas.pydata.org/pandas-docs/stable/)
-* [matplotlib](https://matplotlib.org/contents.html)
-* [prettytable](https://ptable.readthedocs.io/en/latest/index.html)
-* [geoip2](https://geoip2.readthedocs.io/en/latest/)
-* [sklearn](https://scikit-learn.org/stable/documentation.html)
-* [xgboost](https://xgboost.readthedocs.io/en/latest/)
-
-Everything works with versions published within 2018.
-
 
 ## Usage Message
 
@@ -144,6 +127,10 @@ tuples of the following format:
 | ...Reception Timestamp | 34132453.567                             | Reception timestamp populated by our TCP stack, in seconds since the Unix epoch, with fractional values.                                                                                                                               |   |   |
 | ...                    |                                          | The last two fields (marked with `...`) are repeated for every received timestamp.  
 
+Individual candidate evaluation results (`candidates.tsv`)
+are stored with column names corresponding to the
+`export` method of `SiblingProperty` (for all properties that were requested
+during evaluation).
 
 ## Execution
 via pip/setuptools:
@@ -192,14 +179,9 @@ Hence, for the time being, we still require to be run as root.
 [NumPy](https://www.numpy.org/)  
 [SciPy](https://www.scipy.org/)  
 [pandas](https://pandas.pydata.org/)  
-[MaxMind GeoLite2](https://dev.maxmind.com/geoip/geoip2/geolite2/)  
-
-This product includes GeoLite2 data created by MaxMind, available from https://www.maxmind.com.
 
 ## TODOs
 
-* Load already prepared machine learning models within `SiblingCandidate` and `LowRTSiblingCandidate` classes (`evaluate()` function) in `ipsiblings/libsiblings.py` to implement prediction as done in `ipsiblings/evaluation.py`
 * Reduce disk space and access times by working with a database instead of text files
-* Combine all functionalities in one file as a module
-  - Check only one target at a time
-  - Eliminate preprocessing like tracerouting etc. from the one-file-module
+* Set this up to be distributed with multiple measurement hosts
+* More intelligent Bitcoin application-layer check

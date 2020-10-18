@@ -49,6 +49,7 @@ class TcpTsHarvester(HarvestProvider):
         )
         # typecodes - https://docs.python.org/3.7/library/array.html
         self.total_records = self.mp_manager.Value('I', 0)
+        self.process_run_cnt = 0
 
         log.info(
             f'Constructed packets to be sent each run: '
@@ -153,7 +154,7 @@ class TcpTsHarvester(HarvestProvider):
         self.stop_event.set()
 
     def process_queued_results(self):
-        self._process_results(self.conf.ts_running_timeout)
+        self._process_results(2)
 
     def terminate_processing(self):
         self._process_results(self.conf.final_timeout)
@@ -184,12 +185,12 @@ class TcpTsHarvester(HarvestProvider):
             log.info('Runs completed, waiting for final responses ...')
             self.recv_proc.join(timeout)
 
+        self.process_run_cnt += 1
         nr_records = 0
-        while True:
+        for _ in range(0, 5_000):
             if self._process_single_result(timeout):
                 nr_records += 1
             else:
-                log.debug(f'Records processed in this run: {nr_records}')
                 self.total_records.value = self.total_records.value + nr_records
                 break
 
@@ -197,6 +198,7 @@ class TcpTsHarvester(HarvestProvider):
         try:
             record = self.receiver.response_queue.get(timeout=timeout)
             self.process_record(record)
+            return True
         except queue.Empty:
             return False
         except Exception:

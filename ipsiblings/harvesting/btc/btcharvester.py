@@ -47,15 +47,15 @@ class BtcHarvester(HarvestProvider):
             handler.all_connections_created.wait(30)  # seconds
 
     def process_queued_results(self):
-        while True:
+        for _ in range(0, 5_000):
             try:
-                record = self.result_q.get(timeout=5)
+                record = self.result_q.get(timeout=2)
                 self._process_record(record)
             except queue.Empty:
-                break
+                return
             except Exception:
                 log.exception('Unexpected error processing BTC records')
-                break
+                return
 
     def _process_record(self, record):
         self.exporter.export_record(record)

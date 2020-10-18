@@ -120,13 +120,6 @@ def _prepare_parser():
         default=1800
     )
     harvest_grp.add_argument(
-        '-ttr', '--ts-timeout', type=int,
-        help='Wait at least this many seconds for timestamp replies per iteration '
-             '(Should not be longer than -thi) '
-             f'(default {libconstants.HARVESTING_RESULTS_TIMEOUT})',
-        default=libconstants.HARVESTING_RESULTS_TIMEOUT
-    )
-    harvest_grp.add_argument(
         '-htf', '--harvest-timeout-final', type=int,
         help='Wait at least this long for replies after the last iteration '
              f'(default {libconstants.HARVESTING_RESULTS_TIMEOUT_FINAL})',
