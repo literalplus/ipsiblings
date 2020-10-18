@@ -1,5 +1,5 @@
 from .model import AppConfig, FlagsConfig, PathsConfig, \
-    CandidatesConfig, TargetProviderConfig, HarvesterConfig, \
+    TargetProviderConfig, HarvesterConfig, \
     OsTunerConfig
 
 """

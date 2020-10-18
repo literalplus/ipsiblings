@@ -21,11 +21,6 @@ class PathsConfig:
         self.candidates_out = 'candidates.tsv'
 
 
-class CandidatesConfig:
-    def __init__(self, args):
-        self.low_runtime = args.low_runtime
-
-
 class TargetProviderConfig:
     def __init__(self, args):
         self.provider = _convert_enum(const.TargetProviderChoice, args.targets_from)
@@ -88,7 +83,6 @@ class AppConfig:
         self.paths = PathsConfig(self.args)
         self.flags = FlagsConfig(self.args)
         self.targetprovider = TargetProviderConfig(self.args)
-        self.candidates = CandidatesConfig(self.args)
         self.harvester = HarvesterConfig(self.args)
         self.os_tuner = OsTunerConfig(self.args)
         self.eval = EvalConfig(self.args)
