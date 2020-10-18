@@ -19,8 +19,7 @@ class PathsConfig:
     def __init__(self, args):
         self.base_dir = os.path.join(args.base_dir, args.run_id)
         self.ip_ignores = args.ignore_ips_from
-        self.eval_out = args.eval_results_to
-        self.candidates_out = args.candidates_to
+        self.candidates_out = 'candidates.tsv'
 
 
 class CandidatesConfig:

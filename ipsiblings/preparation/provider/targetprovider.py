@@ -1,7 +1,8 @@
 import abc
+from typing import Dict
 
 from ... import config
-from ...model import PreparedTargets
+from ...model import Target
 
 
 class TargetProvider(metaclass=abc.ABCMeta):
@@ -11,6 +12,6 @@ class TargetProvider(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def provide(self) -> PreparedTargets:
+    def provide(self) -> Dict[str, Target]:
         """Provide targets for preparation"""
         raise NotImplementedError

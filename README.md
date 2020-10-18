@@ -22,11 +22,11 @@ Everything works with versions published within 2018.
 ## Usage Message
 
 ```
-usage: ipsiblings [-h] [-d BASE_DIR] [--ignore-ips-from IGNORE_IPS_FROM] [--eval-results-to EVAL_RESULTS_TO] [--candidates-to CANDIDATES_TO] [--run-id RUN_ID] [--low-runtime] [--export-plots]
-                  [--evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}] [--skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}]
-                  [--eval-batch-size EVAL_BATCH_SIZE] [--eval-fail-fast] [--eval-ssh-timeout EVAL_SSH_TIMEOUT] [--eval-first-batch EVAL_FIRST_BATCH] [--eval-batch-count EVAL_BATCH_COUNT]
-                  [--skip-eval] [--only-init] [-v | -q] [--targets-from {BITCOIN,FILESYSTEM}] [--skip-v SKIP_V] [--from START_INDEX] [--to END_INDEX] [--do-harvest] [--really-harvest]
-                  [-ht HARVEST_TIME] [-hi HARVEST_INTERVAL] [-htr HARVEST_TIMEOUT] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
+usage: ipsiblings [-h] [-d BASE_DIR] [--run-id RUN_ID] [--export-plots] [--evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}]
+                  [--skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}] [--eval-batch-size EVAL_BATCH_SIZE] [--eval-fail-fast]
+                  [--eval-ssh-timeout EVAL_SSH_TIMEOUT] [--eval-first-batch EVAL_FIRST_BATCH] [--eval-batch-count EVAL_BATCH_COUNT] [--skip-eval] [--only-init] [-v | -q]
+                  [--targets-from {BITCOIN,FILESYSTEM}] [--skip-v SKIP_V] [--from START_INDEX] [--to END_INDEX] [--do-harvest] [--really-harvest] [--harvester {TCP_TS,BTC}] [-hd HARVEST_DURATION]
+                  [-ti TS_INTERVAL] [-bi BTC_INTERVAL] [-ttr TS_TIMEOUT] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
 
 IP Siblings Toolset
 
@@ -36,20 +36,13 @@ optional arguments:
 PATHS:
   -d BASE_DIR, --base-dir BASE_DIR
                         Base directory for application data (default ./target)
-  --ignore-ips-from IGNORE_IPS_FROM
-                        File of IP addresses to ignore for all operations
-  --eval-results-to EVAL_RESULTS_TO
-                        Write evaluation results to file
-  --candidates-to CANDIDATES_TO
-                        Write generated sibling candidates to a file
   --run-id RUN_ID       Identifier for the run to contribute to, appended to the base directory. (default current date-time)
 
 EVALUATION:
-  --low-runtime         Use low-runtime evaluation methods
   --export-plots        Export plots after evaluation
-  --evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}
+  --evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}
                         Select a specific evaluator instead of running all of them. May be specified multiple times.
-  --skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE}
+  --skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}
                         Skip a specific evaluator. May be specified multiple times.
   --eval-batch-size EVAL_BATCH_SIZE
                         Candidates to evaluate per batch (default 10_000)
@@ -77,16 +70,20 @@ TARGET NODES:
   --to END_INDEX        Index of first target to skip (default none)
 
 TIMESTAMP COLLECTION:
-  --do-harvest          Collect (harvest) timestamps if not present
+  --do-harvest          Collect (harvest) if no timestamps present
   --really-harvest      Harvest even if we already have timestamps
-  -ht HARVEST_TIME, --harvest-time HARVEST_TIME
+  --harvester {TCP_TS,BTC}
+                        Select a specific harvester instead of running all of them. May be specified multiple times.
+  -hd HARVEST_DURATION, --harvest-duration HARVEST_DURATION
                         Collection duration, seconds (default 36000)
-  -hi HARVEST_INTERVAL, --harvest-interval HARVEST_INTERVAL
-                        Collection interval for a single node, seconds (default 60)
-  -htr HARVEST_TIMEOUT, --harvest-timeout HARVEST_TIMEOUT
-                        Wait at least this many seconds for timestamp replies per iteration (Should not be too long so that the next run can start in time) (default 20)
+  -ti TS_INTERVAL, --ts-interval TS_INTERVAL
+                        Collection interval for timestamps per target, seconds (default 60)
+  -bi BTC_INTERVAL, --btc-interval BTC_INTERVAL
+                        Collection interval for Bitcoin protocol per target, seconds (default 1800 / 30min)
+  -ttr TS_TIMEOUT, --ts-timeout TS_TIMEOUT
+                        Wait at least this many seconds for timestamp replies per iteration (Should not be longer than -thi) (default 20)
   -htf HARVEST_TIMEOUT_FINAL, --harvest-timeout-final HARVEST_TIMEOUT_FINAL
-                        Wait at least this long for timestamp replies after the last iteration (default 120)
+                        Wait at least this long for replies after the last iteration (default 120)
 
 OPERATING SYSTEM SETTINGS:
   By default, we adapt some global (!!) OS settings. The previous values are saved to ./settings.bak and restored when the application exits.

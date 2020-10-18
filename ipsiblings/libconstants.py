@@ -63,9 +63,6 @@ HARVESTING_RESULTS_TIMEOUT_FINAL = 120  # seconds - 2 * interval
 # HARVESTING_RESULTS_TIMEOUT = 4          # testing value -> 1
 # HARVESTING_RESULTS_TIMEOUT_FINAL = 8    # testing value -> 2
 
-# results file name
-RESULT_FILE_NAME = 'results.csv'
-
 # sibling options and constants
 # calc everything beyond raw_timestamp_diff
 SIB_FRT_CALC_ADDITIONAL_FEATURES = True

@@ -16,24 +16,12 @@ def _prepare_parser():
         '-d', '--base-dir', help='Base directory for application data (default ./target)', default='./target'
     )
     path_grp.add_argument(
-        '--ignore-ips-from', help='File of IP addresses to ignore for all operations'
-    )
-    path_grp.add_argument(
-        '--eval-results-to', help='Write evaluation results to file', default=libconstants.RESULT_FILE_NAME
-    )
-    path_grp.add_argument(
-        '--candidates-to', help='Write generated sibling candidates to a file', default='candidates.tsv'
-    )
-    path_grp.add_argument(
         '--run-id',
         help='Identifier for the run to contribute to, appended to the base directory. (default current date-time)',
         default=datetime.now().strftime("run_%Y-%m-%dT%H_%M_%S")
     )
 
     eval_grp = created_parser.add_argument_group(title='EVALUATION', description=None)
-    eval_grp.add_argument(
-        '--low-runtime', action='store_true', help='Use low-runtime evaluation methods', default=False
-    )
     eval_grp.add_argument(
         '--export-plots', action='store_true', help='Export plots after evaluation', default=False
     )

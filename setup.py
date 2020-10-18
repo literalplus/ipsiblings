@@ -26,7 +26,6 @@ setuptools.setup(
         'xgboost~=1.1.1',
         'requests~=2.24.0',
         'prettytable~=0.7.2',
-        'retrie~=0.1.2',
         'python-bitcoinlib~=0.11.0',
     ],
     classifiers=[

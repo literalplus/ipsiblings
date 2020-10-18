@@ -2,7 +2,6 @@ import gc
 
 from .. import liblog, libtools, libconstants, preparation
 from ..config.model import AppConfig
-from ..libtools import SkipList
 from ..ostuning import OsTuning
 
 
@@ -18,7 +17,6 @@ class Wiring:
         self.log = liblog.get_root_logger()
         self.target_provider = preparation.get_provider(conf.targetprovider.provider)
         self.target_provider.configure(conf)
-        self.skip_list = SkipList(conf.paths.ip_ignores)
         self.os_tuning = OsTuning(conf.os_tuner)
 
 

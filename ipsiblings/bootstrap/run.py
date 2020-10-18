@@ -16,7 +16,7 @@ log = liblog.get_root_logger()
 
 def run(wiring: Wiring):
     log.info('Application is running.')
-    prepared_targets = preparation.run(wiring.conf, wiring.target_provider)
+    prepared_targets = preparation.run(wiring.conf, wiring.target_provider, wiring.skip_list)
     _do_harvesting(prepared_targets, wiring)
     gc.collect()
     _check_evaluation(prepared_targets, wiring.conf)
