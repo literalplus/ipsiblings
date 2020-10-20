@@ -52,7 +52,7 @@ class Connection:
 
     def should_expire(self):
         secs_since_last_useful_message = time.time() - self.last_useful
-        return secs_since_last_useful_message > 40
+        return secs_since_last_useful_message > 60
 
     def close(self):
         self.sock.close()
