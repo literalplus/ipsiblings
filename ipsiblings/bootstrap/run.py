@@ -28,7 +28,7 @@ def _do_harvesting(prepared_targets: PreparedTargets, wiring: Wiring):
         log.info('Not harvesting or exporting targets.')
         return
     TargetSerialization.export_targets(prepared_targets, wiring.conf.base_dir, wiring.conf.flags.always_harvest)
-    did_run = False
+    did_run = True  # we want to save in exceptional cases (i.e. where this variable does not get overwritten)
     try:
         did_run = harvesting.run(prepared_targets, wiring.conf, wiring.nic)
     finally:
