@@ -67,14 +67,14 @@ class BtcImporter:
         ver_info = self._parse_ver_info(ver_str)
         conn = BitcoinConnection(ipv, ip, port, first_seen, last_seen, ver_info)
         if addr_str:
-            for addr in const.SECONDARY_DELIMITER.split(addr_str):
-                (atimes, asvcs, aip, aports) = const.TERTIARY_DELIMITER.split(addr)
+            for addr in addr_str.split(const.SECONDARY_DELIMITER):
+                (atimes, asvcs, aip, aports) = addr.split(const.TERTIARY_DELIMITER)
                 atime, asvc, aport = int(atimes), int(asvcs), int(aports)
                 conn.add_addrinfo(atime, asvc, aip, aport)
         return conn
 
     def _parse_ver_info(self, ver_str):
-        (proto_vers, sub_ver, svcs, times, heights) = const.SECONDARY_DELIMITER.split(ver_str)
+        (proto_vers, sub_ver, svcs, times, heights) = ver_str.split(const.SECONDARY_DELIMITER)
         proto_ver, svc, time, height = int(proto_vers), int(svcs), int(times), int(heights)
         verinfo = BitcoinVersionInfo(proto_ver, sub_ver, svc, time, height)
         return verinfo
