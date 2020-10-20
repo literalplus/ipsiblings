@@ -61,14 +61,15 @@ class BtcImporter:
                 results[(ipv, ip)].append(conn)
         return results
 
-    def _parse_rest(self, ip, ipv, port, rest):
+    def _parse_rest(self, ip, ipv, port, rest: Tuple[str, str, str, str]):
         (first_seens, last_seens, ver_str, addr_str) = rest
         first_seen, last_seen = int(first_seens), int(last_seens)
         ver_info = self._parse_ver_info(ver_str)
         conn = BitcoinConnection(ipv, ip, port, first_seen, last_seen, ver_info)
         if addr_str:
             for addr in addr_str.split(const.SECONDARY_DELIMITER):
-                (atimes, asvcs, aip, aports) = addr.split(const.TERTIARY_DELIMITER)
+                (atimes, asvcs, addr_rest) = addr.split(const.TERTIARY_DELIMITER, maxsplit=2)
+                (aip, aports) = addr_rest.rsplit(const.TERTIARY_DELIMITER, maxsplit=1)
                 atime, asvc, aport = int(atimes), int(asvcs), int(aports)
                 conn.add_addrinfo(atime, asvc, aip, aport)
         return conn
