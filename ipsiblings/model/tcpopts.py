@@ -32,8 +32,8 @@ class TcpOptions:
         results = []
         for name, option_value in self:
             if libtools.is_iterable(option_value):
-                fields = [name] + [str(item) for item in option_value]
+                fields = [str(name)] + [str(item) for item in option_value]
             else:
-                fields = [name, str(option_value)]
+                fields = [str(name), str(option_value)]
             results.append(const.TERTIARY_DELIMITER.join(fields))
         return const.SECONDARY_DELIMITER.join(results)
