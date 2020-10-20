@@ -11,26 +11,30 @@ from typing import Iterator
 
 from ipsiblings import liblog
 from ipsiblings.config import AppConfig
-from ipsiblings.model import SiblingCandidate, PreparedTargets, ConfigurationException
+from ipsiblings.evaluation.target_btc_versions import TargetBtcVersions
+from ipsiblings.model import SiblingCandidate, PreparedTargets
 
 log = liblog.get_root_logger()
 
 
 class CandidateProvider:
     def __init__(self, prepared_targets: PreparedTargets, conf: AppConfig):
-        if conf.candidates.low_runtime:
-            raise ConfigurationException('Low-RT is not currently supported.')
         log.debug('Splitting targets by IP version, skipping non-responsive ones.')
         self.targets4 = [t for t in prepared_targets if t.ip_version == 4 and t.has_any_timestamp()]
         log.debug(f'Retained {len(self.targets4)} IPv4 targets.')
         self.targets6 = [t for t in prepared_targets if t.ip_version == 6 and t.has_any_timestamp()]
         log.debug(f'Retained {len(self.targets6)} IPv6 targets.')
         prepared_targets.clear()
+        self.versions = TargetBtcVersions(conf.base_dir)
+        self.skip_count = 0
 
     def __iter__(self) -> Iterator[SiblingCandidate]:
         for target4 in self.targets4:
             for target6 in self.targets6:
-                yield SiblingCandidate(target4, target6)
+                if self.versions.is_match_possible(target4, target6):
+                    yield SiblingCandidate(target4, target6)
+                else:
+                    self.skip_count += 1
 
     def as_batches(self, batch_size: int) -> Iterator[Iterator[SiblingCandidate]]:
         iterator = iter(self)

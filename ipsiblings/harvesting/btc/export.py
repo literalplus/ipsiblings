@@ -1,7 +1,7 @@
 import csv
 import pathlib
 from collections import defaultdict
-from typing import Set, Tuple, Dict, List, Optional
+from typing import Set, Tuple, Dict, List, Optional, Union, Iterable
 
 from typing.io import IO
 
@@ -43,11 +43,18 @@ class BtcExporter:
 
 
 class BtcImporter:
-    def __init__(self, indir: str):
+    def __init__(self, indir: Union[str, pathlib.Path]):
         self.infile = pathlib.Path(indir) / 'bitcoin.tsv'
 
     def read_relevant(self, version_ips: Set[Tuple[int, str]]) -> Dict[Tuple[int, str], List[BitcoinConnection]]:
         results: Dict[Tuple[int, str], List[BitcoinConnection]] = defaultdict(list)
+        for conn in self.yield_relevant(version_ips):
+            results[(conn.ip_ver, conn.ip)] += conn
+        return results
+
+    def yield_relevant(
+            self, version_ips: Optional[Set[Tuple[int, str]]]
+    ) -> Iterable[BitcoinConnection]:
         with open(self.infile, 'r', encoding='utf-8', newline='') as fil:
             reader = csv.reader(fil, dialect=csv.excel_tab)
             for row in reader:
@@ -55,11 +62,9 @@ class BtcImporter:
                     continue
                 (ipvs, ip, ports, *rest) = row
                 ipv, port = int(ipvs), int(ports)
-                if (ipv, ip) not in version_ips:
+                if version_ips and (ipv, ip) not in version_ips:
                     continue
-                conn = self._parse_rest(ip, ipv, port, rest)
-                results[(ipv, ip)].append(conn)
-        return results
+                yield self._parse_rest(ip, ipv, port, rest)
 
     def _parse_rest(self, ip, ipv, port, rest: Tuple[str, str, str, str]):
         (first_seens, last_seens, ver_str, addr_str) = rest

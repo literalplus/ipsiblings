@@ -46,8 +46,8 @@ def _check_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig)
 
 
 def _run_evaluation_batched(prepared_targets, wiring):
-    batches = CandidateProvider(prepared_targets, wiring.conf) \
-        .as_batches(wiring.conf.eval.batch_size)
+    candidate_provider = CandidateProvider(prepared_targets, wiring.conf)
+    batches = candidate_provider.as_batches(wiring.conf.eval.batch_size)
     evaluator = EvaluationProcessor(wiring.conf)
     i = 0
     batches_processed = 0
@@ -69,3 +69,4 @@ def _run_evaluation_batched(prepared_targets, wiring):
         if 0 <= wiring.conf.eval.batch_count <= batches_processed:
             log.info(f'Stopping evaluation after {batches_processed} batches as requested.')
             break
+    log.info(f'Skipped {candidate_provider.skip_count} candidate pairs due to Bitcoin version mismatch')

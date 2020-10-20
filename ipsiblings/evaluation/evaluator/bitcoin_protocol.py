@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Dict, Tuple, Optional, Any, Set
+from typing import List, Dict, Optional, Any, Set, Tuple
 
 from ipsiblings import liblog
 from ipsiblings.config import AppConfig
