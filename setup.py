@@ -45,7 +45,8 @@ setuptools.setup(
     python_requires='>=3.7',
     entry_points={
         'console_scripts': [
-            'ipsiblings=ipsiblings.run:main'
+            'ipsiblings=ipsiblings.run:main',
+            'ips-addrstats=ipsiblings.scripts.addrstats:run',
         ]
     },
     package_data={

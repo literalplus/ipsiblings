@@ -1,5 +1,14 @@
 from typing import List, Tuple
 
+ADDR_SAVE_PENALTY_SECS = 2 * 60 * 60
+ADDR_INACTIVE_THRESH_SECS = 24 * 60 * 60
+
+# indices in addr info structure
+AI_TIME = 0
+AI_SVC = 1
+AI_IP = 2
+AI_PORT = 3
+
 
 class BitcoinVersionInfo:
     def __init__(self, proto_ver: int, sub_ver: str, services: int, timestamp: int, height: int):
@@ -22,3 +31,12 @@ class BitcoinConnection:
 
     def add_addrinfo(self, time: int, services: int, ip: str, port: int):
         self.addr_infos.append((time, services, ip, port))
+
+    def addr_ts_no_penalty(self, addrinfo: Tuple[int, int, str, int]) -> int:
+        return addrinfo[0] - ADDR_SAVE_PENALTY_SECS
+
+    def addr_age(self, addrinfo: Tuple[int, int, str, int]) -> int:
+        return self.ver_info.timestamp - self.addr_ts_no_penalty(addrinfo)
+
+    def was_active(self, addrinfo: Tuple[int, int, str, int]) -> bool:
+        return self.addr_age(addrinfo) < ADDR_INACTIVE_THRESH_SECS
