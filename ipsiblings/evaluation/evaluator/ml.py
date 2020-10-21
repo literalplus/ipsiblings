@@ -81,7 +81,7 @@ class MachineLearningEvaluator(SiblingEvaluator):
             'dynrange_avg': dyn_range.average,
             'dynrange_diff_rel': dyn_range.diff_relative,
         }
-        for key, value in features:
+        for key, value in features.items():
             if not value:
                 features[key] = numpy.nan
         return features

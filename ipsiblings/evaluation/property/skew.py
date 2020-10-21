@@ -4,15 +4,18 @@ import numpy
 from scipy.stats import mstats as scipy_mstats
 from scipy.stats import stats as scipy_stats
 
+from ipsiblings import liblog
 from ipsiblings.evaluation.model.property import SiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.offsets import OffsetSeries
 from ipsiblings.evaluation.property.ppd_outliers import PpdOutlierRemovalProperty
 
-
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew", GPLv2
 # https://github.com/tumi8/siblings
+
+
+log = liblog.get_root_logger()
 
 
 class SkewProperty(SiblingProperty):
@@ -33,10 +36,17 @@ class SkewProperty(SiblingProperty):
             return None
         # Cannot cache because we depend on PpdOutlierRemovalProperty,
         # which uses both series
-        return cls(
-            cls._calc_skew_angle(ppd_outliers_prop[4]),
-            cls._calc_skew_angle(ppd_outliers_prop[6])
-        )
+        try:
+            return cls(
+                cls._calc_skew_angle(ppd_outliers_prop[4]),
+                cls._calc_skew_angle(ppd_outliers_prop[6])
+            )
+        except ValueError as e:
+            if "cannot convert float NaN to integer" in str(e):
+                log.debug(f'NaN in skew calculation, {evaluated_sibling.domains}')
+                return None
+            else:
+                raise e
 
     @classmethod
     def _calc_skew_angle(cls, source: OffsetSeries) -> Tuple[float, float]:

@@ -65,4 +65,4 @@ class DynamicRangeProperty(FamilySpecificSiblingProperty[float]):
 
     @classmethod
     def get_export_keys(cls) -> Set[str]:
-        return {'4', '6', 'diff_abs', 'diff_res', 'avg'}
+        return {'4', '6', 'diff_abs', 'diff_rel', 'avg'}
