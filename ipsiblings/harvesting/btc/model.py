@@ -20,7 +20,8 @@ class BitcoinVersionInfo:
 
 
 class BitcoinConnection:
-    def __init__(self, ip_ver: int, ip: str, port: int, first_seen: int, last_seen: int, verinfo: BitcoinVersionInfo):
+    def __init__(self, ip_ver: int, ip: str, port: int, first_seen: float, last_seen: float,
+                 verinfo: BitcoinVersionInfo):
         self.ip_ver = ip_ver
         self.ip = ip
         self.port = port

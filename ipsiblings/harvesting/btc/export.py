@@ -68,7 +68,7 @@ class BtcImporter:
 
     def _parse_rest(self, ip, ipv, port, rest: Tuple[str, str, str, str]):
         (first_seens, last_seens, ver_str, addr_str) = rest
-        first_seen, last_seen = int(first_seens), int(last_seens)
+        first_seen, last_seen = float(first_seens), float(last_seens)
         ver_info = self._parse_ver_info(ver_str)
         conn = BitcoinConnection(ipv, ip, port, first_seen, last_seen, ver_info)
         if addr_str:
