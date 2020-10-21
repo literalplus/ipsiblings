@@ -7,7 +7,7 @@
 # -> https://github.com/tumi8/siblings (GPLv2)
 #
 from itertools import islice
-from typing import Iterator
+from typing import Iterator, Optional
 
 from ipsiblings import liblog
 from ipsiblings.config import AppConfig
@@ -28,13 +28,13 @@ class CandidateProvider:
         log.debug(f'Loaded harvested Bitcoin versions for {len(self.versions.target_versions_map)} addresses.')
         self.skip_count = 0
 
-    def __iter__(self) -> Iterator[SiblingCandidate]:
+    def __iter__(self) -> Iterator[Optional[SiblingCandidate]]:
         for target4 in self.targets4:
             for target6 in self.targets6:
                 if self.versions.is_match_possible(target4, target6):
                     yield SiblingCandidate(target4, target6)
                 else:
-                    self.skip_count += 1
+                    yield None  # otherwise batching is not reliably possible w/o doing btc check on skipped batches
 
     def as_batches(self, batch_size: int) -> Iterator[Iterator[SiblingCandidate]]:
         iterator = iter(self)
@@ -42,4 +42,4 @@ class CandidateProvider:
             batch = islice(iterator, batch_size)
             if not batch:
                 return
-            yield batch
+            yield filter(lambda x: x is not None, batch)
