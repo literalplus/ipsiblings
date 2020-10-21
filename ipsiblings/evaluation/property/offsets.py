@@ -57,7 +57,7 @@ class OffsetsProperty(FamilySpecificSiblingProperty[Optional[OffsetSeries]]):
     def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'Optional[OffsetsProperty]':
         freq_prop = evaluated_sibling.contribute_property_type(FrequencyProperty)
         clean_prop = evaluated_sibling.contribute_property_type(NormSeriesProperty)
-        if freq_prop and freq_prop[4].frequency == 0 or freq_prop[6] == 0:
+        if freq_prop and (freq_prop[4].frequency == 0 or freq_prop[6] == 0):
             log.debug(f'Frequency is zero for {evaluated_sibling}')
             return None
         if freq_prop and clean_prop:

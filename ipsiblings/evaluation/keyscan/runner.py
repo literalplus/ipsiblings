@@ -62,7 +62,6 @@ class KeyscanProcessHandler:
             self._handle_agent_info_in_stderr(stderr)
             self._handle_key_info_in_stdout(stdout)
             log.warn(f'SSH keyscan {self.ip_version} timed out.')
-            log.debug(f'OUT -> {stdout} ERR -> {stderr}')
             self.failed = True
         log.debug(f'SSH keyscan {self.ip_version} thread exited.')
 

@@ -49,7 +49,7 @@ class BtcImporter:
     def read_relevant(self, version_ips: Set[Tuple[int, str]]) -> Dict[Tuple[int, str], List[BitcoinConnection]]:
         results: Dict[Tuple[int, str], List[BitcoinConnection]] = defaultdict(list)
         for conn in self.yield_relevant(version_ips):
-            results[(conn.ip_ver, conn.ip)] += conn
+            results[(conn.ip_ver, conn.ip)].append(conn)
         return results
 
     def yield_relevant(
