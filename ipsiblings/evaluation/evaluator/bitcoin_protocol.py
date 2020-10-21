@@ -35,7 +35,7 @@ class BitcoinConnections:
         self.addr_infos.intersection_update(set(conn.addr_infos))
 
     def is_consistent(self):
-        return self.proto_ver is None or self.sub_ver is None or self.services is None
+        return self.proto_ver is not None and self.sub_ver is not None and self.services is not None
 
 
 class BitcoinProperty(FamilySpecificSiblingProperty[Optional[BitcoinConnections]]):
@@ -60,10 +60,10 @@ class BitcoinProperty(FamilySpecificSiblingProperty[Optional[BitcoinConnections]
             raise KeyError
 
     def has_response_for_both(self):
-        return self.data4 and self.data6
+        return self[4] and self[6]
 
     def can_conclude(self):
-        return not self.has_response_for_both() or not self.data4.is_consistent() or not self.data6.is_consistent()
+        return self.has_response_for_both() and self.data4.is_consistent() and self.data6.is_consistent()
 
     def all_signs_point_to_no(self):
         return self.can_conclude() and (
