@@ -66,9 +66,9 @@ class HarvesterConfig:
 
 class OsTunerConfig:
     def __init__(self, args):
-        self.skip_sysctls = args.skip_os_sysctls
-        self.skip_firewall = args.skip_os_iptables
-        self.skip_timesync = args.skip_os_ntp
+        self.skip_sysctls = args.skip_os_sysctls or args.skip_os
+        self.skip_firewall = args.skip_os_iptables or args.skip_os
+        self.skip_timesync = args.skip_os_ntp or args.skip_os
 
 
 class AppConfig:

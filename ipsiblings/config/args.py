@@ -132,6 +132,10 @@ def _prepare_parser():
                     'The previous values are saved to ./settings.bak and restored when the application exits.'
     )
     os_grp.add_argument(
+        '--skip-os', action='store_true',
+        help='Skip all OS settings', default=False
+    )
+    os_grp.add_argument(
         '--skip-os-sysctls', action='store_true',
         help='Skip overwriting necessary sysctls', default=False
     )
