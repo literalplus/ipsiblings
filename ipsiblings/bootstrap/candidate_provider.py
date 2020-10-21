@@ -22,7 +22,7 @@ class CandidateProvider:
         log.debug('Splitting targets by IP version, skipping non-responsive ones.')
         self.targets4 = [t for t in prepared_targets if t.ip_version == 4 and t.has_any_timestamp()]
         self.targets6 = [t for t in prepared_targets if t.ip_version == 6 and t.has_any_timestamp()]
-        log.debug(f'Retained {len(self.targets4)} IPv4  / {len(self.targets6)} IPv6 targets. Loading BTC data...')
+        log.debug(f'Retained {len(self.targets4)} IPv4 / {len(self.targets6)} IPv6 targets. Loading BTC data...')
         prepared_targets.clear()
         self.versions = TargetBtcVersions(conf.base_dir)
         log.debug(f'Loaded harvested Bitcoin versions for {len(self.versions.target_versions_map)} addresses.')

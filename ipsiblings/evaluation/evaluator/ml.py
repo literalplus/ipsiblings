@@ -38,7 +38,7 @@ class MachineLearningEvaluator(SiblingEvaluator):
 
     def __init__(self):
         super().__init__(const.EvaluatorChoice.SSH_KEYSCAN)
-        model_path = pathlib.Path(__file__).parent.parent / 'assets' / 'model_FRT_XGB_no-rawts-new.native.bin'
+        model_path = pathlib.Path(__file__).parent.parent / 'assets' / 'model_FRT_no-rawts-new.native.bin'
         self.classifier = xgboost.XGBClassifier()
         booster = xgboost.Booster()
         booster.load_model(model_path)
