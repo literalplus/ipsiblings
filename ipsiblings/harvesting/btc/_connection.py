@@ -52,7 +52,8 @@ class Connection:
 
     def should_expire(self):
         secs_since_last_useful_message = time.time() - self.last_useful
-        return secs_since_last_useful_message > 60
+        # Peers usually take below 30s (but always some time) to respond, times around 100s have been observed
+        return secs_since_last_useful_message > 150
 
     def close(self):
         self.sock.close()

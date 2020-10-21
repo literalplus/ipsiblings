@@ -45,7 +45,7 @@ class ConnectionHandler:
             self._close_conn(conn)
 
     def _handle_connection_creation(self):
-        if self.all_connections_created.is_set() or len(self.connections) > 50:
+        if self.all_connections_created.is_set() or len(self.connections) > 100:
             return
         key = None
         try:
