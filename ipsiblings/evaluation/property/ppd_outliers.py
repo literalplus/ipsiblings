@@ -62,4 +62,4 @@ class PpdOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):
 
     @classmethod
     def get_export_keys(cls) -> Set[str]:
-        return {'pdd_rng'}
+        return {'ppd_rng'}

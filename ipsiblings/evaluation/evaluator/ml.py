@@ -52,6 +52,8 @@ class MachineLearningEvaluator(SiblingEvaluator):
             # sibling candidates that already match the Delta-tcpraw criterion
             return SiblingStatus.INDECISIVE
         only_row = self._features_from_evaluated(evaluated_sibling)
+        if not only_row:
+            return SiblingStatus.ERROR
         data = pandas.DataFrame([only_row], columns=self._FEATURE_KEYS)
         results = self.classifier.predict(data)
         if results[0]:
@@ -68,6 +70,8 @@ class MachineLearningEvaluator(SiblingEvaluator):
         freq = evaluated_sibling.contribute_property_type(FrequencyProperty)
         skew = evaluated_sibling.contribute_property_type(SkewProperty)
         dyn_range = evaluated_sibling.contribute_property_type(DynamicRangeProperty)
+        if not freq or not skew or not dyn_range:
+            return {}
         features = {
             'hz_diff': freq.diff,
             'hz_rsqrdiff': freq.r_squared_diff,

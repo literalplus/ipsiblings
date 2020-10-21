@@ -39,13 +39,13 @@ class DynamicRangeProperty(FamilySpecificSiblingProperty[float]):
 
     @classmethod
     def _calc_dynamic_range(cls, source: OffsetSeries):
-        if not source.data:
+        if not len(source.data):
             raise DataException("No source data for dynamic range - offsets empty?")
         sorted_offsets = numpy.sort(source.data, order=OffsetSeries.KEY_OFFSET)
         cutoff_idx_low = int(round(cls.CUTOFF_FACTOR_LOW * len(sorted_offsets)))
         cutoff_idx_high = int(round(cls.CUTOFF_FACTOR_HIGH * len(sorted_offsets)))
-        new_min = sorted_offsets[cutoff_idx_low]
-        new_max = sorted_offsets[cutoff_idx_high]
+        new_min = sorted_offsets[cutoff_idx_low][OffsetSeries.KEY_OFFSET]
+        new_max = sorted_offsets[cutoff_idx_high][OffsetSeries.KEY_OFFSET]
         return new_max - new_min
 
     def __init__(self, range4: float, range6: float):
