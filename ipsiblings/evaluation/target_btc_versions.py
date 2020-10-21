@@ -17,7 +17,7 @@ class TargetBtcVersions:
                 versions_for_this_target.append(ver_tup)
 
     def get_version_tuple(self, target: Target) -> List[Tuple[int, str]]:
-        return self.target_versions_map.get((target.ip_version, target.address))
+        return self.target_versions_map[(target.ip_version, target.address)]
 
     def is_match_possible(self, target4: Target, target6: Target):
         version4 = self.get_version_tuple(target4)

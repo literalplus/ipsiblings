@@ -9,7 +9,7 @@ usage: ipsiblings [-h] [-d BASE_DIR] [--run-id RUN_ID] [--export-plots] [--evalu
                   [--skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}] [--eval-batch-size EVAL_BATCH_SIZE] [--eval-fail-fast]
                   [--eval-ssh-timeout EVAL_SSH_TIMEOUT] [--eval-first-batch EVAL_FIRST_BATCH] [--eval-batch-count EVAL_BATCH_COUNT] [--skip-eval] [--only-init] [-v | -q]
                   [--targets-from {BITCOIN,FILESYSTEM}] [--skip-v SKIP_V] [--from START_INDEX] [--to END_INDEX] [--do-harvest] [--really-harvest] [--harvester {TCP_TS,BTC}] [-hd HARVEST_DURATION]
-                  [-ti TS_INTERVAL] [-bi BTC_INTERVAL] [-ttr TS_TIMEOUT] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
+                  [-ti TS_INTERVAL] [-bi BTC_INTERVAL] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os] [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
 
 IP Siblings Toolset
 
@@ -63,14 +63,13 @@ TIMESTAMP COLLECTION:
                         Collection interval for timestamps per target, seconds (default 60)
   -bi BTC_INTERVAL, --btc-interval BTC_INTERVAL
                         Collection interval for Bitcoin protocol per target, seconds (default 1800 / 30min)
-  -ttr TS_TIMEOUT, --ts-timeout TS_TIMEOUT
-                        Wait at least this many seconds for timestamp replies per iteration (Should not be longer than -thi) (default 20)
   -htf HARVEST_TIMEOUT_FINAL, --harvest-timeout-final HARVEST_TIMEOUT_FINAL
                         Wait at least this long for replies after the last iteration (default 120)
 
 OPERATING SYSTEM SETTINGS:
   By default, we adapt some global (!!) OS settings. The previous values are saved to ./settings.bak and restored when the application exits.
 
+  --skip-os             Skip all OS settings
   --skip-os-sysctls     Skip overwriting necessary sysctls
   --skip-os-iptables    Skip adding necessary iptables rules
   --skip-os-ntp         Skip disabling NTP client

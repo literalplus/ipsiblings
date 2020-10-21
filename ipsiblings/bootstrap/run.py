@@ -47,11 +47,10 @@ def _check_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig)
 
 def _run_evaluation_batched(prepared_targets, wiring):
     candidate_provider = CandidateProvider(prepared_targets, wiring.conf)
-    batches = candidate_provider.as_batches(wiring.conf.eval.batch_size)
     evaluator = EvaluationProcessor(wiring.conf)
     i = 0
     batches_processed = 0
-    for batch_iter in batches:
+    for batch_iter in candidate_provider.as_batches(wiring.conf.eval.batch_size):
         if i < wiring.conf.eval.first_batch_idx:
             i += 1
             continue
