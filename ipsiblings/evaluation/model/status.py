@@ -13,7 +13,7 @@ class SiblingStatus(Enum):
     def combine(cls, statuses: Iterable['SiblingStatus']) -> 'SiblingStatus':
         overall = cls.INDECISIVE
         for status in statuses:
-            transitions = _STATUS_TRANSITIONS[overall]
+            transitions = _STATUS_TRANSITIONS.get(overall)
             if not transitions:
                 overall = status
             else:
@@ -29,6 +29,7 @@ _STATUS_TRANSITIONS = {
     SiblingStatus.POSITIVE: {SiblingStatus.NEGATIVE: SiblingStatus.CONFLICT},
     SiblingStatus.NEGATIVE: {SiblingStatus.POSITIVE: SiblingStatus.CONFLICT},
     SiblingStatus.INDECISIVE: None,
+    SiblingStatus.CONFLICT: None,
     SiblingStatus.ERROR: {SiblingStatus.POSITIVE: SiblingStatus.POSITIVE,
                           SiblingStatus.NEGATIVE: SiblingStatus.NEGATIVE},
 }
