@@ -32,7 +32,7 @@ class TcpOptionsEvaluator(SiblingEvaluator):
             opt4, opt6 = next(iter4, None), next(iter6, None)
             if not opt4 and not opt6:
                 # Checked all options, length equal, not empty due to check above
-                return SiblingStatus.POSITIVE
+                return SiblingStatus.INDECISIVE
             if not opt4 or not opt6:
                 # Different length
                 return SiblingStatus.NEGATIVE
