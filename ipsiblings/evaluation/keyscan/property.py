@@ -47,7 +47,7 @@ class SshProperty(FamilySpecificSiblingProperty[Optional[KeyscanResult]]):
             raise KeyError
 
     def has_data_for_both(self):
-        return bool(self[4] and self[6])
+        return self[4] is not None and self[6] is not None
 
     def do_agents_match(self) -> Optional[bool]:
         if not self.has_data_for_both():

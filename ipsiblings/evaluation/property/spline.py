@@ -52,7 +52,7 @@ class OffsetSpline(OffsetSeries):
             log.debug(f'Spline: KeyError')
             return None
         except ValueError as e:
-            if "The input parameters have been rejected by fpchec" in str(e):
+            if "The input parameters have been rejected by fpchec" in repr(e):
                 log.debug(f'Spline parameters rejected')
                 return None
             else:

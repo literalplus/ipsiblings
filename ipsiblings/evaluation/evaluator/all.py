@@ -3,7 +3,7 @@ from typing import List, Dict, Type
 
 from ipsiblings import liblog
 from ipsiblings.config import AppConfig
-from ipsiblings.evaluation.evaluator.bitcoin_protocol import BitcoinEvaluator, BitcoinProperty
+from ipsiblings.evaluation.evaluator.bitcoin_protocol import BitcoinEvaluator
 from ipsiblings.evaluation.evaluator.domain import DomainEvaluator
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.evaluator.ml import MachineLearningEvaluator
@@ -42,29 +42,24 @@ def _provide_all(
     return evaluators
 
 
-def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingEvaluator], fail_fast: bool) -> bool:
-    if evaluated_sibling.has_property(BitcoinProperty):
-        prop = evaluated_sibling.get_property(BitcoinProperty)
-        if prop.all_signs_point_to_no():
-            return False
+def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingEvaluator], fail_fast: bool):
     for evaluator in evaluators:
         # noinspection PyBroadException
         try:
             result = evaluator.evaluate(evaluated_sibling)
+            if result is None:
+                result = SiblingStatus.INDECISIVE
             evaluated_sibling.classifications[evaluator.key] = result
         except Exception:
             evaluated_sibling.classifications[evaluator.key] = SiblingStatus.ERROR
             log.exception(f'Failed to evaluate {evaluated_sibling} with {evaluator.key}')
             if fail_fast:
                 raise
-    return True
 
 
 def evaluate_with_all(evaluated_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
     # TODO: low runtime ?
     evaluators = _provide_all(evaluated_siblings, batch_dir, conf)
-    skipped = 0
+    log.debug(f'Evaluators: {[it.key.name for it in evaluators]}')
     for evaluated_sibling in evaluated_siblings:
-        if not _evaluate_one(evaluated_sibling, evaluators, conf.eval.fail_fast):
-            skipped += 1
-    log.debug(f'Skipped {skipped} targets due to BTC check.')
+        _evaluate_one(evaluated_sibling, evaluators, conf.eval.fail_fast)

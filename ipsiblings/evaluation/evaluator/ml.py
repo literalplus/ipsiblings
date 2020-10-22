@@ -33,11 +33,10 @@ class MachineLearningEvaluator(SiblingEvaluator):
 
     @classmethod
     def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
-        instance = cls()
-        return instance
+        return cls()
 
     def __init__(self):
-        super().__init__(const.EvaluatorChoice.SSH_KEYSCAN)
+        super().__init__(const.EvaluatorChoice.ML_STARKE)
         model_path = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'model_FRT_no-rawts-new.native.bin'
         self.classifier = xgboost.XGBClassifier()
         booster = xgboost.Booster()

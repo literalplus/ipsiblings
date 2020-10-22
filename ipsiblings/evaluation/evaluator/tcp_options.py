@@ -18,11 +18,10 @@ class TcpOptionsEvaluator(SiblingEvaluator):
 
     @classmethod
     def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
-        instance = cls()
-        return instance
+        return cls()
 
     def __init__(self):
-        super().__init__(const.EvaluatorChoice.SSH_KEYSCAN)
+        super().__init__(const.EvaluatorChoice.TCP_OPTIONS)
 
     def evaluate(self, evaluated_sibling: EvaluatedSibling) -> SiblingStatus:
         if any([not opts or not len(opts) for opts in evaluated_sibling.tcp_options.items()]):
