@@ -1,5 +1,4 @@
 import random
-import random
 import socket
 import time
 from typing import Iterable
@@ -8,6 +7,8 @@ from bitcoin import SelectParams
 from bitcoin.core import Hash, b2lx
 from bitcoin.messages import *
 from bitcoin.net import CInv, CAddress
+
+from ipsiblings.model import JustExit
 
 USE_TESTNET = True
 PORT = 18333 if USE_TESTNET else 8333
@@ -28,6 +29,7 @@ def version_pkt(client_ip, server_ip, nonce):
     msg.addrTo.port = PORT
     msg.addrFrom.ip = client_ip
     msg.addrFrom.port = PORT
+    # msg.nServices = 1  # the default, but important, otherwise they don't want our ADDRs
     if nonce is not None:
         msg.nNonce = nonce
     return msg
@@ -42,7 +44,9 @@ def recv_pkt(fake_fil):
         for addrx in pkt.addrs:
             addr: CAddress = addrx
             if addr.ip.startswith("2001:db8"):
-                print(f'GOT an address cookie: {addr.ip}')
+                print(f' ****************************************** GOT an address cookie: {addr.ip}')
+        if len(pkt.addrs) > 10:
+            raise JustExit
     elif pkt.command == b'getdata':
         ts_diff = time.time() - INV_SEND_TS
         print(f' GETDATA * {pkt}')
@@ -50,7 +54,7 @@ def recv_pkt(fake_fil):
     elif type(pkt) == msg_getheaders:
         print(f'they asked for headers. lol do they think')
     elif type(pkt) == msg_version:
-        print(f'version! {pkt.strSubVer}')
+        print(f'version! {pkt.strSubVer} height {pkt.nStartingHeight}')
         g_ver_ts = pkt.nTime
     else:
         print(f' <- {pkt}')
@@ -75,19 +79,23 @@ def gen_fake_ips(run_id, addr_id, thread_id) -> Iterable[str]:
     g_block = f'{thread_id:01x}'
     if len(x_block) > 4 or len(y_block) > 4 or len(g_block) > 1:
         raise ValueError(f'One of the address blocks got too long: {x_block} / {y_block} / {g_block}')
-    for offset in range(0, 64):
+    for offset in range(0, 256):
         z_block = f'{offset:03x}'
         yield f'2001:db8::cafe:baaf:{x_block}:{y_block}:{g_block}{z_block}'
 
 
 def main():
     if USE_TESTNET:
-        server_addr = '3.17.246.73'  # testnet
+        # server_addr = '3.17.246.73'  # testnet
+        server_addr = '127.0.0.1'
     else:
         server_addr = '37.59.47.27'  # mainnet
     client_addr = '10.87.21.23'
-    nce = do_connect(client_addr, server_addr, None)
-    print(f'ok lol {nce}')
+    try:
+        nce = do_connect(client_addr, server_addr, None)
+    except JustExit:
+        pass
+    print(f'doen')
 
 
 def do_connect(client_addr, server_addr, nonce):
@@ -102,11 +110,11 @@ def do_connect(client_addr, server_addr, nonce):
             i = 0
             try:
                 while True:
-                    if i == 5:
+                    if i == 3:
                         g_getaddr_send_ts = time.time()
                         print("sending getaddr!")
                         send_pkt(fake_fil, msg_getaddr())
-                    elif i == 7:
+                    elif i == 5:
                         print(f"sending inv for {b2lx(FAKE_TX_HASH)}!")
                         pkt = msg_inv()
                         inv = CInv()
@@ -115,7 +123,7 @@ def do_connect(client_addr, server_addr, nonce):
                         pkt.inv.append(inv)
                         INV_SEND_TS = time.time()
                         send_pkt(fake_fil, pkt)
-                    elif i == 6:
+                    elif i == 4:
                         print(f"sending marker ips")
                         pkt = msg_addr()
                         for fake_ip in gen_fake_ips(RUN_ID, 78, 0xf):

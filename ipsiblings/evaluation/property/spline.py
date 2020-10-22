@@ -4,13 +4,18 @@ import numpy
 from numpy.lib import recfunctions
 from scipy import interpolate as scipy_interpolate
 
+from ipsiblings import liblog
 from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
+from ipsiblings.evaluation.property.offsets import OffsetSeries
+from ipsiblings.evaluation.property.ppd_outliers import PpdOutlierRemovalProperty
+
 # The code in this file is based on the work of Scheitle et al. 2017:
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
-from ipsiblings.evaluation.property.offsets import OffsetSeries
-from ipsiblings.evaluation.property.ppd_outliers import PpdOutlierRemovalProperty
+
+
+log = liblog.get_root_logger()
 
 
 class OffsetSpline(OffsetSeries):
@@ -44,7 +49,14 @@ class OffsetSpline(OffsetSeries):
             all_knots = [first_time + i * bin_width for i in range(1, cls._BIN_COUNT)]
             internal_knots = all_knots[1:-1]
         except KeyError:
+            log.debug(f'Spline: KeyError')
             return None
+        except ValueError as e:
+            if "The input parameters have been rejected by fpchec" in str(e):
+                log.debug(f'Spline parameters rejected')
+                return None
+            else:
+                raise e
         return cls(relevant_data, internal_knots, x_values)
 
     @classmethod
