@@ -48,6 +48,7 @@ class EvalConfig:
         self.ssh_timeout = args.eval_ssh_timeout
         self.first_batch_idx = args.eval_first_batch
         self.batch_count = args.eval_batch_count
+        self.discard_results = args.eval_discard_results
 
 
 class HarvesterConfig:

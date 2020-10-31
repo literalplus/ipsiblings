@@ -20,9 +20,9 @@ class EvaluationProcessor:
         batch_dir.mkdir(parents=True, exist_ok=True)
         evaluated = [EvaluatedSibling(c) for c in candidate_iter]
         evaluate_with_all(evaluated, batch_dir, self.conf)
-        if self.conf.paths.candidates_out:
+        if self.conf.paths.candidates_out and not self.conf.eval.discard_results:
             self._do_export(evaluated, batch_dir / self.conf.paths.candidates_out)
-        if self.conf.eval.export_plots:
+        if self.conf.eval.export_plots and not self.conf.eval.discard_results:
             plot.plot_all(evaluated, batch_dir / 'plots.pdf')
         TargetPropertyCache.clear()
 

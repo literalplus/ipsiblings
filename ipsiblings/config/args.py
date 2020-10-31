@@ -57,6 +57,10 @@ def _prepare_parser():
         '--eval-batch-count', help='How many batches to evaluate, default all.',
         default=-1, type=int
     )
+    eval_grp.add_argument(
+        '--eval-discard-results', help='Discard evaluation results (to only invoke side effects, e.g. keyscan)',
+        action='store_true', default=False
+    )
 
     skip_grp = created_parser.add_argument_group(title='SKIP STEPS', description=None)
     skip_grp.add_argument(
