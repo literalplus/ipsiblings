@@ -29,7 +29,7 @@ def _prepare_parser():
         '--evaluator', action='append',
         help='Select a specific evaluator instead of running all of them. '
              'May be specified multiple times.',
-        choices=const.EvaluatorChoice.all_keys(), default=const.EvaluatorChoice.all_keys()
+        choices=const.EvaluatorChoice.all_keys(), default=[]
     )
     eval_grp.add_argument(
         '--skip-evaluator', action='append',

@@ -6,7 +6,6 @@
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew"
 # -> https://github.com/tumi8/siblings (GPLv2)
 #
-from itertools import islice
 from typing import Iterator, Optional
 
 from ipsiblings import liblog
@@ -15,6 +14,12 @@ from ipsiblings.evaluation.target_btc_versions import TargetBtcVersions
 from ipsiblings.model import SiblingCandidate, PreparedTargets
 
 log = liblog.get_root_logger()
+
+
+class BatchIteratorState:
+    def __init__(self, batch_size: int):
+        self.batch_size = batch_size
+        self.encountered_stop = False
 
 
 class CandidateProvider:
@@ -38,8 +43,25 @@ class CandidateProvider:
 
     def as_batches(self, batch_size: int) -> Iterator[Iterator[SiblingCandidate]]:
         iterator = iter(self)
-        while True:  # gotta love Debian only shipping Python 3.7, so cannot use Walrus operator :(
-            batch = islice(iterator, batch_size)
-            if not batch:
+        state = BatchIteratorState(batch_size)
+        while True:
+            yield self._islice_with_stop(iterator, state)
+            if state.encountered_stop:
+                # We need to store this in some state since raising StopIteration in the nested iterator
+                # only stops the current batch, but we will continue to produce (empty)
+                # batches - there is no way to determine this only given the returned
+                # iterator without actually consuming it, which we cannot since our caller needs it.
+                # We call this after yield to allow partial batches (the "rest" before StopIteration)
                 return
-            yield filter(lambda x: x is not None, batch)
+
+    def _islice_with_stop(
+            self, it: Iterator[Optional[SiblingCandidate]], state: BatchIteratorState
+    ) -> Iterator[SiblingCandidate]:
+        try:
+            for _ in range(state.batch_size):
+                el = next(it)
+                if el is not None:
+                    yield el
+        except StopIteration:
+            state.encountered_stop = True
+            raise

@@ -16,9 +16,11 @@ class EvaluationProcessor:
         self.conf = conf
 
     def run(self, batch_id: int, candidate_iter: Iterator[SiblingCandidate]):
+        evaluated = [EvaluatedSibling(c) for c in candidate_iter]
+        if not len(evaluated):
+            return  # happens if (#targets % batch_size) == 0
         batch_dir = pathlib.Path(self.conf.base_dir) / f'batch_{batch_id:06}'
         batch_dir.mkdir(parents=True, exist_ok=True)
-        evaluated = [EvaluatedSibling(c) for c in candidate_iter]
         evaluate_with_all(evaluated, batch_dir, self.conf)
         if self.conf.paths.candidates_out and not self.conf.eval.discard_results:
             self._do_export(evaluated, batch_dir / self.conf.paths.candidates_out)

@@ -36,6 +36,8 @@ class FlagsConfig:
 
 class EvalConfig:
     def __init__(self, args):
+        if not len(args.evaluator):
+            args.evaluator = const.EvaluatorChoice.all_keys()
         self.evaluators: List[const.EvaluatorChoice] = [
             _convert_enum(const.EvaluatorChoice, key)
             for key in args.evaluator
