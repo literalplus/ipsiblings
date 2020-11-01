@@ -27,6 +27,8 @@ class EvaluatorChoice(Enum):
     TCP_OPTIONS = 'tcp-options'
     ML_STARKE = 'machine-learning-starke'
     BITCOIN = 'bitcoin'
+    BITCOIN_ADDR = 'addr'
+    BITCOIN_ADDR_SVC = 'addr-svc'
 
     @classmethod
     def all_keys(cls):

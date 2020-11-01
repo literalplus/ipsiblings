@@ -20,10 +20,7 @@ class BitcoinConnections:
         self.proto_ver: Optional[int] = first_conn.ver_info.proto_ver
         self.sub_ver: Optional[str] = first_conn.ver_info.sub_ver
         self.services: Optional[int] = first_conn.ver_info.services
-        self.addr_infos = set(first_conn.addr_infos)
         # TODO: check R^2 of block height
-        # TODO: check addr info overlap
-        # TODO: check consistency for each pair of closest measurements
 
     def accept(self, conn: BitcoinConnection):
         if conn.ver_info.proto_ver != self.proto_ver:
@@ -32,7 +29,6 @@ class BitcoinConnections:
             self.sub_ver = None
         if conn.ver_info.services != self.services:
             self.services = None
-        self.addr_infos.intersection_update(set(conn.addr_infos))
 
     def is_consistent(self):
         return self.proto_ver is not None and self.sub_ver is not None and self.services is not None
@@ -96,11 +92,11 @@ class BitcoinEvaluator(SiblingEvaluator):
     @classmethod
     def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
         # Do not use base_dir from param since we want to share keyscan results between batches
-        instance = cls(pathlib.Path(conf.base_dir), conf.eval.ssh_timeout)
+        instance = cls(pathlib.Path(conf.base_dir))
         instance.init_data_for(all_siblings)
         return instance
 
-    def __init__(self, base_dir: pathlib.Path, timeout: int):
+    def __init__(self, base_dir: pathlib.Path):
         super().__init__(const.EvaluatorChoice.BITCOIN)
         self.importer = BtcImporter(base_dir)
         self.__init_done = False
