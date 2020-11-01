@@ -20,6 +20,16 @@ from ipsiblings.model import const
 log = liblog.get_root_logger()
 
 
+# Negative example (output: [0]):
+# {'hz_diff': 12004607.465348983, 'hz_rsqrdiff': 0.0026889115995168966, 'alphadiff': 3.61167517372717,
+# 'rsqrdiff': 0.8238155476931854, 'dynrange_diff': 1543427.5729799997, 'dynrange_avg': 771726.938229,
+# 'dynrange_diff_rel': 1.9999659160815864}
+# Positive example (output: [1]):
+# {'hz_diff': 0, 'hz_rsqrdiff': 0.0026889115995168966, 'alphadiff': 3.61167517372717,
+# 'rsqrdiff': 0.8238155476931854, 'dynrange_diff': 0, 'dynrange_avg': 771726.938229,
+# 'dynrange_diff_rel': 0}
+
+
 class MachineLearningEvaluator(SiblingEvaluator):
     """
     Evaluates based on the Machine Learning model proposed by Starke for randomised offsets.
@@ -38,11 +48,8 @@ class MachineLearningEvaluator(SiblingEvaluator):
     def __init__(self):
         super().__init__(const.EvaluatorChoice.ML_STARKE)
         model_path = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'model_FRT_no-rawts-new.native.bin'
-        self.classifier = xgboost.XGBClassifier(nthread=4)
-        booster = xgboost.Booster()
-        booster.load_model(model_path)
-        # ref: https://github.com/dmlc/xgboost/issues/706#issuecomment-167253974
-        self.classifier._Booster = booster
+        self.classifier = xgboost.XGBClassifier()
+        self.classifier.load_model(model_path)
 
     def evaluate(self, evaluated_sibling: EvaluatedSibling) -> SiblingStatus:
         first_ts_prop = evaluated_sibling.contribute_property_type(FirstTimestampDiffProperty)
