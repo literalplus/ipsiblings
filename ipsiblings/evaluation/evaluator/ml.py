@@ -38,11 +38,7 @@ class MachineLearningEvaluator(SiblingEvaluator):
     def __init__(self):
         super().__init__(const.EvaluatorChoice.ML_STARKE)
         model_path = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'model_FRT_no-rawts-new.native.bin'
-        params = {
-            'eta': 0.1, 'n_estimators': 800, 'max_depth': 4, 'min_child_weight': 6,
-            'gamma': 0.05, 'subsample': 0.6, 'colsample_bytree': 0.6, 'nthread': 4
-        }
-        self.classifier = xgboost.XGBClassifier(**params)
+        self.classifier = xgboost.XGBClassifier(nthread=4)
         booster = xgboost.Booster()
         booster.load_model(model_path)
         # ref: https://github.com/dmlc/xgboost/issues/706#issuecomment-167253974
@@ -59,7 +55,8 @@ class MachineLearningEvaluator(SiblingEvaluator):
             return SiblingStatus.ERROR
         data = pandas.DataFrame([only_row], columns=self._FEATURE_KEYS)
         results = self.classifier.predict(data)
-        print(f'starke: >{only_row}< >> {results[0]}')
+        print(f'starke raw data: >{only_row}<')
+        print(f'starke: >{data}< >> {results[0]}')
         if results[0]:
             return SiblingStatus.POSITIVE
         else:
