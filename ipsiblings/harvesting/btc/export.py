@@ -80,7 +80,8 @@ class BtcImporter:
         return conn
 
     def _parse_ver_info(self, ver_str):
-        (proto_vers, sub_ver, svcs, times, heights) = ver_str.split(const.SECONDARY_DELIMITER)
+        (proto_vers, rest) = ver_str.split(const.SECONDARY_DELIMITER, maxsplit=1)
+        (sub_ver, svcs, times, heights) = rest.rsplit(const.SECONDARY_DELIMITER, maxsplit=3)
         proto_ver, svc, time, height = int(proto_vers), int(svcs), int(times), int(heights)
         verinfo = BitcoinVersionInfo(proto_ver, sub_ver, svc, time, height)
         return verinfo
