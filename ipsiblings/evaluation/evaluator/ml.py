@@ -62,8 +62,6 @@ class MachineLearningEvaluator(SiblingEvaluator):
             return SiblingStatus.ERROR
         data = pandas.DataFrame([only_row], columns=self._FEATURE_KEYS)
         results = self.classifier.predict(data)
-        print(f'starke raw data: >{only_row}<')
-        print(f'starke: >{data}< >> {results[0]}')
         if results[0]:
             return SiblingStatus.POSITIVE
         else:
