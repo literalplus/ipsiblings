@@ -64,4 +64,3 @@ class CandidateProvider:
                     yield el
         except StopIteration:
             state.encountered_stop = True
-            raise
