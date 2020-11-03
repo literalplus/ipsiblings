@@ -13,14 +13,14 @@ import csv
 import sys
 
 from . import libconstants, config, bootstrap
-from . import liblog
+from . import logsetup
 from .config.util import print_usage_and_exit
 from .model import JustExit, BusinessException
 
 # setup root logger
-log = liblog.setup_root_logger()
+log = logsetup.setup_root_logger()
 # set log level for scapy => disables warnings
-liblog.set_scapy_loglevel(libconstants.LOG_LVL_SCAPY)
+logsetup.set_scapy_loglevel(40)
 # set field_size_limit() from 131072 (2**17) to 262144 (2**18)
 csv.field_size_limit(262144)
 
@@ -33,15 +33,10 @@ def _validate_config(conf):
             print_usage_and_exit('--to can not be less or equal to --from')
 
 
-def _bridge_config_to_legacy(conf: config.AppConfig, const: libconstants):
-    log.setLevel(conf.log_level)
-    const.BASE_DIRECTORY = conf.base_dir
-
-
 def _prepare_context():
     conf = config.AppConfig()
     _validate_config(conf)
-    _bridge_config_to_legacy(conf, libconstants)
+    log.setLevel(conf.log_level)
     wiring = bootstrap.Wiring(conf)
     bootstrap.bridge_wiring_to_legacy(wiring, libconstants)
     return conf, wiring

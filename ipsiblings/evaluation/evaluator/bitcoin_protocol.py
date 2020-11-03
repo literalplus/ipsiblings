@@ -1,7 +1,7 @@
 import pathlib
 from typing import List, Dict, Optional, Any, Set, Tuple
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.model import FamilySpecificSiblingProperty
@@ -11,7 +11,7 @@ from ipsiblings.harvesting.btc.export import BtcImporter
 from ipsiblings.harvesting.btc.model import BitcoinConnection
 from ipsiblings.model import const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class BitcoinConnections:

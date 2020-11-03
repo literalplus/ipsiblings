@@ -4,7 +4,7 @@ import numpy
 from numpy.lib import recfunctions
 from scipy import interpolate as scipy_interpolate
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.offsets import OffsetSeries
@@ -15,7 +15,7 @@ from ipsiblings.evaluation.property.ppd_outliers import PpdOutlierRemovalPropert
 # -> https://github.com/tumi8/siblings (GPLv2)
 
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class OffsetSpline(OffsetSeries):

@@ -6,10 +6,10 @@ from bitcoin import messages, net
 from bitcoin.core.serialize import SerializationTruncationError
 from bitcoin.messages import MsgSerializable
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.harvesting.btc._msgreceiver import MsgReceiver, MsgDisconnectedException, MsgReadException
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class Connection:

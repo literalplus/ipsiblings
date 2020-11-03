@@ -2,7 +2,7 @@ from typing import Tuple, Dict, Set, Optional
 
 import numpy
 
-from ipsiblings import liblog, libconstants
+from ipsiblings import logsetup, libconstants
 from ipsiblings.evaluation.model.property import SiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.offsets import OffsetSeries
@@ -12,7 +12,7 @@ from ipsiblings.evaluation.property.outliers_mean import MeanOutlierRemovalPrope
 # "Large scale Classification of IPv6-IPv4 Siblings with Variable Clock Skew", GPLv2
 # https://github.com/tumi8/siblings/
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class PpdProperty(SiblingProperty):

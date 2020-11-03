@@ -1,11 +1,11 @@
 from typing import Dict, Any, Optional, Iterable, Set
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.model import DataException
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class KeyscanResult:

@@ -8,12 +8,12 @@
 #
 from typing import Iterator, Optional
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.target_btc_versions import TargetBtcVersions
 from ipsiblings.model import SiblingCandidate, PreparedTargets
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class BatchIteratorState:

@@ -15,11 +15,11 @@ import subprocess
 from typing import Dict, List
 
 from . import libconstants as const
-from . import liblog
+from . import logsetup
 from .config import OsTunerConfig
 from .model import ConfigurationException, DataException, BusinessException
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class OsTuner(metaclass=abc.ABCMeta):
@@ -92,7 +92,7 @@ class SysctlTuner(OsTuner):
         """
         if not original_values:
             raise DataException("No settings to back up? Check for earlier errors.")
-        filename = os.path.join(os.getcwd(), const.OS_SETTINGS_FILE_NAME)
+        filename = os.path.join(os.getcwd(), 'settings.bak')
         with open(filename, mode='w', encoding='utf-8', newline='') as outfile:
             writer = csv.writer(outfile)
             writer.writerows(original_values.items())

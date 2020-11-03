@@ -1,11 +1,11 @@
 import csv
 from typing import Dict, Tuple
 
-from ipsiblings import config, liblog
+from ipsiblings import config, logsetup
 from ipsiblings.model import Target, TcpOptions, const
 from ipsiblings.preparation.serialization import TargetSerialization
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class FilesystemProvider:

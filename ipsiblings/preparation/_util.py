@@ -1,8 +1,8 @@
 import sys
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 def _prepare_reduce(iterable, conf, what):

@@ -8,10 +8,10 @@ import csv
 import os
 import pathlib
 
-from .. import liblog
+from .. import logsetup
 from ..model import PreparedTargets, const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class TargetSerialization:

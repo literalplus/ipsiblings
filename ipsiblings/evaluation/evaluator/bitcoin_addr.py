@@ -1,7 +1,7 @@
 import pathlib
 from typing import List, Tuple, Optional
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
@@ -10,7 +10,7 @@ from ipsiblings.evaluation.property.bitcoin_addr_neighbors import BitcoinAddrNei
 from ipsiblings.harvesting.btc.model import BitcoinConnection
 from ipsiblings.model import const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class AddrEvaluator(SiblingEvaluator):

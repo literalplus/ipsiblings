@@ -2,9 +2,9 @@ from typing import Dict, Union
 
 from .exception import DataException
 from .target import Target
-from .. import liblog
+from .. import logsetup
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class PreparedTargets:

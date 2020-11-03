@@ -1,14 +1,14 @@
 import pathlib
 from typing import List
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.model.status import SiblingStatus
 from ipsiblings.model import const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class TcpOptionsEvaluator(SiblingEvaluator):

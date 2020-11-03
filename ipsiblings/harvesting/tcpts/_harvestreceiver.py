@@ -5,9 +5,9 @@ from typing import List, Union, Tuple
 
 import scapy.all as scapy
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class HarvestReceiver:

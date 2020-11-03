@@ -2,7 +2,7 @@ import gc
 
 from .candidate_provider import CandidateProvider
 from .wiring import Wiring
-from .. import liblog, preparation, config, harvesting
+from .. import logsetup, preparation, config, harvesting
 from ..evaluation import EvaluationProcessor
 from ..model import PreparedTargets, JustExit, DataException
 from ..preparation.serialization import TargetSerialization
@@ -11,7 +11,7 @@ from ..preparation.serialization import TargetSerialization
 Runs the actual business logic of the application, calling high-level API methods of other modules.
 """
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 def run(wiring: Wiring):

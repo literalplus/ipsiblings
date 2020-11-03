@@ -2,7 +2,7 @@ from typing import Dict, Set, Optional
 
 import numpy
 
-from ipsiblings import liblog, libconstants
+from ipsiblings import logsetup, libconstants
 from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.denoise import DenoiseProperty
@@ -13,7 +13,7 @@ from ipsiblings.evaluation.property.offsets import OffsetSeries
 # https://github.com/tumi8/siblings/blob/140418dca0547a08b12c01e8df1b514c4f2f25c2/src/sibling_decision.py#L561
 
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class MeanOutlierRemovalProperty(FamilySpecificSiblingProperty[OffsetSeries]):

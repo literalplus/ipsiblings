@@ -2,11 +2,11 @@ import csv
 import pathlib
 from typing import Dict, Tuple, Optional, Set, Iterable
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.keyscan.property import KeyscanResult
 from ipsiblings.model import const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 _KEY_IP_VERSION = 'ipv'
 _KEY_IP_ADDRESS = 'ip'

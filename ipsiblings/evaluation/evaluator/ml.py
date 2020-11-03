@@ -5,7 +5,7 @@ import numpy
 import pandas
 import xgboost
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
 from ipsiblings.evaluation.evaluator.tcpraw import StarkeTcprawEvaluator
@@ -17,7 +17,7 @@ from ipsiblings.evaluation.property.raw_tcp_ts_diff import FirstTimestampDiffPro
 from ipsiblings.evaluation.property.skew import SkewProperty
 from ipsiblings.model import const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 # Negative example (output: [0]):

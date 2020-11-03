@@ -1,7 +1,7 @@
 import pathlib
 from typing import List, Dict, Type
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
 from ipsiblings.evaluation.evaluator.bitcoin_protocol import BitcoinEvaluator
 from ipsiblings.evaluation.evaluator.domain import DomainEvaluator
@@ -14,7 +14,7 @@ from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.model.status import SiblingStatus
 from ipsiblings.model import const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 _PROVIDERS: Dict[const.EvaluatorChoice, Type[SiblingEvaluator]] = {
     const.EvaluatorChoice.TCPRAW_SCHEITLE: ScheitleTcprawEvaluator,

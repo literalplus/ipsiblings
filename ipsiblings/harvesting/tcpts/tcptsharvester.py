@@ -12,13 +12,13 @@ from typing import Tuple, List, Dict
 import scapy.all as scapy
 
 from ipsiblings import libconstants as const
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import HarvesterConfig
 from ipsiblings.harvesting.model import HarvestProvider
 from ipsiblings.harvesting.tcpts._harvestreceiver import HarvestReceiver
 from ipsiblings.model import Target, PreparedTargets, DataException, NicInfo
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class TcpTsHarvester(HarvestProvider):
@@ -93,7 +93,7 @@ class TcpTsHarvester(HarvestProvider):
                 log.debug('Stopping IPv4 sending process ...')
                 break
             socket4.send(pkt)
-        if log.isEnabledFor(liblog.DEBUG):
+        if log.isEnabledFor(logsetup.DEBUG):
             diff = time.time() - start_time
             log.debug(f'Finished IPv4 sending after {timedelta(seconds=diff)}.')
         socket4.close()
@@ -108,7 +108,7 @@ class TcpTsHarvester(HarvestProvider):
                 log.debug('Stopping IPv6 sending process ...')
                 break
             socket6.send(pkt)
-        if log.isEnabledFor(liblog.DEBUG):
+        if log.isEnabledFor(logsetup.DEBUG):
             diff = time.time() - start_time
             log.debug(f'Finished IPv6 sending after {timedelta(seconds=diff)}.')
         socket6.close()

@@ -5,10 +5,10 @@ from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from . import plot, export
 from .evaluator.all import evaluate_with_all
 from .model.targetpropertycache import TargetPropertyCache
-from .. import config, liblog
+from .. import config, logsetup
 from ..model import SiblingCandidate
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class EvaluationProcessor:

@@ -3,11 +3,11 @@ from typing import List
 from ipsiblings.harvesting.tcpts.tcptsharvester import TcpTsHarvester
 from .btc.btcharvester import BtcHarvester
 from .model import HarvestProvider
-from .. import liblog
+from .. import logsetup
 from ..config import AppConfig
 from ..model import PreparedTargets, NicInfo, const, JustExit
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 def run(prepared_targets: PreparedTargets, conf: AppConfig, nic: NicInfo) -> bool:

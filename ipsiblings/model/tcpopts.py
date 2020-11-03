@@ -1,6 +1,6 @@
+import collections
 from typing import List, Tuple, Union, Iterable
 
-from ipsiblings import libtools
 from ipsiblings.model import const
 
 
@@ -31,9 +31,16 @@ class TcpOptions:
     def __str__(self):
         results = []
         for name, option_value in self:
-            if libtools.is_iterable(option_value):
+            if _is_iterable_not_str(option_value):
                 fields = [str(name)] + [str(item) for item in option_value]
             else:
                 fields = [str(name), str(option_value)]
             results.append(const.TERTIARY_DELIMITER.join(fields))
         return const.SECONDARY_DELIMITER.join(results)
+
+
+def _is_iterable_not_str(obj):
+    """
+    Considers only non-string types as iterables
+    """
+    return isinstance(obj, collections.Iterable) and not isinstance(obj, str)

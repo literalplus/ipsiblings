@@ -77,18 +77,12 @@ OPERATING SYSTEM SETTINGS:
 ```
 
 ## Architecture
-description TBD, but trust me there is one
+![Flow Chart](flow.png)
 
-## Files `scripts/`
-Old scripts related to Starke's work.
-
-`gt_api_scripts/`: API interaction scripts to compile ground truth host list  
-`run/`: Bash scripts to handle batches of data  
-`xpref6/`: IPv6 routing prefix extraction from publicly available routing data  
-`load_cdn_ipnets.py`: Extendable script to compile CDN filter list  
-`min_ts_ssh.py`: PoC for FreeBSD timestamp acquisition with only one TCP connection  
-`resolve_toplist_domains.py`: Resolution of domain Top List files  
-`xgb_print_features.py`: Script to reproduce plots in the thesis (contains used data)
+Allowed outgoing dependencies:
+ * any → model, config, logsetup, libconstants (legacy)
+ * bootstrap, scripts → any
+ * evaluation → harvesting → preparation
 
 ## Execution
 For measurement, you need a dual-stack server with sufficient bandwidth
@@ -131,6 +125,8 @@ are stored with column names corresponding to the
 `export` method of `SiblingProperty` (for all properties that were requested
 during evaluation).
 
+The remaining file structures are implementation details and subject to change.
+
 ## Execution
 via pip/setuptools:
 
@@ -170,17 +166,8 @@ it to be written in C if avoidable.
 
 Hence, for the time being, we still require to be run as root.
 
-## Links
-
-[Scapy](https://scapy.net/)  
-[XGBoost](https://github.com/dmlc/xgboost)  
-[scikit-learn](https://scikit-learn.org/stable/index.html)  
-[NumPy](https://www.numpy.org/)  
-[SciPy](https://www.scipy.org/)  
-[pandas](https://pandas.pydata.org/)  
-
 ## TODOs
 
 * Reduce disk space and access times by working with a database instead of text files
 * Set this up to be distributed with multiple measurement hosts
-* More intelligent Bitcoin application-layer check
+* More sophisticated Bitcoin application-layer check

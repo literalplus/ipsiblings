@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Set, Type, TypeVar, List
 
 from .args import parser
-from .. import liblog
+from .. import logsetup
 from ..model import const
 
 T = TypeVar('T', bound=Enum)
@@ -103,12 +103,12 @@ class AppConfig:
     @property
     def log_level(self):
         if self.verbosity <= -2:
-            return liblog.CRITICAL
+            return logsetup.CRITICAL
         elif self.verbosity <= -1:
-            return liblog.ERROR
+            return logsetup.ERROR
         elif self.verbosity == 0:  # the default
-            return liblog.WARNING
+            return logsetup.WARNING
         elif self.verbosity == 1:
-            return liblog.INFO
+            return logsetup.INFO
         else:
-            return liblog.DEBUG
+            return logsetup.DEBUG

@@ -8,10 +8,10 @@ import time
 from multiprocessing.managers import SyncManager
 from typing import Dict, Tuple, List
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.harvesting.btc._connection import Connection
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class ConnectionHandler:

@@ -1,12 +1,12 @@
 from typing import Tuple, Dict, Set, Optional, List
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.evaluator.bitcoin_protocol import BitcoinProperty
 from ipsiblings.evaluation.model.property import SiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.harvesting.btc.model import BitcoinConnection
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class SharedAddr:

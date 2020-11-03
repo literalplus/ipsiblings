@@ -1,9 +1,9 @@
 import abc
+import re
 from typing import Set, Optional, Dict, Any, Generic, Iterator, Tuple, TypeVar, Type, TYPE_CHECKING, Callable
 
 from .exportregistry import ExportRegistry
 from .targetpropertycache import TargetPropertyCache
-from ... import libtools
 from ...model import BusinessException, TimestampSeries
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ class SiblingProperty(metaclass=_PropertyMeta):
 
     @classmethod
     def prefix_key(cls, key: str) -> str:
-        prefix = libtools.camel_to_snake_case(cls.__name__.replace('Property', ''))
+        prefix = _camel_to_snake_case(cls.__name__.replace('Property', ''))
         return f'{prefix}_{key}'
 
     @classmethod
@@ -85,3 +85,7 @@ class SiblingPropertyException(BusinessException):
         super(SiblingPropertyException, self).__init__(message)
         if cause:
             self.__cause__ = cause
+
+
+def _camel_to_snake_case(camel_name: str) -> str:
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', camel_name).lower()

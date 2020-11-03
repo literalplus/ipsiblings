@@ -3,9 +3,9 @@ import multiprocessing
 import threading
 from typing import Optional
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class HarvestProvider(metaclass=abc.ABCMeta):

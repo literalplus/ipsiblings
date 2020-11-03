@@ -3,13 +3,13 @@ from typing import Dict, Union
 
 import requests
 
-from ipsiblings import config, liblog
+from ipsiblings import config, logsetup
 from ipsiblings.model import Target
 from .targetprovider import TargetProvider
 
 API_BASE = "https://bitnodes.io/api/v1"
 API_SNAPSHOTS = f"{API_BASE}/snapshots"
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class BitcoinNodesProvider(TargetProvider):

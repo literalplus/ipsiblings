@@ -13,12 +13,12 @@ import matplotlib
 import matplotlib.backends.backend_pdf
 from matplotlib import pyplot
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.outliers_mean import MeanOutlierRemovalProperty
 from ipsiblings.evaluation.property.spline import SplineProperty
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 def _configure_plot_appearance(axis1, evaluated_sibling):

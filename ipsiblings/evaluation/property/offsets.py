@@ -6,13 +6,13 @@ from typing import Dict, Set, Optional
 import numpy
 from numpy.lib import recfunctions
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.frequency import FrequencyProperty
 from ipsiblings.evaluation.property.norm_series import NormTimestampSeries, NormSeriesProperty
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class OffsetSeries:

@@ -5,11 +5,11 @@ from collections import defaultdict
 from itertools import islice
 from typing import Dict, Optional, Set, Tuple, Iterable, List, Iterator
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.keyscan.property import KeyscanResult
 from ipsiblings.model import const
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class KeyscanProcessHandler:

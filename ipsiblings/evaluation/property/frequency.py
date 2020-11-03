@@ -6,12 +6,12 @@ from typing import Dict, Set, Optional
 import numpy
 import scipy.stats as scipy_stats
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.evaluation.model.property import FamilySpecificSiblingProperty, SiblingPropertyException
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.property.norm_series import NormTimestampSeries, NormSeriesProperty
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class FrequencyFailedException(SiblingPropertyException):

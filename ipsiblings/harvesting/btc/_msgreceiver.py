@@ -9,9 +9,9 @@ from bitcoin import messages
 from bitcoin.core import b2x
 from bitcoin.messages import MsgSerializable, CAddress, VarStringSerializer, ser_read
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class MsgReadException(Exception):

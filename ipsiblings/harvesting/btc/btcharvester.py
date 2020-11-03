@@ -2,14 +2,14 @@ import multiprocessing
 import queue
 from typing import List
 
-from ipsiblings import liblog
+from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
 from ipsiblings.harvesting.btc._connectionhandler import ConnectionHandler
 from ipsiblings.harvesting.btc.export import BtcExporter
 from ipsiblings.harvesting.model import HarvestProvider
 from ipsiblings.model import PreparedTargets
 
-log = liblog.get_root_logger()
+log = logsetup.get_root_logger()
 
 
 class BtcHarvester(HarvestProvider):
