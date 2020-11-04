@@ -5,6 +5,8 @@ from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from . import plot, export
 from .evaluator.all import evaluate_with_all
 from .model.targetpropertycache import TargetPropertyCache
+from .stats.export import StatsExporter
+from .stats.model import Stats
 from .. import config, logsetup
 from ..model import SiblingCandidate
 
@@ -21,12 +23,15 @@ class EvaluationProcessor:
             return  # happens if (#targets % batch_size) == 0
         batch_dir = pathlib.Path(self.conf.base_dir) / f'batch_{batch_id:06}'
         batch_dir.mkdir(parents=True, exist_ok=True)
-        evaluate_with_all(evaluated, batch_dir, self.conf)
-        if self.conf.paths.candidates_out and not self.conf.eval.discard_results:
-            self._do_export(evaluated, batch_dir / self.conf.paths.candidates_out)
-        if self.conf.eval.export_plots and not self.conf.eval.discard_results:
-            plot.plot_all(evaluated, batch_dir / 'plots.pdf')
-        TargetPropertyCache.clear()
+        stats = Stats()
+        evaluate_with_all(evaluated, stats, batch_dir, self.conf)
+        if not self.conf.eval.discard_results:
+            if self.conf.paths.candidates_out:
+                self._do_export(evaluated, batch_dir / self.conf.paths.candidates_out)
+            StatsExporter(batch_dir).export_all(stats)
+            if self.conf.eval.export_plots:
+                plot.plot_all(evaluated, batch_dir / 'plots.pdf')
+            TargetPropertyCache.clear()
 
     def _do_export(self, evaluated: List[EvaluatedSibling], out_file: pathlib.Path):
         export.write_results(evaluated, out_file)

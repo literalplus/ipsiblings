@@ -12,6 +12,7 @@ from ipsiblings.evaluation.evaluator.tcp_options import TcpOptionsEvaluator
 from ipsiblings.evaluation.evaluator.tcpraw import ScheitleTcprawEvaluator, StarkeTcprawEvaluator
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 from ipsiblings.evaluation.model.status import SiblingStatus
+from ipsiblings.evaluation.stats.model import Stats
 from ipsiblings.model import const
 
 log = logsetup.get_root_logger()
@@ -57,9 +58,16 @@ def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingE
                 raise
 
 
-def evaluate_with_all(evaluated_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
+def evaluate_with_all(
+        evaluated_siblings: List[EvaluatedSibling], stats: Stats,
+        batch_dir: pathlib.Path, conf: AppConfig
+):
     # TODO: low runtime ?
     evaluators = _provide_all(evaluated_siblings, batch_dir, conf)
     log.debug(f'Evaluators: {[it.key.name for it in evaluators]}')
     for evaluated_sibling in evaluated_siblings:
         _evaluate_one(evaluated_sibling, evaluators, conf.eval.fail_fast)
+        stats.add_result(
+            evaluated_sibling[4].target_ip, evaluated_sibling[6].target_ip,
+            evaluated_sibling.overall_status, evaluated_sibling.classifications
+        )

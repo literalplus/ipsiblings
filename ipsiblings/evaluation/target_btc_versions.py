@@ -31,6 +31,7 @@ class TargetBtcVersions:
         else:
             for (proto_ver4, user_agent4) in version4:
                 for (proto_ver6, user_agent6) in version6:
+                    # TODO: we could also drop based on user agent here if we have too many candidates still
                     if proto_ver4 != proto_ver6 or version4 != version6:
                         return False
             return True
