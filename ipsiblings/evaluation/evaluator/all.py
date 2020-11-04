@@ -3,6 +3,8 @@ from typing import List, Dict, Type, Optional
 
 from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
+from ipsiblings.evaluation.evaluator.bitcoin_addr import AddrEvaluator
+from ipsiblings.evaluation.evaluator.bitcoin_addrsvc import AddrSvcEvaluator
 from ipsiblings.evaluation.evaluator.bitcoin_protocol import BitcoinEvaluator
 from ipsiblings.evaluation.evaluator.domain import DomainEvaluator
 from ipsiblings.evaluation.evaluator.evaluator import SiblingEvaluator
@@ -25,6 +27,8 @@ _PROVIDERS: Dict[const.EvaluatorChoice, Type[SiblingEvaluator]] = {
     const.EvaluatorChoice.TCP_OPTIONS: TcpOptionsEvaluator,
     const.EvaluatorChoice.ML_STARKE: MachineLearningEvaluator,
     const.EvaluatorChoice.BITCOIN: BitcoinEvaluator,
+    const.EvaluatorChoice.BITCOIN_ADDR: AddrEvaluator,
+    const.EvaluatorChoice.BITCOIN_ADDR_SVC: AddrSvcEvaluator,
 }
 
 
