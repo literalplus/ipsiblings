@@ -15,8 +15,7 @@ class AlgorithmPosNegMetrics:
 
 
 class AlgorithmMetrics:
-    def __init__(self, key: str):
-        self.key = key
+    def __init__(self):
         self.posneg: Dict[bool, AlgorithmPosNegMetrics] = defaultdict(lambda: AlgorithmPosNegMetrics())
         self.conflicts = 0
         self.indecisives = 0
