@@ -89,7 +89,7 @@ class BitcoinAddrNeighborsProperty(SiblingProperty):
             v4_ts = curr_v4.ver_info.timestamp
             while next_v6 is not None and next_v6.ver_info.timestamp < v4_ts:
                 prev_v6 = next_v6
-                next_v6 = next(v6_iter, default=None)
+                next_v6 = next(v6_iter, None)
             if prev_v6.ver_info.timestamp <= v4_ts:
                 # check becomes relevant when the first v6 is after the first v4
                 neighbor.set_prev_v6(prev_v6)

@@ -56,7 +56,7 @@ class CrossStats:
         # validating metrics which will usually yield a correct classification
         'probable': {EvaluatorChoice.DOMAIN},
         # falsifying metrics which will usually yield a correct classification
-        'improbable': {EvaluatorChoice.DOMAIN},
+        'improbable': {EvaluatorChoice.BITCOIN_ADDR_SVC},
         'starke': {EvaluatorChoice.TCPRAW_STARKE, EvaluatorChoice.ML_STARKE},
         'scheitle': {EvaluatorChoice.TCPRAW_SCHEITLE}
     }
