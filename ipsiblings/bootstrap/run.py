@@ -69,3 +69,4 @@ def _run_evaluation_batched(prepared_targets, wiring):
             log.info(f'Stopping evaluation after {batches_processed} batches as requested.')
             break
     log.info(f'Skipped {candidate_provider.skip_count} candidate pairs due to Bitcoin version mismatch')
+    evaluator.export_total_stats()

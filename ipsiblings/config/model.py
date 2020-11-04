@@ -51,6 +51,7 @@ class EvalConfig:
         self.first_batch_idx = args.eval_first_batch
         self.batch_count = args.eval_batch_count
         self.discard_results = args.eval_discard_results
+        self.totals_in_memory = args.eval_totals_in_memory
 
 
 class HarvesterConfig:

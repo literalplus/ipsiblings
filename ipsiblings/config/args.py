@@ -61,6 +61,10 @@ def _prepare_parser():
         '--eval-discard-results', help='Discard evaluation results (to only invoke side effects, e.g. keyscan)',
         action='store_true', default=False
     )
+    eval_grp.add_argument(
+        '--eval-totals-in-memory', help='Compute total stats in memory',
+        action='store_true', default=False
+    )
 
     skip_grp = created_parser.add_argument_group(title='SKIP STEPS', description=None)
     skip_grp.add_argument(

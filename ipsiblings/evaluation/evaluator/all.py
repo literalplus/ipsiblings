@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Dict, Type
+from typing import List, Dict, Type, Optional
 
 from ipsiblings import logsetup
 from ipsiblings.config import AppConfig
@@ -59,7 +59,8 @@ def _evaluate_one(evaluated_sibling: EvaluatedSibling, evaluators: List[SiblingE
 
 
 def evaluate_with_all(
-        evaluated_siblings: List[EvaluatedSibling], stats: Stats,
+        evaluated_siblings: List[EvaluatedSibling],
+        total_stats: Optional[Stats], batch_stats: Stats,
         batch_dir: pathlib.Path, conf: AppConfig
 ):
     # TODO: low runtime ?
@@ -67,7 +68,12 @@ def evaluate_with_all(
     log.debug(f'Evaluators: {[it.key.name for it in evaluators]}')
     for evaluated_sibling in evaluated_siblings:
         _evaluate_one(evaluated_sibling, evaluators, conf.eval.fail_fast)
-        stats.add_result(
+        batch_stats.add_result(
             evaluated_sibling[4].target_ip, evaluated_sibling[6].target_ip,
             evaluated_sibling.overall_status, evaluated_sibling.classifications
         )
+        if total_stats is not None:
+            total_stats.add_result(
+                evaluated_sibling[4].target_ip, evaluated_sibling[6].target_ip,
+                evaluated_sibling.overall_status, evaluated_sibling.classifications
+            )
