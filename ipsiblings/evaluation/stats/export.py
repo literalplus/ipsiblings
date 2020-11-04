@@ -6,6 +6,7 @@ from ipsiblings.evaluation.model import SiblingStatus
 from ipsiblings.evaluation.stats.model import Stats, CrossStats
 
 FIL_SIBLINGS = 'siblings.tsv'
+FIL_STARKE_SIBLINGS = 'starke-siblings.tsv'
 FIL_MULTI_SIBLINGS = 'multi-siblings.tsv'
 FIL_STATUSES = 'classifications.sum.tsv'
 FIL_CROSS_STATS = 'cross-stats.sum.tsv'
@@ -51,17 +52,20 @@ class StatsExporter:
         self.export_cross(stats.cross_stats)
 
     def export_siblings(self, stats: Stats):
-        with self._open_fil(FIL_MULTI_SIBLINGS, append=True) as (existed_before, fil):
+        with self._open_fil(FIL_MULTI_SIBLINGS, append=False) as (existed_before, fil):
             writer = csv.writer(fil, dialect=csv.excel_tab)
-            if not existed_before:
-                writer.writerow(('ip',))
+            writer.writerow(('ip',))
             for ip in stats.multi_siblings:
                 writer.writerow((ip,))
-        with self._open_fil(FIL_SIBLINGS, append=True) as (existed_before, fil):
+        with self._open_fil(FIL_SIBLINGS, append=False) as (existed_before, fil):
             writer = csv.writer(fil, dialect=csv.excel_tab)
-            if not existed_before:
-                writer.writerow(COLS_SIBLINGS)
+            writer.writerow(COLS_SIBLINGS)
             for ip4, ip6 in stats.sibling_pairs:
+                writer.writerow((ip4, ip6))
+        with self._open_fil(FIL_STARKE_SIBLINGS, append=False) as (existed_before, fil):
+            writer = csv.writer(fil, dialect=csv.excel_tab)
+            writer.writerow(COLS_SIBLINGS)
+            for ip4, ip6 in stats.starke_siblings:
                 writer.writerow((ip4, ip6))
 
     @contextlib.contextmanager
@@ -80,7 +84,7 @@ class StatsExporter:
             writer.writeheader()
             for provider, status_counts in stats.provider_status_counts.items():
                 res = {s.name: str(c) for s, c in status_counts.items()}
-                res[COL_STATUS_KEY] = str(provider)
+                res[COL_STATUS_KEY] = provider.name
                 writer.writerow(res)
 
     def export_cross(self, cross_stats: CrossStats):
@@ -100,3 +104,4 @@ class StatsExporter:
                         res[f'{prefix}{COLIFX_CS_TRUE_STATUS}{true_result.name}'] = str(count)
                     res[f'{prefix}{COLSFX_CS_PROBABLE}'] = str(sub_metrics.probables)
                     res[f'{prefix}{COLSFX_CS_IMPROBABLE}'] = str(sub_metrics.improbables)
+                writer.writerow(res)

@@ -90,6 +90,7 @@ class Stats:
         self.seen_siblings: Set[str] = set()
         self.multi_siblings: Set[str] = set()
         self.sibling_pairs: List[Tuple[str, str]] = []
+        self.starke_siblings: List[Tuple[str, str]] = []
         self.cross_stats: CrossStats = CrossStats()
 
     def add_result(
@@ -102,6 +103,9 @@ class Stats:
             self.provider_status_counts[evaluator][status] += 1
         self.overalls[overall] += 1
         self.cross_stats.add(evaluator_results)
+        if evaluator_results[EvaluatorChoice.ML_STARKE] == SiblingStatus.POSITIVE or \
+                evaluator_results[EvaluatorChoice.TCPRAW_STARKE] == SiblingStatus.POSITIVE:
+            self.starke_siblings.append((ip4, ip6))
         if overall == SiblingStatus.POSITIVE:
             self.sibling_pairs.append((ip4, ip6))
             if ip4 in self.seen_siblings:

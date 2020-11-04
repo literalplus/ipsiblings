@@ -33,10 +33,6 @@ class AddrSvcEvaluator(SiblingEvaluator):
         for neighbor in prop.neighbors:
             if self._any_addr_lost_svc_flag(neighbor.shared_addrs_prev) or \
                     self._any_addr_lost_svc_flag(neighbor.shared_addrs_next):
-                log.debug(
-                    f'BTC ADDR svc check ruled out: '
-                    f'{evaluated_sibling[4].target_ip} vs. {evaluated_sibling[6].target_ip}'
-                )
                 return SiblingStatus.NEGATIVE
         # no contradiction
         return SiblingStatus.INDECISIVE
