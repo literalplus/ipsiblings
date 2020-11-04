@@ -79,7 +79,7 @@ class StatsExporter:
             writer = csv.DictWriter(fil, COLS_STATUSES, dialect=csv.excel_tab)
             writer.writeheader()
             for provider, status_counts in stats.provider_status_counts.items():
-                res = {str(s): str(c) for s, c in status_counts.items()}
+                res = {s.name: str(c) for s, c in status_counts.items()}
                 res[COL_STATUS_KEY] = str(provider)
                 writer.writerow(res)
 
@@ -97,6 +97,6 @@ class StatsExporter:
                 for is_positive, sub_metrics in metrics.posneg.items():
                     prefix = COLPFX_CS_POSITIVE if is_positive else COLPFX_CS_NEGATIVE
                     for true_result, count in sub_metrics.true_values.items():
-                        res[f'{prefix}{COLIFX_CS_TRUE_STATUS}{true_result}'] = str(count)
+                        res[f'{prefix}{COLIFX_CS_TRUE_STATUS}{true_result.name}'] = str(count)
                     res[f'{prefix}{COLSFX_CS_PROBABLE}'] = str(sub_metrics.probables)
                     res[f'{prefix}{COLSFX_CS_IMPROBABLE}'] = str(sub_metrics.improbables)
