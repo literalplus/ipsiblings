@@ -53,6 +53,14 @@ class CrossStats:
             EvaluatorChoice.BITCOIN_ADDR,  # negative only if timestamps cannot come from same node
             EvaluatorChoice.BITCOIN,  # negative only if proto + user agent + services consistent & mismatch
         },
+        'most_definite': {
+            EvaluatorChoice.TCP_OPTIONS,  # negative only if mismatch, a strong indicator
+            EvaluatorChoice.SSH_KEYSCAN,  # only yields if both show keys, and a match/mismatch is a strong indicator
+        },
+        'btc_definite': {
+            EvaluatorChoice.BITCOIN_ADDR,  # negative only if timestamps cannot come from same node
+            EvaluatorChoice.BITCOIN,  # negative only if proto + user agent + services consistent & mismatch
+        },
         # validating metrics which will usually yield a correct classification
         'probable': {EvaluatorChoice.DOMAIN},
         # falsifying metrics which will usually yield a correct classification
