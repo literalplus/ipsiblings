@@ -24,7 +24,7 @@ COLPFX_CS_NEGATIVE = 'neg_'
 COLIFX_CS_TRUE_STATUS = 'was_'
 COLSFX_CS_PROBABLE = 'probable'
 COLSFX_CS_IMPROBABLE = 'improbable'
-COLS_CS_POSNEG = [f'{COLIFX_CS_TRUE_STATUS}{status}' for status in SiblingStatus] + \
+COLS_CS_POSNEG = [f'{COLIFX_CS_TRUE_STATUS}{status.name}' for status in SiblingStatus] + \
                  [COLSFX_CS_PROBABLE, COLSFX_CS_IMPROBABLE]
 COL_CS_CONFLICT = 'conflict'
 COL_CS_INDECISIVE = 'indecisive'
@@ -52,17 +52,17 @@ class StatsExporter:
         self.export_cross(stats.cross_stats)
 
     def export_siblings(self, stats: Stats):
-        with self._open_fil(FIL_MULTI_SIBLINGS, append=False) as (existed_before, fil):
+        with self._open_fil(FIL_MULTI_SIBLINGS, append=False) as fil:
             writer = csv.writer(fil, dialect=csv.excel_tab)
             writer.writerow(('ip',))
             for ip in stats.multi_siblings:
                 writer.writerow((ip,))
-        with self._open_fil(FIL_SIBLINGS, append=False) as (existed_before, fil):
+        with self._open_fil(FIL_SIBLINGS, append=False) as fil:
             writer = csv.writer(fil, dialect=csv.excel_tab)
             writer.writerow(COLS_SIBLINGS)
             for ip4, ip6 in stats.sibling_pairs:
                 writer.writerow((ip4, ip6))
-        with self._open_fil(FIL_STARKE_SIBLINGS, append=False) as (existed_before, fil):
+        with self._open_fil(FIL_STARKE_SIBLINGS, append=False) as fil:
             writer = csv.writer(fil, dialect=csv.excel_tab)
             writer.writerow(COLS_SIBLINGS)
             for ip4, ip6 in stats.starke_siblings:
