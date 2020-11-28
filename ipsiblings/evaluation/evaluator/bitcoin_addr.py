@@ -54,5 +54,9 @@ class AddrEvaluator(SiblingEvaluator):
 
     def _is_addr_active(self, tup: Tuple[int, int, str, int], conn: BitcoinConnection) -> bool:
         # tup: time, svc, ip, port
+        # IMPORTANT: This formula is too loose! Bitcoin considers the *actual* address timestamp
+        # when checking for active, i.e. the two-hour penalty is only applied *after* this check.
+        # Therefore, we'd need to either add two hours to the observed timestamp or increase the
+        # threshold to 26 hours. This is left incorrect for consistency with existing analyses.
         ts_age_earlier = conn.ver_info.timestamp - tup[0]
         return ts_age_earlier < 24 * 60 * 60
