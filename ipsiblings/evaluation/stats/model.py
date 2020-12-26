@@ -1,5 +1,4 @@
 from collections import defaultdict
-
 from typing import Dict, Tuple, List, Set, Optional
 
 from ..model import SiblingStatus
@@ -116,8 +115,8 @@ class Stats:
             self.provider_status_counts[evaluator][status] += 1
         self.overalls[overall] += 1
         self.cross_stats.add(evaluator_results)
-        if evaluator_results[EvaluatorChoice.ML_STARKE] == SiblingStatus.POSITIVE or \
-                evaluator_results[EvaluatorChoice.TCPRAW_STARKE] == SiblingStatus.POSITIVE:
+        if evaluator_results.get(EvaluatorChoice.ML_STARKE) == SiblingStatus.POSITIVE or \
+                evaluator_results.get(EvaluatorChoice.TCPRAW_STARKE) == SiblingStatus.POSITIVE:
             self.starke_siblings.append((ip4, ip6))
         if overall == SiblingStatus.POSITIVE:
             self.sibling_pairs.append((ip4, ip6))

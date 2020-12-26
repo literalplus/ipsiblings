@@ -42,21 +42,21 @@ COLS_CS = [COL_CS_KEY] + \
 class CandidateDecisionImporter:
     def import_all(self, stats: Stats, batch_dir: pathlib.Path):
         with open(batch_dir / 'candidates.tsv', 'r', encoding='utf-8', newline='') as fil:
-            reader = csv.DictReader(fil)
+            reader = csv.DictReader(fil, dialect=csv.excel_tab)
             for row in reader:
                 try:
                     ip4, ip6 = row['ip4'], row['ip6']
                     evaluator_results = {
-                        key: SiblingStatus[row[f'status_{key}']]
+                        key: SiblingStatus[row[f'status_{key.name}']]
                         for key in EvaluatorChoice
-                        if f'status_{key}' in row
+                        if f'status_{key.name}' in row
                     }
                     combined_result = SiblingStatus.combine(evaluator_results.values())
                     stats.add_result(
                         ip4, ip6, combined_result, evaluator_results
                     )
-                except KeyError:
-                    log.info(f'Illegal key in some sibling candidate status - {row}')
+                except KeyError as e:
+                    log.info(f'Illegal key in some sibling candidate status - {row}', e)
 
 
 class StatsImporter:
