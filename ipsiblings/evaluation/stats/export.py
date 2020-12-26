@@ -1,6 +1,7 @@
 import contextlib
 import csv
 import pathlib
+from typing import Dict
 
 from ipsiblings.evaluation.model import SiblingStatus
 from ipsiblings.evaluation.stats.model import Stats, CrossStats
@@ -46,17 +47,23 @@ class CandidateDecisionImporter:
             for row in reader:
                 try:
                     ip4, ip6 = row['ip4'], row['ip6']
-                    evaluator_results = {
-                        key: SiblingStatus[row[f'status_{key.name}']]
-                        for key in EvaluatorChoice
-                        if f'status_{key.name}' in row
-                    }
-                    combined_result = SiblingStatus.combine(evaluator_results.values())
-                    stats.add_result(
-                        ip4, ip6, combined_result, evaluator_results
-                    )
                 except KeyError as e:
                     log.info(f'Illegal key in some sibling candidate status - {row}', e)
+                evaluator_results = {
+                    key: self._parse(row, key)
+                    for key in EvaluatorChoice
+                    if f'status_{key.name}' in row
+                }
+                combined_result = SiblingStatus.combine(evaluator_results.values())
+                stats.add_result(
+                    ip4, ip6, combined_result, evaluator_results
+                )
+
+    def _parse(self, row: Dict[str, str], evaluator: EvaluatorChoice):
+        try:
+            return SiblingStatus[row[f'status_{evaluator.name}']]
+        except KeyError:
+            return SiblingStatus.INDECISIVE
 
 
 class StatsImporter:
