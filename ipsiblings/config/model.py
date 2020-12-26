@@ -1,4 +1,5 @@
 import os
+
 from enum import Enum
 from typing import Set, Type, TypeVar, List
 
@@ -52,6 +53,7 @@ class EvalConfig:
         self.batch_count = args.eval_batch_count
         self.discard_results = args.eval_discard_results
         self.totals_in_memory = args.eval_totals_in_memory
+        self.recalc_stats = args.eval_recalc_stats
 
 
 class HarvesterConfig:

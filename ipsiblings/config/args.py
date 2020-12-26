@@ -65,6 +65,10 @@ def _prepare_parser():
         '--eval-totals-in-memory', help='Compute total stats in memory',
         action='store_true', default=False
     )
+    eval_grp.add_argument(
+        '--eval-recalc-stats', help='Recompute stats for each batch from candidates.tsv, no evaluation',
+        action='store_true', default=False
+    )
 
     skip_grp = created_parser.add_argument_group(title='SKIP STEPS', description=None)
     skip_grp.add_argument(

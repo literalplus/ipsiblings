@@ -29,7 +29,7 @@ _STATUS_TRANSITIONS = {
     SiblingStatus.POSITIVE: {SiblingStatus.NEGATIVE: SiblingStatus.CONFLICT},
     SiblingStatus.NEGATIVE: {SiblingStatus.POSITIVE: SiblingStatus.CONFLICT},
     SiblingStatus.INDECISIVE: None,
-    SiblingStatus.CONFLICT: None,
+    SiblingStatus.CONFLICT: {},
     SiblingStatus.ERROR: {SiblingStatus.POSITIVE: SiblingStatus.POSITIVE,
                           SiblingStatus.NEGATIVE: SiblingStatus.NEGATIVE},
 }

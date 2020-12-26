@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Dict, Tuple, List, Set
+
+from typing import Dict, Tuple, List, Set, Optional
 
 from ..model import SiblingStatus
 from ...model.const import EvaluatorChoice
@@ -66,7 +67,8 @@ class CrossStats:
         # falsifying metrics which will usually yield a correct classification
         'improbable': {EvaluatorChoice.BITCOIN_ADDR_SVC},
         'starke': {EvaluatorChoice.TCPRAW_STARKE, EvaluatorChoice.ML_STARKE},
-        'scheitle': {EvaluatorChoice.TCPRAW_SCHEITLE}
+        'scheitle': {EvaluatorChoice.TCPRAW_SCHEITLE},
+        'keyscan': {EvaluatorChoice.SSH_KEYSCAN},
     }
 
     def __init__(self):
@@ -91,7 +93,7 @@ class CrossStats:
 
 
 class Stats:
-    def __init__(self):
+    def __init__(self, parent: Optional['Stats'] = None):
         self.provider_status_counts: Dict[EvaluatorChoice, Dict[SiblingStatus, int]] = \
             defaultdict(lambda: defaultdict(lambda: 0))
         self.overalls: Dict[SiblingStatus, int] = defaultdict(lambda: 0)
@@ -100,6 +102,7 @@ class Stats:
         self.sibling_pairs: List[Tuple[str, str]] = []
         self.starke_siblings: List[Tuple[str, str]] = []
         self.cross_stats: CrossStats = CrossStats()
+        self.parent = parent
 
     def add_result(
             self,
@@ -107,6 +110,8 @@ class Stats:
             overall: SiblingStatus,
             evaluator_results: Dict[EvaluatorChoice, SiblingStatus]
     ):
+        if self.parent:
+            self.parent.add_result(ip4, ip6, overall, evaluator_results)
         for evaluator, status in evaluator_results.items():
             self.provider_status_counts[evaluator][status] += 1
         self.overalls[overall] += 1

@@ -3,7 +3,7 @@ import gc
 from .candidate_provider import CandidateProvider
 from .wiring import Wiring
 from .. import logsetup, preparation, config, harvesting
-from ..evaluation import EvaluationProcessor
+from ..evaluation.run import provide_processor
 from ..model import PreparedTargets, JustExit, DataException
 from ..preparation.serialization import TargetSerialization
 
@@ -47,7 +47,7 @@ def _check_evaluation(prepared_targets: PreparedTargets, conf: config.AppConfig)
 
 def _run_evaluation_batched(prepared_targets, wiring):
     candidate_provider = CandidateProvider(prepared_targets, wiring.conf)
-    evaluator = EvaluationProcessor(wiring.conf)
+    evaluator = provide_processor(wiring.conf)
     i = 0
     batches_processed = 0
     for batch_iter in candidate_provider.as_batches(wiring.conf.eval.batch_size):

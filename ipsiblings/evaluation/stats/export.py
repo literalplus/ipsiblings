@@ -4,12 +4,16 @@ import pathlib
 
 from ipsiblings.evaluation.model import SiblingStatus
 from ipsiblings.evaluation.stats.model import Stats, CrossStats
+from ipsiblings.logsetup import get_root_logger
+from ipsiblings.model.const import EvaluatorChoice
 
-FIL_SIBLINGS = 'siblings.tsv'
-FIL_STARKE_SIBLINGS = 'starke-siblings.tsv'
-FIL_MULTI_SIBLINGS = 'multi-siblings.tsv'
-FIL_STATUSES = 'classifications.sum.tsv'
-FIL_CROSS_STATS = 'cross-stats.sum.tsv'
+log = get_root_logger()
+
+FIL_SIBLINGS = 'siblings.st.tsv'
+FIL_STARKE_SIBLINGS = 'starke-siblings.st.tsv'
+FIL_MULTI_SIBLINGS = 'multi-siblings.st.tsv'
+FIL_STATUSES = 'classifications.sum.st.tsv'
+FIL_CROSS_STATS = 'cross-stats.sum.st.tsv'
 
 COL_SIBLINGS_4 = 'ip4'
 COL_SIBLINGS_6 = 'ip6'
@@ -33,6 +37,26 @@ COLS_CS = [COL_CS_KEY] + \
           [f'{COLPFX_CS_POSITIVE}{col}' for col in COLS_CS_POSNEG] + \
           [f'{COLPFX_CS_NEGATIVE}{col}' for col in COLS_CS_POSNEG] + \
           [COL_CS_CONFLICT, COL_CS_INDECISIVE, COL_CS_ERROR]
+
+
+class CandidateDecisionImporter:
+    def import_all(self, stats: Stats, batch_dir: pathlib.Path):
+        with open(batch_dir / 'candidates.tsv', 'r', encoding='utf-8', newline='') as fil:
+            reader = csv.DictReader(fil)
+            for row in reader:
+                try:
+                    ip4, ip6 = row['ip4'], row['ip6']
+                    evaluator_results = {
+                        key: SiblingStatus[row[f'status_{key}']]
+                        for key in EvaluatorChoice
+                        if f'status_{key}' in row
+                    }
+                    combined_result = SiblingStatus.combine(evaluator_results.values())
+                    stats.add_result(
+                        ip4, ip6, combined_result, evaluator_results
+                    )
+                except KeyError:
+                    log.info(f'Illegal key in some sibling candidate status - {row}')
 
 
 class StatsImporter:
@@ -71,10 +95,10 @@ class StatsExporter:
     @contextlib.contextmanager
     def _open_fil(self, name: str, append: bool = False):
         path = self.outdir / name
-        exited_before = path.exists()
+        existed_before = path.exists()
         with open(path, 'a' if append else 'w', encoding='utf-8', newline='') as fil:
             if append:
-                yield exited_before, fil
+                yield existed_before, fil
             else:
                 yield fil
 
