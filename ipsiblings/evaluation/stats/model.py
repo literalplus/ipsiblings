@@ -44,6 +44,34 @@ class AlgorithmMetrics:
             self.errors += 1
 
 
+class PeerStats:
+    def __init__(self):
+        self.v4_decisions: Dict[str, Dict[str, SiblingStatus]] = defaultdict(lambda: dict())
+        self.v6_decisions: Dict[str, Dict[str, SiblingStatus]] = defaultdict(lambda: dict())
+        self.v4_dupecount: Dict[str, int] = defaultdict(lambda: 0)
+        self.v6_dupecount: Dict[str, int] = defaultdict(lambda: 0)
+
+    def record(self, ip4: str, ip6: str, group_results: Dict[str, SiblingStatus]):
+        for group, decision in group_results.items():
+            self._update_decisions(decision, group, self.v4_decisions[ip4])
+            self.v4_dupecount[ip4] += 1
+            self._update_decisions(decision, group, self.v6_decisions[ip6])
+            self.v6_dupecount[ip6] += 1
+
+    def _update_decisions(self, decision: SiblingStatus, group: str, existing_statuses: Dict[str, SiblingStatus]):
+        existing = existing_statuses.get(group, SiblingStatus.INDECISIVE)
+        if existing == SiblingStatus.CONFLICT or (
+                existing != SiblingStatus.INDECISIVE and decision in [SiblingStatus.INDECISIVE, SiblingStatus.ERROR]
+        ):
+            return
+        elif existing == SiblingStatus.POSITIVE and decision == SiblingStatus.NEGATIVE:
+            existing_statuses[group] = SiblingStatus.CONFLICT
+        elif existing == SiblingStatus.NEGATIVE and decision == SiblingStatus.POSITIVE:
+            existing_statuses[group] = SiblingStatus.CONFLICT
+        else:
+            existing_statuses[group] = decision
+
+
 class CrossStats:
     _METRIC_GROUPS: Dict[str, Set[EvaluatorChoice]] = {
         # metrics which, if they yield a result, will almost always yield the true status.
@@ -70,10 +98,15 @@ class CrossStats:
         'keyscan': {EvaluatorChoice.SSH_KEYSCAN},
     }
 
+    @classmethod
+    def get_group_names(cls):
+        return cls._METRIC_GROUPS.keys()
+
     def __init__(self):
         self.metrics: Dict[str, AlgorithmMetrics] = defaultdict(AlgorithmMetrics)
+        self.peer_stats = PeerStats()
 
-    def add(self, evaluator_results: Dict[EvaluatorChoice, SiblingStatus]):
+    def add(self, ip4: str, ip6: str, evaluator_results: Dict[EvaluatorChoice, SiblingStatus]):
         group_results: Dict[str, SiblingStatus] = {
             key: self._combine(evaluator_results, members)
             for key, members in self._METRIC_GROUPS.items()
@@ -83,6 +116,7 @@ class CrossStats:
         is_improbable = group_results['improbable'] == SiblingStatus.POSITIVE
         for group_key, result in group_results.items():
             self.metrics[group_key].add(result, true_status, is_probable, is_improbable)
+        self.peer_stats.record(ip4, ip6, group_results)
 
     def _combine(self, evaluator_results: Dict[EvaluatorChoice, SiblingStatus], consider: Set[EvaluatorChoice]):
         return SiblingStatus.combine([
@@ -114,7 +148,7 @@ class Stats:
         for evaluator, status in evaluator_results.items():
             self.provider_status_counts[evaluator][status] += 1
         self.overalls[overall] += 1
-        self.cross_stats.add(evaluator_results)
+        self.cross_stats.add(ip4, ip6, evaluator_results)
         if evaluator_results.get(EvaluatorChoice.ML_STARKE) == SiblingStatus.POSITIVE or \
                 evaluator_results.get(EvaluatorChoice.TCPRAW_STARKE) == SiblingStatus.POSITIVE:
             self.starke_siblings.append((ip4, ip6))

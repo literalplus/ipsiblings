@@ -15,6 +15,8 @@ FIL_STARKE_SIBLINGS = 'starke-siblings.st.tsv'
 FIL_MULTI_SIBLINGS = 'multi-siblings.st.tsv'
 FIL_STATUSES = 'classifications.sum.st.tsv'
 FIL_CROSS_STATS = 'cross-stats.sum.st.tsv'
+FIL_PEER_STATS_4 = 'peer-stats.v4.st.tsv'
+FIL_PEER_STATS_6 = 'peer-stats.v6.st.tsv'
 
 COL_SIBLINGS_4 = 'ip4'
 COL_SIBLINGS_6 = 'ip6'
@@ -38,6 +40,12 @@ COLS_CS = [COL_CS_KEY] + \
           [f'{COLPFX_CS_POSITIVE}{col}' for col in COLS_CS_POSNEG] + \
           [f'{COLPFX_CS_NEGATIVE}{col}' for col in COLS_CS_POSNEG] + \
           [COL_CS_CONFLICT, COL_CS_INDECISIVE, COL_CS_ERROR]
+
+COL_PS_IP = 'ip'
+COL_PS_NUMASSOC = 'num_assoc'
+COLPFX_PS_RES = 'res_'
+COLS_PS = [COL_PS_IP, COL_PS_NUMASSOC] + \
+          [f'{COLPFX_PS_RES}{group}' for group in CrossStats.get_group_names()]
 
 
 class CandidateDecisionImporter:
@@ -81,6 +89,9 @@ class StatsExporter:
         self.export_siblings(stats)
         self.export_classifications(stats)
         self.export_cross(stats.cross_stats)
+        peer_stats = stats.cross_stats.peer_stats
+        self.export_peers(FIL_PEER_STATS_4, peer_stats.v4_decisions, peer_stats.v4_dupecount)
+        self.export_peers(FIL_PEER_STATS_6, peer_stats.v6_decisions, peer_stats.v6_dupecount)
 
     def export_siblings(self, stats: Stats):
         with self._open_fil(FIL_MULTI_SIBLINGS, append=False) as fil:
@@ -135,4 +146,17 @@ class StatsExporter:
                         res[f'{prefix}{COLIFX_CS_TRUE_STATUS}{true_result.name}'] = str(count)
                     res[f'{prefix}{COLSFX_CS_PROBABLE}'] = str(sub_metrics.probables)
                     res[f'{prefix}{COLSFX_CS_IMPROBABLE}'] = str(sub_metrics.improbables)
+                writer.writerow(res)
+
+    def export_peers(self, file_name: str, decisions: Dict[str, Dict[str, SiblingStatus]], dupes: Dict[str, int]):
+        with self._open_fil(file_name, append=False) as fil:
+            writer = csv.DictWriter(fil, COLS_PS, dialect=csv.excel_tab)
+            writer.writeheader()
+            for ipa, sub_decisions in decisions.items():
+                res = {
+                    COL_PS_IP: ipa,
+                    COL_PS_NUMASSOC: dupes[ipa],
+                }
+                for group, decision in sub_decisions.items():
+                    res[f'{COLPFX_PS_RES}{group}'] = decision.name
                 writer.writerow(res)
