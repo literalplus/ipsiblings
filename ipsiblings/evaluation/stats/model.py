@@ -54,9 +54,10 @@ class PeerStats:
     def record(self, ip4: str, ip6: str, group_results: Dict[str, SiblingStatus]):
         for group, decision in group_results.items():
             self._update_decisions(decision, group, self.v4_decisions[ip4])
-            self.v4_dupecount[ip4] += 1
             self._update_decisions(decision, group, self.v6_decisions[ip6])
-            self.v6_dupecount[ip6] += 1
+            if decision == SiblingStatus.POSITIVE and group == "starke":
+                self.v4_dupecount[ip4] += 1
+                self.v6_dupecount[ip6] += 1
 
     def _update_decisions(self, decision: SiblingStatus, group: str, existing_statuses: Dict[str, SiblingStatus]):
         existing = existing_statuses.get(group, SiblingStatus.INDECISIVE)
