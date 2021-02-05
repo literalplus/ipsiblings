@@ -9,6 +9,10 @@ from ipsiblings.model import const
 
 
 class DomainEvaluator(SiblingEvaluator):
+    """
+    Evaluates based on the domains provided by the Bitnodes.io API.
+    """
+
     @classmethod
     def provide(cls, all_siblings: List[EvaluatedSibling], batch_dir: pathlib.Path, conf: AppConfig):
         return cls()

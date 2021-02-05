@@ -10,6 +10,10 @@ log = logsetup.get_root_logger()
 
 
 class SharedAddr:
+    """
+    A single address shared between two connections that stores information collected in both of them.
+    """
+
     # tuple structure: time, svc, ip, port
     def __init__(self, earlier_info: Tuple[int, int, str, int], later_info: Tuple[int, int, str, int]):
         self.earlier_info = earlier_info

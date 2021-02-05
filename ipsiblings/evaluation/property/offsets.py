@@ -16,6 +16,10 @@ log = logsetup.get_root_logger()
 
 
 class OffsetSeries:
+    """
+    Stores offsets for a single address family in seconds.
+    """
+
     KEY_RECEPTION_TIME = 'reception_time'
     KEY_OFFSET = 'offset_secs'
     DTYPE = numpy.dtype([(KEY_RECEPTION_TIME, numpy.float64), (KEY_OFFSET, numpy.float64)])

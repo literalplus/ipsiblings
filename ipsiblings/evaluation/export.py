@@ -7,7 +7,11 @@ from ipsiblings.evaluation.model.sibling import EvaluatedSibling
 
 
 def write_results(evaluated_siblings: List[EvaluatedSibling], out_path: pathlib.Path):
-    # TODO: LRT keys: 'ip4', 'ip6', 'port4', 'port6', 'domains', 'hz4', 'hz6', 'hz4_R2', 'hz6_R2', 'raw_ts_diff',
+    """
+    Writes the batch results represented by the parameters to a standard-format file.
+    """
+
+    # LRT keys: 'ip4', 'ip6', 'port4', 'port6', 'domains', 'hz4', 'hz6', 'hz4_R2', 'hz6_R2', 'raw_ts_diff',
     #             'ip4_tcpopts', 'ip6_tcpopts', 'ssh_keys_match', 'ssh_agents_match', 'geo4', 'geo6', 'geoloc_diff',
     #             'status', 'is_sibling'
     existed_before = out_path.is_file()

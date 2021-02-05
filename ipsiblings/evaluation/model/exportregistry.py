@@ -2,6 +2,10 @@ from typing import List
 
 
 class ExportRegistry:
+    """
+    Registers keys used in the candidates.tsv file format that stores metric values provided by properties.
+    """
+
     _REGISTERED_KEYS = set()
 
     @classmethod

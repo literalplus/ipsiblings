@@ -13,6 +13,10 @@ log = logsetup.get_root_logger()
 
 
 class KeyscanProcessHandler:
+    """
+    Handles ssh-keyscan interaction for a single process.
+    """
+
     def __init__(self, cwd: pathlib.Path, ip_version: int, timeout: int):
         self._cwd = cwd
         self.ip_version = ip_version
@@ -92,6 +96,10 @@ class KeyscanProcessHandler:
 
 
 class KeyscanRunner:
+    """
+    Runs an entire SSH key scan with multiple processes.
+    """
+
     def __init__(self, cwd: pathlib.Path, timeout: int):
         self._cwd = cwd
         self.timeout = timeout

@@ -11,6 +11,10 @@ if TYPE_CHECKING:
 
 
 class _PropertyMeta(abc.ABCMeta):
+    """
+    Metaclass for sibling properties that automatically registers them with [ExportRegistry].
+    """
+
     def __new__(mcs, name, bases, namespace):
         # noinspection PyTypeChecker
         cls: 'Type[SiblingProperty]' = super(_PropertyMeta, mcs).__new__(mcs, name, bases, namespace)
@@ -22,6 +26,10 @@ CT = TypeVar('CT')
 
 
 class SiblingProperty(metaclass=_PropertyMeta):
+    """
+    Abstract base class for a single property that is automatically registered with [ExportRegistry].
+    """
+
     @classmethod
     @abc.abstractmethod
     def get_export_keys(cls) -> Set[str]:
@@ -81,6 +89,10 @@ class FamilySpecificSiblingProperty(SiblingProperty, Generic[RT], metaclass=abc.
 
 
 class SiblingPropertyException(BusinessException):
+    """
+    Raised if evaluation of a sibling property failed.
+    """
+
     def __init__(self, message: str, cause: Optional[Exception] = None):
         super(SiblingPropertyException, self).__init__(message)
         if cause:

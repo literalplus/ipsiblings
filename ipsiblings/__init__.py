@@ -4,7 +4,7 @@
 #
 
 __title__ = 'ipsiblings'
-__version__ = '0.0.1'
+__version__ = '1.0.0'
 __author__ = 'Marco Starke, Philipp Nowak'
 __license__ = 'GPLv3'
-__copyright__ = 'Copyright (c) 2018-2020 Marco Starke, Philipp Nowak'
+__copyright__ = 'Copyright (c) 2018-2021 Marco Starke, Philipp Nowak'

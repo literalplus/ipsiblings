@@ -6,6 +6,10 @@ from ipsiblings.model import Target
 
 
 class TargetBtcVersions:
+    """
+    Retains version information for all known Bitcoin peers to allow pre-filtering of candidates.
+    """
+
     def __init__(self, base_dir: str):
         ip_filter = None
         self.target_versions_map: Dict[Tuple[int, str], List[Tuple[int, str]]] = defaultdict(list)

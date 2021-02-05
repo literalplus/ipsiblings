@@ -1,5 +1,4 @@
 import pathlib
-
 from typing import List, Dict, Type
 
 from ipsiblings import logsetup
@@ -67,6 +66,10 @@ def evaluate_with_all(
         evaluated_siblings: List[EvaluatedSibling], batch_stats: Stats,
         batch_dir: pathlib.Path, conf: AppConfig
 ):
+    """
+    Evaluates sibling decisions for provided candidates using all known and enabled properties.
+    """
+
     # TODO: low runtime ?
     evaluators = _provide_all(evaluated_siblings, batch_dir, conf)
     log.debug(f'Evaluators: {[it.key.name for it in evaluators]}')

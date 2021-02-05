@@ -9,6 +9,10 @@ PT = TypeVar('PT', bound=SiblingProperty)
 
 
 class EvaluatedSibling:
+    """
+    Combines all evaluation data related to a single sibling candidate.
+    """
+
     def __init__(self, candidate: SiblingCandidate):
         self.key = candidate.key
         self.series = candidate.series

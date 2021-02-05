@@ -15,12 +15,15 @@ log = logsetup.get_root_logger()
 
 
 class BitcoinConnections:
+    """
+    Manages multiple Bitcoin connections to the same target.
+    """
+
     def __init__(self, first_conn: BitcoinConnection):
         self.connections: List[BitcoinConnection] = [first_conn]
         self.proto_ver: Optional[int] = first_conn.ver_info.proto_ver
         self.sub_ver: Optional[str] = first_conn.ver_info.sub_ver
         self.services: Optional[int] = first_conn.ver_info.services
-        # TODO: check R^2 of block height
 
     def accept(self, conn: BitcoinConnection):
         if conn.ver_info.proto_ver != self.proto_ver:
@@ -35,6 +38,10 @@ class BitcoinConnections:
 
 
 class BitcoinProperty(FamilySpecificSiblingProperty[Optional[BitcoinConnections]]):
+    """
+    Stores Bitcoin data for evaluation by Bitcoin-based evaluators.
+    """
+
     @classmethod
     def get_export_keys(cls) -> Set[str]:
         return {'proto_ver4', 'sub_ver4', 'proto_ver6', 'sub_ver6'}

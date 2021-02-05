@@ -8,6 +8,10 @@ from ipsiblings.model import const
 
 
 class SiblingEvaluator(metaclass=abc.ABCMeta):
+    """
+    Abstract base class for sibling evaluators.
+    """
+
     def __init__(self, key: const.EvaluatorChoice):
         self.key = key
 

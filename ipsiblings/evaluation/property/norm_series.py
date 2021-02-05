@@ -19,6 +19,11 @@ TS_OVERFLOW_THRESHOLD = 2 ** 32 - 100_000
 
 
 class NormTimestampSeries(TimestampSeries):
+    """
+    A normalised timestamp series for a single address family.
+    Normalisation is performed as described by [NormSeriesProperty].
+    """
+
     def __init__(self, source: TimestampSeries, clean_reception_times: numpy.ndarray, clean_ts_vals: numpy.ndarray):
         unstructured_data = numpy.array([clean_ts_vals, clean_reception_times]).T
         structured_data = recfunctions.unstructured_to_structured(unstructured_data, dtype=self.DTYPE)

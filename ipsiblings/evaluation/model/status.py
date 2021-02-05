@@ -3,6 +3,10 @@ from typing import Iterable
 
 
 class SiblingStatus(Enum):
+    """
+    Possible evaluation results for a single sibling pair.
+    """
+
     POSITIVE = auto()
     NEGATIVE = auto()
     INDECISIVE = auto()

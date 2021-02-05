@@ -2,14 +2,19 @@
 
 *IP Sibling Detection Toolset*
 
+A Python framework designed to measure clock skew and Bitcoin-specific properties over all nodes of the Bitcoin network.
+The list of nodes is acquired using the Bitnodes.io API. Details about the high-level process may be found in the thesis
+that produced this framework, which is provided in `thesis-pnowak-github.pdf`.
+
 ## Usage Message
 
 ```
-usage: ipsiblings [-h] [-d BASE_DIR] [--run-id RUN_ID] [--export-plots] [--evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}]
-                  [--skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}] [--eval-batch-size EVAL_BATCH_SIZE] [--eval-fail-fast]
-                  [--eval-ssh-timeout EVAL_SSH_TIMEOUT] [--eval-first-batch EVAL_FIRST_BATCH] [--eval-batch-count EVAL_BATCH_COUNT] [--skip-eval] [--only-init] [-v | -q]
-                  [--targets-from {BITCOIN,FILESYSTEM}] [--skip-v SKIP_V] [--from START_INDEX] [--to END_INDEX] [--do-harvest] [--really-harvest] [--harvester {TCP_TS,BTC}] [-hd HARVEST_DURATION]
-                  [-ti TS_INTERVAL] [-bi BTC_INTERVAL] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os] [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
+usage: ipsiblings [-h] [-d BASE_DIR] [--run-id RUN_ID] [--export-plots] [--evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN,BITCOIN_ADDR,BITCOIN_ADDR_SVC}]
+                  [--skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN,BITCOIN_ADDR,BITCOIN_ADDR_SVC}] [--eval-batch-size EVAL_BATCH_SIZE]
+                  [--eval-fail-fast] [--eval-ssh-timeout EVAL_SSH_TIMEOUT] [--eval-first-batch EVAL_FIRST_BATCH] [--eval-batch-count EVAL_BATCH_COUNT] [--eval-discard-results]
+                  [--eval-totals-in-memory] [--eval-recalc-stats] [--skip-eval] [--only-init] [-v | -q] [--targets-from {BITCOIN,FILESYSTEM}] [--skip-v SKIP_V] [--from START_INDEX] [--to END_INDEX]
+                  [--do-harvest] [--really-harvest] [--harvester {TCP_TS,BTC}] [-hd HARVEST_DURATION] [-ti TS_INTERVAL] [-bi BTC_INTERVAL] [-htf HARVEST_TIMEOUT_FINAL] [--skip-os]
+                  [--skip-os-sysctls] [--skip-os-iptables] [--skip-os-ntp]
 
 IP Siblings Toolset
 
@@ -23,9 +28,9 @@ PATHS:
 
 EVALUATION:
   --export-plots        Export plots after evaluation
-  --evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}
+  --evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN,BITCOIN_ADDR,BITCOIN_ADDR_SVC}
                         Select a specific evaluator instead of running all of them. May be specified multiple times.
-  --skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN}
+  --skip-evaluator {TCPRAW_SCHEITLE,TCPRAW_STARKE,DOMAIN,SSH_KEYSCAN,TCP_OPTIONS,ML_STARKE,BITCOIN,BITCOIN_ADDR,BITCOIN_ADDR_SVC}
                         Skip a specific evaluator. May be specified multiple times.
   --eval-batch-size EVAL_BATCH_SIZE
                         Candidates to evaluate per batch (default 10_000)
@@ -36,6 +41,11 @@ EVALUATION:
                         Start counting eval batches at this number, default 0.
   --eval-batch-count EVAL_BATCH_COUNT
                         How many batches to evaluate, default all.
+  --eval-discard-results
+                        Discard evaluation results (to only invoke side effects, e.g. keyscan)
+  --eval-totals-in-memory
+                        Compute total stats in memory
+  --eval-recalc-stats   Recompute stats for each batch from candidates.tsv, no evaluation
 
 SKIP STEPS:
   --skip-eval           Skip any interpretation of collected data
@@ -85,20 +95,19 @@ Allowed outgoing dependencies:
  * evaluation → harvesting → preparation
 
 ## Execution
-For measurement, you need a dual-stack server with sufficient bandwidth
-and at least 1 GB of RAM. It is advised to enable at least 2 GB of swap (file-based is fine)
-to handle spikes due to other applications -- you don't want a ten-hour run to be OOM-killed
-at the ninth hour.
 
-For evaluation, more resources are necessary. It is technically possible to evaluate on a
-low-end host such as the one suggested for measurement above, but you need to specify
-a very low batch size (10k or less) and it will take a long time, producing many
-batches that need to be merged. Note that, at the time of writing, the Bitcoin
-network consists of around 6k v4 nodes and 1.5k v6 nodes, which results in
-around 6 million (!!) candidates for evaluation. For this work,
-a Linux server with 16 GB of RAM was used. Note that evaluation is single-threaded and
-performance may be improved by having multiple processes responsible for different
-batch numbers.
+For measurement, you need a dual-stack server with sufficient bandwidth and at least 1 GB of RAM. It is advised to
+enable at least 2 GB of swap (file-based is fine)
+to handle spikes due to other applications -- you don't want a ten-hour run to be OOM-killed at the ninth hour. If swap
+is not desired, an appropriately higher amount of RAM is necessary.
+
+For evaluation, more resources are necessary. It is technically possible to evaluate on a low-end host such as the one
+suggested for measurement above, but you need to specify a very low batch size (10k or less) and it will take a long
+time, producing many batches that need to be merged. Note that, at the time of writing, the Bitcoin network consists of
+around 6k v4 nodes and 1.5k v6 nodes, which results in around 6 million candidates for evaluation. For this work, a
+Linux server with 16 GB of RAM was used. Note that evaluation is single-threaded and performance may be improved by
+having multiple processes responsible for different batch numbers. Statistics collection for this execution mode may be
+performed in a later run over all batches with the `--eval-recalc-stats` flag.
 
 
 ## File Formats
@@ -160,9 +169,8 @@ read and write ALL network traffic of the system.
 **However,** we cannot modify sysctl values if we are not root,
 which means we'd need to move that logic into the wrapper as
 well, and also have the wrapper setuid to root, which
-is an improvement but still not the best. Further, the
-OS settings logic is complex enough that we wouldn't want
-it to be written in C if avoidable.
+is an improvement but still not the best. Further, the OS settings logic is complex enough that we wouldn't want it to
+be written in C if avoidable.
 
 Hence, for the time being, we still require to be run as root.
 
@@ -171,3 +179,13 @@ Hence, for the time being, we still require to be run as root.
 * Reduce disk space and access times by working with a database instead of text files
 * Set this up to be distributed with multiple measurement hosts
 * More sophisticated Bitcoin application-layer check
+* More ideas in the Future Work section of the thesis
+
+## License
+
+The original base of this work, https://github.com/tumi8/siblings, is licensed under GPLv2. The immediate base, created
+by Marco Starke as a result of his
+[Master's thesis](https://diglib.tugraz.at/identifying-ip-siblings-on-public-network-devices-2019), does not include a
+license file but notes GPLv3 in the `ipsiblings/__init__.py` file. This base does not seem to be available publicly, but
+can be located in the shared Git history at the `starke` tag. Due to being based on a GPLv2 work, a compatible license
+is required, which GPLv3 is.

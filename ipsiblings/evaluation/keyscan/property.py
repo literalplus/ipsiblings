@@ -9,6 +9,10 @@ log = logsetup.get_root_logger()
 
 
 class KeyscanResult:
+    """
+    A single result item from an SSH key scan.
+    """
+
     def __init__(self, ip_version: int, ip_address: str, agent: str):
         self.ip_version = ip_version
         self.ip_address = ip_address
@@ -30,6 +34,10 @@ class KeyscanResult:
 
 
 class SshProperty(FamilySpecificSiblingProperty[Optional[KeyscanResult]]):
+    """
+    A sibling property based on data provided by SSH key scans.
+    """
+
     @classmethod
     def provide_for(cls, evaluated_sibling: EvaluatedSibling) -> 'SshProperty':
         return cls()

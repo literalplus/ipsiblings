@@ -11,6 +11,10 @@ from ipsiblings.model import const
 
 
 class TcprawEvaluator(SiblingEvaluator, metaclass=abc.ABCMeta):
+    """
+    Evaluates based on the raw TCP timestamp difference using a constant threshold as defined by
+    Scheitle et al. and Starke.
+    """
 
     def __init__(self, threshold: float, key: const.EvaluatorChoice):
         super().__init__(key)

@@ -19,6 +19,10 @@ class FrequencyFailedException(SiblingPropertyException):
 
 
 class FrequencyInfo:
+    """
+    Combines information related to frequencies for a single address family.
+    """
+
     def __init__(self, clean_series: NormTimestampSeries):
         slope_raw, intercept, rval, pval, stderr = scipy_stats.linregress(
             clean_series.reception_times, clean_series.ts_vals

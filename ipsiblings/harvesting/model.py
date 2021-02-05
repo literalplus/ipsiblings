@@ -9,6 +9,10 @@ log = logsetup.get_root_logger()
 
 
 class HarvestProvider(metaclass=abc.ABCMeta):
+    """
+    Provides harvesting capabilities with multi-processing support.
+    """
+
     def __init__(self, interval: int, requested_run_count: int):
         self.interval = interval
 

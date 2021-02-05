@@ -1,6 +1,5 @@
 import abc
 import pathlib
-
 from typing import List, Iterator, Optional
 
 from ipsiblings.evaluation.model.sibling import EvaluatedSibling
@@ -16,6 +15,10 @@ log = logsetup.get_root_logger()
 
 
 class AbstractProcessor(metaclass=abc.ABCMeta):
+    """
+    Abstract base class for evaluation processor logic.
+    """
+
     def __init__(self, conf: config.AppConfig):
         self.conf = conf
         self.total_stats: Optional[Stats] = Stats() if conf.eval.totals_in_memory else None
@@ -40,6 +43,10 @@ class AbstractProcessor(metaclass=abc.ABCMeta):
 
 
 class StatsReaderProcessor(AbstractProcessor):
+    """
+    An evaluation processor that solely recalculates statistics but does not run actual evaluation.
+    """
+
     def __init__(self, conf: config.AppConfig):
         super(StatsReaderProcessor, self).__init__(conf)
         log.info('Evaluation: Recalculating stats only.')
@@ -50,6 +57,10 @@ class StatsReaderProcessor(AbstractProcessor):
 
 
 class EvaluationProcessor(AbstractProcessor):
+    """
+    The default evaluation processor that runs actual evaluation and maintains a property cache.
+    """
+
     def _handle_batch(self, evaluated: List[EvaluatedSibling], batch_stats: Stats, batch_dir: pathlib.Path):
         evaluate_with_all(evaluated, batch_stats, batch_dir, self.conf)
         if not self.conf.eval.discard_results:
@@ -65,6 +76,10 @@ class EvaluationProcessor(AbstractProcessor):
 
 
 def provide_processor(conf: config.AppConfig) -> AbstractProcessor:
+    """
+    Decides on the processor based on configuration options.
+    """
+
     if conf.eval.recalc_stats:
         return StatsReaderProcessor(conf)
     else:

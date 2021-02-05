@@ -16,6 +16,10 @@ _CSV_FIELD_NAMES = [_KEY_IP_VERSION, _KEY_IP_ADDRESS, _KEY_AGENT, _KEY_KEYS]
 
 
 class SshResultExporter:
+    """
+    Exports results provided by the ssh-keyscan tool into a standard file format.
+    """
+
     def __init__(self, out_file: pathlib.Path):
         self.out_file = out_file
 
@@ -41,6 +45,10 @@ class SshResultExporter:
 
 
 class SshResultImporter:
+    """
+    Imports results from the standard file format produced by [SshResultExporter].
+    """
+
     def __init__(self, in_file: pathlib.Path):
         self.in_file = in_file
 

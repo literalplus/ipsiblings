@@ -7,3 +7,7 @@ from .target import Target
 from .tcpopts import TcpOptions
 from .timestamps import Timestamps
 from .timestampseries import TimestampSeries
+
+"""
+Defines shared model classes over all layers.
+"""
