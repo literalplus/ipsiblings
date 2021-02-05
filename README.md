@@ -6,6 +6,8 @@ A Python framework designed to measure clock skew and Bitcoin-specific propertie
 The list of nodes is acquired using the Bitnodes.io API. Details about the high-level process may be found in the thesis
 that produced this framework, which is provided in `thesis-pnowak-github.pdf`.
 
+The statistics produced by the evaluation chapter of the thesis are provided in the `measurements/` directory.
+
 ## Usage Message
 
 ```

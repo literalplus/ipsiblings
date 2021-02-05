@@ -1,0 +1,9 @@
+algorithm	pos_was_POSITIVE	pos_was_NEGATIVE	pos_was_INDECISIVE	pos_was_CONFLICT	pos_was_ERROR	pos_probable	pos_improbable	neg_was_POSITIVE	neg_was_NEGATIVE	neg_was_INDECISIVE	neg_was_CONFLICT	neg_was_ERROR	neg_probable	neg_improbable	conflict	indecisive	error
+definite	281					0	0		428859				0	0	134	141976	2670
+most_definite	281			134		13	0		261783				0	0	0	311722	0
+btc_definite									327045		134		13	0	0	243093	3648
+probable	33	22	31	13		44	0								0	573821	0
+improbable									98624	17608			0	0	0	454040	3648
+starke	171	5883	3225	78	12	26	0	109	418020	136896	56	2431	18	0	0	0	7039
+scheitle	104	186	184	40		21	0								0	572227	1179
+keyscan	281			134		13	0		99681				0	0	0	473824	0

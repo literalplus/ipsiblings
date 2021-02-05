@@ -1,0 +1,19 @@
+things to change
+ -> sum checks
+    diff pos: =D3-SUM(E3:G3)
+    diff neg: =J3-SUM(K3:M3)
+    diff tot: =C3-D3-J3
+ -> starke: sum(pos/neg) from cross-stats sheet
+   pos =SUM($'cross-stats.sum.tsv'.C7:G7)
+   neg =SUM($'cross-stats.sum.tsv'.J7:N7)
+ -> starke total decided
+   =SUM($'cross-stats.sum.tsv'.C7:G7,$'cross-stats.sum.tsv'.J7:N7)
+ -> stark negs conflict missing
+   =SUM($'cross-stats.sum.tsv'.L7,$'cross-stats.sum.tsv'.N7,$'cross-stats.sum.tsv'.M7)
+ -> keyscan total peers sum fix
+   =SUM($'cross-stats.sum.tsv'.C9:E9,$'cross-stats.sum.tsv'.J9:L9,$'cross-stats.sum.tsv'.Q9,$'cross-stats.sum.tsv'.R9,$'cross-stats.sum.tsv'.S9,$'cross-stats.sum.tsv'.M9:N9,$'cross-stats.sum.tsv'.F9:G9)
+ -> btc total peers sum fix
+   =SUM($'cross-stats.sum.tsv'.C4,$'cross-stats.sum.tsv'.K4:L4,$'cross-stats.sum.tsv'.Q4,$'cross-stats.sum.tsv'.R4,$'cross-stats.sum.tsv'.S4,$'cross-stats.sum.tsv'.M4)
+ -> non-btc: all negs+pos should ref to row 3
+
+
