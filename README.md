@@ -3,8 +3,8 @@
 *IP Sibling Detection Toolset*
 
 A Python framework designed to measure clock skew and Bitcoin-specific properties over all nodes of the Bitcoin network.
-The list of nodes is acquired using the Bitnodes.io API. Details about the high-level process may be found in the thesis
-that produced this framework, which is provided in `thesis-pnowak-github.pdf`.
+The list of nodes is acquired using the Bitnodes.io API. Details about the high-level process may be found in the
+Bachelor's thesis that produced this framework, which is provided in `thesis-pnowak-github.pdf`.
 
 The statistics produced by the evaluation chapter of the thesis are provided in the `measurements/` directory.
 
@@ -190,4 +190,4 @@ by Marco Starke as a result of his
 [Master's thesis](https://diglib.tugraz.at/identifying-ip-siblings-on-public-network-devices-2019), does not include a
 license file but notes GPLv3 in the `ipsiblings/__init__.py` file. This base does not seem to be available publicly, but
 can be located in the shared Git history at the `starke` tag. Due to being based on a GPLv2 work, a compatible license
-is required, which GPLv3 is.
+is required, which GPLv3 is, so we assume that the license designation in that file is intentional and valid.
